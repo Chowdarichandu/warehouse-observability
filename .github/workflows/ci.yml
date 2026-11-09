@@ -56,14 +56,6 @@ jobs:
       - uses: azure/setup-helm@v4.3.0
         with: {version: v3.18.6}
       - run: helm lint deploy/helm/obs-console && helm template obs deploy/helm/obs-console --set backup.enabled=true --set ingress.enabled=true > /tmp/rendered.yaml
-      - name: Build and run demo containers
-        run: |
-          set -euo pipefail
-          cp .env.example .env
-          export OBS_WEB_PORT=18080
-          trap 'docker compose logs --no-color > /tmp/container.log; docker compose down -v' EXIT
-          make demo
-          node scripts/container-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -72,3 +64,41 @@ jobs:
             output/screenshots
             frontend/playwright-report
             frontend/test-results
+
+  containers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      MODE: demo
+      OBS_WEB_PORT: 18080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Build and run demo containers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv
+          cp .env.example .env
+          finish() {
+            status=$?
+            docker compose logs --no-color > /tmp/container.log || true
+            if [ "$status" -ne 0 ]; then
+              python3 scripts/ci_diagnostics.py /tmp/container-build.log /tmp/container.log
+            fi
+            docker compose down -v || true
+            exit "$status"
+          }
+          trap finish EXIT
+          make demo 2>&1 | tee /tmp/container-build.log
+          node scripts/container-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: container-diagnostics
+          path: |
+            /tmp/container-build.log
+            /tmp/container.log
