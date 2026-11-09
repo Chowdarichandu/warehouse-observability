@@ -1,0 +1,382 @@
+import { useEffect, useState } from 'react';
+import {
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Activity,
+  ArrowUpRight,
+  Bell,
+  CalendarDays,
+  ChevronDown,
+  Command,
+  Database,
+  LayoutDashboard,
+  LogOut,
+  Maximize2,
+  Menu,
+  Moon,
+  Plus,
+  Search,
+  Server,
+  Settings2,
+  ShieldCheck,
+  Sun,
+  Users,
+  Workflow,
+  X,
+} from 'lucide-react';
+import { api, ApiError, setCsrf } from './api/client';
+import type { Schema } from './api/client';
+import { useLiveEvents } from './api/useLiveEvents';
+import { AppContext } from './AppContext';
+import { APP_NAME, API_POLL_MS } from './config';
+import { ErrorState, Loading } from './components/ui';
+import { Login } from './pages/Login';
+import { Overview } from './pages/Overview';
+import { Tenants, TenantDetail } from './pages/Tenants';
+import { Runs, RunDetail } from './pages/Runs';
+import { Errors } from './pages/Errors';
+import { Freshness } from './pages/Freshness';
+import { Alerts } from './pages/Alerts';
+import { Onboarding } from './pages/Onboarding';
+import { Admin, Platform, SearchResults } from './pages/System';
+
+function localInputTime(iso: string | null) {
+  if (!iso) return undefined;
+  const date = new Date(iso);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+const NAV = [
+  {
+    group: 'WORKSPACE',
+    items: [
+      { path: '/', label: 'Overview', icon: LayoutDashboard },
+      { path: '/tenants', label: 'Tenants', icon: Users },
+      { path: '/runs', label: 'Pipeline runs', icon: Activity },
+    ],
+  },
+  {
+    group: 'ANALYZE',
+    items: [
+      { path: '/errors', label: 'Errors', icon: ShieldCheck },
+      { path: '/freshness', label: 'Freshness & volume', icon: Database },
+      { path: '/alerts', label: 'Alerts', icon: Bell },
+    ],
+  },
+  {
+    group: 'MANAGE',
+    items: [
+      { path: '/onboarding', label: 'Onboard tenant', icon: Plus },
+      { path: '/platform', label: 'Platform', icon: Server },
+      { path: '/admin', label: 'Administration', icon: Settings2 },
+    ],
+  },
+];
+
+export function App() {
+  const me = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const user = await api<Schema<'User'>>('/me');
+      setCsrf(user.csrf_token || '');
+      return user;
+    },
+    retry: false,
+    staleTime: API_POLL_MS,
+  });
+  useEffect(() => {
+    document.title = APP_NAME;
+  }, []);
+  if (me.error instanceof ApiError && me.error.status === 401) return <Login />;
+  if (me.isPending)
+    return (
+      <div className="initial-loading">
+        <Workflow size={28} />
+        <Loading />
+      </div>
+    );
+  if (!me.data)
+    return me.error instanceof ApiError && me.error.status === 401 ? (
+      <Login />
+    ) : (
+      <ErrorState error={me.error || new Error('The API is unavailable.')} />
+    );
+  return <Workspace user={me.data} />;
+}
+
+function Workspace({ user }: { user: Schema<'User'> }) {
+  const live = useLiveEvents();
+  const [theme, setTheme] = useState(() => localStorage.getItem('obs-theme') || 'light');
+  const [toast, setToast] = useState('');
+  const [menu, setMenu] = useState(false);
+  const [search, setSearch] = useState('');
+  const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const tv = params.get('tv') === '1';
+  const range = params.get('range') || '24h';
+  const logout = useMutation({
+    mutationFn: () => api('/auth/logout', { method: 'POST' }),
+    onSuccess: () => {
+      client.clear();
+      window.location.assign('/');
+    },
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('obs-theme', theme);
+  }, [theme]);
+  useEffect(() => {
+    setMenu(false);
+  }, [location.pathname]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(''), 7000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+  const rangeLink = (path: string) => {
+    const q = new URLSearchParams();
+    for (const k of ['range', 'from', 'to']) if (params.get(k)) q.set(k, params.get(k)!);
+    return `${path}${q.size ? `?${q}` : ''}`;
+  };
+  const section =
+    NAV.flatMap((g) => g.items).find((v) =>
+      v.path === '/' ? location.pathname === '/' : location.pathname.startsWith(v.path),
+    )?.label || 'Search';
+  return (
+    <AppContext.Provider value={{ user, ...live, notify: setToast }}>
+      <div className={`app-shell ${tv ? 'tv-mode' : ''}`}>
+        {!tv && (
+          <aside className={`sidebar ${menu ? 'mobile-open' : ''}`}>
+            <NavLink to="/" className="brand">
+              <span className="brand-icon">
+                <Workflow size={23} />
+              </span>
+              <span>
+                {APP_NAME}
+                <small>PIPELINE CONSOLE</small>
+              </span>
+            </NavLink>
+            <div className="workspace-switch">
+              <span className="workspace-avatar">D</span>
+              <div>
+                <strong>Data workspace</strong>
+                <small>Internal · Demo environment</small>
+              </div>
+              <ChevronDown size={14} />
+            </div>
+            <nav>
+              {NAV.map((group) => (
+                <div className="nav-group" key={group.group}>
+                  <span className="nav-label">{group.group}</span>
+                  {group.items
+                    .filter((item) => item.path !== '/admin' || user.role === 'admin')
+                    .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer')
+                    .map((item) => (
+                      <NavLink key={item.path} to={rangeLink(item.path)} end={item.path === '/'}>
+                        <item.icon size={17} />
+                        <span>{item.label}</span>
+                        {item.path === '/alerts' && <span className="nav-badge">!</span>}
+                      </NavLink>
+                    ))}
+                </div>
+              ))}
+            </nav>
+            <div className="sidebar-bottom">
+              <div className="environment-note">
+                <ShieldCheck size={17} />
+                <div>
+                  <strong>Safe to explore</strong>
+                  <small>Demo actions stay local.</small>
+                </div>
+                <ArrowUpRight size={13} />
+              </div>
+              <div className="profile">
+                <span className="profile-avatar">{user.display_name?.slice(0, 1)}</span>
+                <div>
+                  <strong>{user.display_name}</strong>
+                  <small>{user.role}</small>
+                </div>
+                <button title="Sign out" aria-label="Sign out" onClick={() => logout.mutate()}>
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+          </aside>
+        )}
+        <div className="workspace-main">
+          <header className="topbar">
+            <div className="breadcrumb">
+              <button
+                className="mobile-menu"
+                aria-label="Open navigation"
+                onClick={() => setMenu(!menu)}
+              >
+                <Menu size={19} />
+              </button>
+              <Workflow size={15} />
+              <span>Workspace</span>
+              <span className="slash">/</span>
+              <strong>{section}</strong>
+            </div>
+            <div className="topbar-actions">
+              <form
+                className="global-search"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (search.trim().length > 1)
+                    navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+                }}
+              >
+                <Search size={15} />
+                <input
+                  aria-label="Search errors and logs"
+                  placeholder="Search errors & logs…"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+                <Command size={12} />
+              </form>
+              <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
+                <span />
+                {live.connected ? 'Live' : 'Reconnecting'}
+              </span>
+              <button
+                className="theme-toggle"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                aria-label="Toggle color theme"
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              >
+                {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
+              </button>
+            </div>
+          </header>
+          <div className="range-bar">
+            <div className="demo-tag">
+              <span />
+              DEMO WORKSPACE<span className="muted">All times shown in your local timezone</span>
+            </div>
+            <div className="inline-flex">
+              <label className="range-picker">
+                <CalendarDays size={14} />
+                <select
+                  aria-label="Global time range"
+                  value={range}
+                  onChange={(event) => {
+                    const next = new URLSearchParams(params);
+                    next.set('range', event.target.value);
+                    next.delete('page');
+                    setParams(next);
+                  }}
+                >
+                  <option value="1h">Last hour</option>
+                  <option value="6h">Last 6 hours</option>
+                  <option value="24h">Last 24 hours</option>
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="custom">Custom range</option>
+                </select>
+              </label>
+              <button
+                className="icon-button"
+                aria-label={tv ? 'Exit TV mode' : 'Open TV mode'}
+                title="TV mode"
+                onClick={() => {
+                  const next = new URLSearchParams(params);
+                  if (tv) next.delete('tv');
+                  else next.set('tv', '1');
+                  navigate(`/?${next}`);
+                }}
+              >
+                {tv ? <X size={16} /> : <Maximize2 size={16} />}
+              </button>
+            </div>
+          </div>
+          {range === 'custom' && (
+            <form
+              className="custom-range"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const next = new URLSearchParams(params);
+                next.set('from', new Date(String(data.get('from'))).toISOString());
+                next.set('to', new Date(String(data.get('to'))).toISOString());
+                setParams(next);
+              }}
+            >
+              <label>
+                From
+                <input
+                  name="from"
+                  type="datetime-local"
+                  required
+                  defaultValue={localInputTime(params.get('from'))}
+                />
+              </label>
+              <label>
+                To
+                <input
+                  name="to"
+                  type="datetime-local"
+                  required
+                  defaultValue={localInputTime(params.get('to'))}
+                />
+              </label>
+              <button className="button primary">Apply range</button>
+            </form>
+          )}
+          <main className="page-content">
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/tenants" element={<Tenants />} />
+              <Route path="/tenants/:id" element={<TenantDetail />} />
+              <Route path="/runs" element={<Runs />} />
+              <Route path="/runs/:key" element={<RunDetail />} />
+              <Route path="/errors" element={<Errors />} />
+              <Route path="/freshness" element={<Freshness />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/platform" element={<Platform />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route
+                path="*"
+                element={
+                  <div className="empty">
+                    <h1>Page not found</h1>
+                    <NavLink to="/">Back to overview</NavLink>
+                  </div>
+                }
+              />
+            </Routes>
+          </main>
+          <footer className="app-footer">
+            <span>
+              <Workflow size={12} /> {APP_NAME}
+            </span>
+            <span>
+              Built in-house <i /> Demo · M4
+            </span>
+          </footer>
+        </div>
+        {toast && (
+          <div className="toast" role="status">
+            <ShieldCheck size={19} />
+            <span>{toast}</span>
+            <button aria-label="Dismiss notification" onClick={() => setToast('')}>
+              <X size={15} />
+            </button>
+          </div>
+        )}
+      </div>
+    </AppContext.Provider>
+  );
+}

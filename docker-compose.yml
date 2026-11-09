@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16.9-bookworm
+    environment:
+      POSTGRES_DB: obs
+      POSTGRES_USER: obs
+      POSTGRES_PASSWORD: ${OBS_DB_PASSWORD:-obs_local}
+    volumes: [obs-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U obs -d obs]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: sh -c "python -m obs.migrate && uvicorn obs.api.main:app --host 0.0.0.0 --port 8000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://obs:${OBS_DB_PASSWORD:-obs_local}@db:5432/obs
+      MODE: ${MODE:-demo}
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  collector:
+    build: {context: ., dockerfile: backend/Dockerfile}
+    command: python -m obs.collector
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://obs:${OBS_DB_PASSWORD:-obs_local}@db:5432/obs
+      MODE: ${MODE:-demo}
+    depends_on:
+      api: {condition: service_healthy}
+  alerter:
+    build: {context: ., dockerfile: backend/Dockerfile}
+    command: python -m obs.alerter
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://obs:${OBS_DB_PASSWORD:-obs_local}@db:5432/obs
+      MODE: ${MODE:-demo}
+    depends_on:
+      api: {condition: service_healthy}
+  web:
+    build: {context: ./frontend}
+    ports: ["8080:80"]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  obs-db:

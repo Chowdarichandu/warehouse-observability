@@ -1,0 +1,15 @@
+.env
+.venv/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.runtime
+playwright-report/
+test-results/
+*.pyc
+
+*.tsbuildinfo
+*.egg-info/
+output/console-screens.zip

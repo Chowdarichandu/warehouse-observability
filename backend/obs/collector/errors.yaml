@@ -1,0 +1,36 @@
+- class: MYSQL_BINLOG_PURGED
+  severity: critical
+  patterns: ['binlog.*(purged|no longer available|not available)', 'Could not find first log file', 'Error 1236']
+  hint: MySQL purged the binlog position. A retry cannot recover it. Run a full resync and increase binlog retention.
+- class: MONGO_CHANGE_STREAM_LOST
+  severity: critical
+  patterns: ['ChangeStreamHistoryLost', 'resume (token|point).*(no longer|not found)', 'oplog.*(rolled|too small)']
+  hint: Resume token fell off the oplog. Run a resync and consider a larger oplog.
+- class: SOURCE_AUTH
+  severity: error
+  patterns: ['Access denied for user', 'Authentication failed', 'auth(entication)? fail']
+  hint: Source credentials changed or expired. Contact the tenant owner and rotate the secret reference.
+- class: SOURCE_UNREACHABLE
+  severity: error
+  patterns: ['Communications link failure', 'Connection refused', 'No route to host', 'ServerSelectionTimeout', 'timed? out']
+  hint: Source database or network is unavailable. Check connectivity and the IP allowlist.
+- class: SCHEMA_CHANGE
+  severity: warning
+  patterns: ['schema (change|mismatch)', 'column .* (does not exist|not found)', 'breaking change']
+  hint: Refresh the schema in Airbyte and review downstream models.
+- class: DESTINATION_ERROR
+  severity: error
+  patterns: ['warehouse.*(quota|permission|denied)', 'destination.*(failed|error)']
+  hint: Warehouse rejected the write. Check permissions, quota and table locks.
+- class: OUT_OF_MEMORY
+  severity: error
+  patterns: ['OutOfMemoryError', 'exit code 137', 'OOMKilled']
+  hint: Sync worker ran out of memory. Raise resource limits for this connection.
+- class: AIRFLOW_INFRA
+  severity: error
+  patterns: ['zombie', 'Executor reports task instance', 'SIGTERM', 'SIGKILL']
+  hint: Airflow killed the task. Check workers and the scheduler.
+- class: UNKNOWN
+  severity: error
+  patterns: ['.*']
+  hint: Read the redacted log and add a classification rule.

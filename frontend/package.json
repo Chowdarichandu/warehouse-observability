@@ -1,0 +1,49 @@
+{
+  "name": "observability-console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . && prettier --check . && tsc -b",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "types": "node ../scripts/types.mjs",
+    "e2e": "NODE_PATH=./node_modules playwright test"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.80.7",
+    "@tanstack/react-table": "8.21.3",
+    "echarts": "5.6.0",
+    "lucide-react": "0.511.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-router-dom": "7.6.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.28.0",
+    "@playwright/test": "1.52.0",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/jest-dom": "6.6.3",
+    "@types/react": "19.1.6",
+    "@types/react-dom": "19.1.6",
+    "@types/node": "22.15.29",
+    "@vitejs/plugin-react": "4.5.1",
+    "autoprefixer": "10.4.21",
+    "eslint": "9.28.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react-refresh": "0.4.20",
+    "globals": "16.2.0",
+    "jsdom": "26.1.0",
+    "openapi-typescript": "7.8.0",
+    "postcss": "8.5.4",
+    "prettier": "3.5.3",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.33.1",
+    "vite": "6.3.5",
+    "vitest": "3.2.3"
+  }
+}

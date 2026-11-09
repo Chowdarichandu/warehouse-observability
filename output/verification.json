@@ -1,0 +1,20 @@
+{
+  "verified_at": "2026-11-09T09:45:00.475359+00:00",
+  "milestone": "M4",
+  "backend_tests": 53,
+  "frontend_tests": 2,
+  "playwright_tests": 8,
+  "lint": "passed",
+  "production_build": "passed",
+  "clean_reset": "passed",
+  "empty_console_login": "passed",
+  "seeded_runs": 6726,
+  "tenants": 10,
+  "scenarios": "all verified",
+  "runtime_tested": "native PostgreSQL 16",
+  "compose_tested": false,
+  "production_calls": 0,
+  "demo_restored": true,
+  "screenshots": 16,
+  "retry_alert_regression": "passed"
+}

@@ -1,0 +1,202 @@
+import { useQuery } from '@tanstack/react-query';
+import { ArrowDown, GitBranch, Plus, Table2 } from 'lucide-react';
+import { api } from '../api/client';
+import type { Schema } from '../api/client';
+import { StatusPill } from '../components/StatusPill';
+import { STATUS_COLORS } from '../components/statusColors';
+import {
+  Empty,
+  ErrorState,
+  Loading,
+  NumberValue,
+  PageHeader,
+  Pagination,
+  Panel,
+  Source,
+  TenantLink,
+  Time,
+  useFilters,
+} from '../components/ui';
+
+export function Freshness() {
+  const { page, set } = useFilters();
+  const query = useQuery({
+    queryKey: ['freshness', page],
+    queryFn: () => api<Schema<'Page_Freshness_'>>(`/freshness?page=${page}`),
+  });
+  const volume = useQuery({
+    queryKey: ['volume'],
+    queryFn: () => api<Schema<'Page_Change_'>>('/volume-anomalies'),
+  });
+  const schema = useQuery({
+    queryKey: ['schema'],
+    queryFn: () => api<Schema<'Page_Change_'>>('/schema-changes'),
+  });
+  return (
+    <>
+      <PageHeader
+        title="Freshness & volume"
+        description="Make sure data arrives on time, in the right shape, and at the expected volume."
+      />
+      <Panel
+        title="Data freshness"
+        subtitle="Time since the last successful sync, measured against each source’s SLA."
+        action={<span className="tag">5-MINUTE SLA BUCKETS</span>}
+      >
+        {query.isPending ? (
+          <Loading />
+        ) : query.error ? (
+          <ErrorState error={query.error} />
+        ) : (
+          <>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tenant</th>
+                    <th>Source</th>
+                    <th>Freshness / SLA</th>
+                    <th>Last successful sync</th>
+                    <th>SLA · 7 days</th>
+                    <th>SLA · 30 days</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {query.data.items.map((row) => {
+                    const status =
+                      row.minutes_stale == null || row.minutes_stale > row.freshness_sla_min
+                        ? 'down'
+                        : row.minutes_stale > row.freshness_sla_min * 0.75
+                          ? 'degraded'
+                          : 'healthy';
+                    return (
+                      <tr key={`${row.tenant_id}:${row.source_type}`}>
+                        <td>
+                          <TenantLink id={row.tenant_id} />
+                        </td>
+                        <td>
+                          <Source source={row.source_type} />
+                        </td>
+                        <td>
+                          <div className="freshness-meter">
+                            <span style={{ color: STATUS_COLORS[status] }}>
+                              <NumberValue value={row.minutes_stale} suffix="m" />{' '}
+                              <small>/ {row.freshness_sla_min}m</small>
+                            </span>
+                            <div className="mini-track">
+                              <i
+                                style={{
+                                  background: STATUS_COLORS[status],
+                                  width: `${Math.min(100, ((row.minutes_stale || 0) / row.freshness_sla_min) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                            <StatusPill status={status} />
+                          </div>
+                        </td>
+                        <td>
+                          <Time value={row.last_success_at} relative />
+                        </td>
+                        <td>
+                          <NumberValue value={row.sla_7d} suffix="%" />
+                        </td>
+                        <td>
+                          <NumberValue value={row.sla_30d} suffix="%" />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              total={query.data.total}
+              page={page}
+              onChange={(p) => set('page', String(p))}
+            />
+            <div className="panel-footer">
+              The demo contains seven days of history. Older, unobserved buckets count as
+              non-compliant in the 30-day metric.
+            </div>
+          </>
+        )}
+      </Panel>
+      <div className="two-column">
+        <Panel
+          title="Volume anomalies"
+          subtitle="Drops greater than 30%, or growth above 5× the previous seven-day average delta."
+          action={<Table2 size={17} />}
+        >
+          {volume.isPending ? (
+            <Loading />
+          ) : volume.error ? (
+            <ErrorState error={volume.error} />
+          ) : volume.data.items.length ? (
+            volume.data.items.map((change) => (
+              <div
+                className="anomaly-card"
+                key={`${change.tenant_id}:${change.table_name}:${change.checked_at}`}
+              >
+                <div className="inline-flex">
+                  <TenantLink id={change.tenant_id} />
+                  <span className="tag mono">{change.table_name}</span>
+                </div>
+                <div className="anomaly-value">
+                  <ArrowDown size={21} />
+                  <NumberValue value={change.change_pct} suffix="%" />
+                  <small>row count</small>
+                </div>
+                <p>
+                  <NumberValue value={change.previous_count} /> →{' '}
+                  <NumberValue value={change.row_count} /> rows
+                </p>
+                <Time value={change.checked_at} />
+              </div>
+            ))
+          ) : (
+            <Empty title="No volume anomalies" />
+          )}
+        </Panel>
+        <Panel
+          title="Schema drift"
+          subtitle="Column changes detected between consecutive catalog snapshots."
+          action={<GitBranch size={17} />}
+        >
+          {schema.isPending ? (
+            <Loading />
+          ) : schema.error ? (
+            <ErrorState error={schema.error} />
+          ) : schema.data.items.length ? (
+            schema.data.items.map((change) => (
+              <div
+                className="schema-card"
+                key={`${change.tenant_id}:${change.table_name}:${change.checked_at}`}
+              >
+                <div className="inline-flex">
+                  <TenantLink id={change.tenant_id} />
+                  <span className="tag mono">{change.table_name}</span>
+                </div>
+                {change.added?.map((c) => (
+                  <p className="positive-text" key={c}>
+                    <Plus size={14} />
+                    <code>{c}</code>
+                    <span className="tag">column added</span>
+                  </p>
+                ))}
+                {change.removed?.map((c) => (
+                  <p className="danger-text" key={c}>
+                    − {c} removed
+                  </p>
+                ))}
+                {change.type_changed?.map((c) => <p key={c}>{c}</p>)}
+                <Time value={change.checked_at} />
+              </div>
+            ))
+          ) : (
+            <Empty title="No schema changes" />
+          )}
+        </Panel>
+      </div>
+    </>
+  );
+}

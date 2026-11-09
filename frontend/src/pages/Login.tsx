@@ -1,0 +1,126 @@
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowRight, Database, GitBranch, Layers3, ShieldCheck, Workflow } from 'lucide-react';
+import { api, setCsrf } from '../api/client';
+import type { Schema } from '../api/client';
+import { APP_NAME } from '../config';
+
+export function Login() {
+  const [email, setEmail] = useState('admin@demo.local');
+  const [password, setPassword] = useState('');
+  const client = useQueryClient();
+  const login = useMutation({
+    mutationFn: () =>
+      api<Schema<'User'>>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      }),
+    onSuccess: (user) => {
+      setCsrf(user.csrf_token || '');
+      client.setQueryData(['me'], user);
+    },
+  });
+  return (
+    <div className="login-page">
+      <div className="login-story">
+        <div className="brand">
+          <span className="brand-icon">
+            <Workflow size={23} />
+          </span>
+          <span>{APP_NAME}</span>
+        </div>
+        <div className="login-copy">
+          <span className="eyebrow">YOUR PIPELINE. ONE CLEAR PICTURE.</span>
+          <h1>
+            Clarity at
+            <br />
+            every stage.
+          </h1>
+          <p>
+            Know what’s flowing, what needs attention,
+            <br />
+            and what to do next.
+          </p>
+          <div className="pipeline-art">
+            <div>
+              <Database />
+              <span>Sources</span>
+            </div>
+            <i />
+            <div>
+              <GitBranch />
+              <span>Airbyte</span>
+            </div>
+            <i />
+            <div>
+              <Layers3 />
+              <span>Warehouse</span>
+            </div>
+          </div>
+          <div className="login-health">
+            <span className="pulse-dot" /> Built in-house. Observable by everyone.
+          </div>
+        </div>
+        <div className="login-footer">
+          MySQL & MongoDB <span>→</span> Airbyte <span>→</span> Airflow <span>→</span> Warehouse
+        </div>
+      </div>
+      <main className="login-form-wrap">
+        <form
+          className="login-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            login.mutate();
+          }}
+        >
+          <div className="demo-label">
+            <span /> OFFLINE DEMO
+          </div>
+          <h2>Welcome back</h2>
+          <p>Sign in to your pipeline workspace.</p>
+          <label>
+            Email address
+            <input
+              autoComplete="username"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              autoComplete="current-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              required
+            />
+          </label>
+          {login.error && (
+            <p role="alert" className="danger-text">
+              {login.error.message}
+            </p>
+          )}
+          <button className="button primary login-submit" type="submit" disabled={login.isPending}>
+            {login.isPending ? 'Signing in…' : 'Sign in to workspace'}
+            <ArrowRight size={16} />
+          </button>
+          <div className="demo-credentials">
+            <ShieldCheck size={18} />
+            <div>
+              <strong>Explore the demo</strong>
+              <p>
+                Use admin@demo.local, operator@demo.local, or viewer@demo.local. Default password:{' '}
+                <code>demo</code>.
+              </p>
+            </div>
+          </div>
+          <p className="login-note">Demo data is fictional. All actions are simulated locally.</p>
+        </form>
+      </main>
+    </div>
+  );
+}
