@@ -175,12 +175,26 @@ def main() -> None:
     if shutil.which("docker") and os.environ.get("OBS_NATIVE") != "1":
         commands = {
             "up": ["up", "--build", "-d"],
-            "demo": ["up", "--build", "-d"],
+            "demo": ["up", "--build", "-d", "--wait"],
             "down": ["down"],
             "reset": ["down", "-v"],
-            "seed": ["exec", "api", "python", "-m", "obs.demo.seed"],
+            "seed": ["exec", "-T", "api", "python", "-m", "obs.demo.seed"],
         }
         run(["docker", "compose", *commands[args.action]])
+        if args.action == "demo":
+            run(
+                [
+                    "docker",
+                    "compose",
+                    "exec",
+                    "-T",
+                    "api",
+                    "python",
+                    "-m",
+                    "obs.demo.seed",
+                ]
+            )
+            print(f"Console: http://localhost:{os.environ.get('OBS_WEB_PORT', '8080')}")
         return
     if args.action in {"down", "reset"}:
         down(args.action == "reset")

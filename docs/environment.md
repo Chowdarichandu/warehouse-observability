@@ -65,3 +65,5 @@ Every application setting is listed below. Live integrations never run in demo m
 - `BACKUP_KMS_KEY_ID`: <class 'str'>. Default: ``.
 
 `OBS_CONFIG_SECRET_ID` selects a per-service Secrets Manager JSON for the entrypoint; `AWS_REGION` selects its region. `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, and `SMTP_URL` are channel target environment variables. `OBS_DB_PASSWORD` is only for the local Compose database. `OBS_DATABASE_URL` is the read-only Airflow registry DSN. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` and `OBS_NATIVE` are developer-only settings.
+
+`OBS_WEB_PORT` optionally changes the local demo Compose web port (default 8080); CI uses 18080 to isolate container checks from the native preview.

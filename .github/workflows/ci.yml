@@ -56,8 +56,14 @@ jobs:
       - uses: azure/setup-helm@v4.3.0
         with: {version: v3.18.6}
       - run: helm lint deploy/helm/obs-console && helm template obs deploy/helm/obs-console --set backup.enabled=true --set ingress.enabled=true > /tmp/rendered.yaml
-      - name: Build production containers
-        run: docker compose build api web
+      - name: Build and run demo containers
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          export OBS_WEB_PORT=18080
+          trap 'docker compose logs --no-color > /tmp/container.log; docker compose down -v' EXIT
+          make demo
+          node scripts/container-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
