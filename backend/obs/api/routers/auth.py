@@ -20,7 +20,8 @@ def login(data: Login, request: Request, response: Response) -> dict:
         fail(403, "sso_required", "Use your organization account to sign in.")
     check_login_rate(request)
     origin = request.headers.get("origin")
-    if origin and urlsplit(origin).netloc != request.headers.get("host"):
+    allowed_hosts = {request.headers.get("host"), urlsplit(settings().console_url).netloc}
+    if origin and urlsplit(origin).netloc not in allowed_hosts:
         fail(403, "csrf_origin", "Cross-origin login blocked.")
     user = one("SELECT * FROM obs.users WHERE email=%s", (data.email.lower().strip(),))
     valid = verify_password(data.password, user.get("password_hash") or DUMMY_HASH)
