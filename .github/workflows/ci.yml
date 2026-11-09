@@ -86,8 +86,9 @@ jobs:
           finish() {
             status=$?
             docker compose logs --no-color > /tmp/container.log || true
+            docker compose logs --no-color web > /tmp/web-container.log || true
             if [ "$status" -ne 0 ]; then
-              python3 scripts/ci_diagnostics.py /tmp/container-build.log /tmp/container.log
+              python3 scripts/ci_diagnostics.py /tmp/web-container.log /tmp/container-build.log /tmp/container.log
             fi
             docker compose down -v || true
             exit "$status"
@@ -102,3 +103,4 @@ jobs:
           path: |
             /tmp/container-build.log
             /tmp/container.log
+            /tmp/web-container.log
