@@ -46,7 +46,11 @@ SCREENS = [
         "Platform",
         "Component history, Airflow pools, collectors, and database health.",
     ),
-    ("admin", "Administration", "Users, roles, and the audit trail."),
+    (
+        "admin",
+        "Administration",
+        "Users, roles, operation outcomes, notification deliveries, and audit history.",
+    ),
     (
         "search",
         "Global search",
@@ -85,14 +89,14 @@ h1{font-size:36px;letter-spacing:-1.3px;margin:14px 0 12px}header p{color:#71849
 .copy{padding:20px}h2{font-size:16px;letter-spacing:-.2px;margin:0 0 10px}h2 span{float:right;color:#7f9aab}.copy p{font-size:12px;line-height:1.7;color:#81909d;margin:0}
 footer{font-size:11px;color:#81909d;border-top:1px solid #dfe7ed;margin-top:35px;padding-top:20px;line-height:1.7}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){main{padding:30px 18px}h1{font-size:28px}.grid{grid-template-columns:1fr}.preview{height:260px}}
-</style></head><body><main><header><div class="label">OBSERVABILITY CONSOLE · M0–M4</div>
+</style></head><body><main><header><div class="label">WAREHOUSE OBSERVABILITY · SCREEN GALLERY</div>
 <h1>Every screen, at a glance.</h1><p>Original screenshots captured from the running offline demo with Playwright. Select a screen to open its full-resolution image.</p>
-<div class="status">Demo walkthrough verified · Live integrations remain M5–M7</div></header><div class="grid">"""
+<div class="status">Offline walkthrough verified · EC2/EKS deployment candidate</div></header><div class="grid">"""
     document += "\n".join(cards)
     document += """</div><footer>All tenants and data are fictional. Retry, onboarding, and notification actions are simulated.
-Live Airflow/Airbyte/warehouse connections and SSO are not included in this demo. Images preserve the original Playwright captures.</footer></main></body></html>"""
+Live integration, OIDC, and deployment code is included in the repository; AWS staging acceptance remains pending. These screens show offline demo data. Images preserve the original Playwright captures.</footer></main></body></html>"""
     (DIRECTORY / "index.html").write_text(document)
-    markdown = "# Observability Console screens\n\nOriginal Playwright captures of the M0–M4 offline demo. Live integrations remain at M5–M7.\n\n"
+    markdown = "# Observability Console screens\n\nOriginal Playwright captures of the offline demo. Live integration and EC2/EKS deployment code is included; real staging acceptance remains pending.\n\n"
     markdown += "\n\n".join(
         f"## {title}\n\n{description}\n\n[![{title}]({slug}.png)]({slug}.png)"
         for slug, title, description in SCREENS

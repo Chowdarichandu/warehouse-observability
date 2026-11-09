@@ -6,7 +6,6 @@ from psycopg.types.json import Jsonb
 from obs.alerter.notify import deliver
 from obs.db import connection, notify
 from obs.repositories.analytics import anomalies, schema_changes
-from obs.settings import require_demo
 
 PARAMS = {
     "cdc_consecutive_failures": {"n"},
@@ -108,7 +107,6 @@ def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
 
 
 def evaluate() -> None:
-    require_demo()
     now = datetime.now(UTC)
     with connection() as conn:
         conn.execute("SELECT pg_advisory_xact_lock(110529)")

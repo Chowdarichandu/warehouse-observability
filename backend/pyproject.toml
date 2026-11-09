@@ -4,16 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "obs-console"
-version = "0.1.0"
-description = "In-house pipeline observability console, offline demo through M4"
+version = "0.2.0"
+description = "In-house pipeline observability console, AWS-ready pipeline observability"
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi==0.115.12", "uvicorn==0.34.3", "psycopg[binary]==3.2.9",
-  "pydantic-settings==2.9.1", "httpx==0.28.1", "sse-starlette==2.3.5",
-  "argon2-cffi==23.1.0", "PyJWT==2.10.1", "APScheduler==3.11.0", "PyYAML==6.0.2",
+  "fastapi==0.162.2", "uvicorn==0.34.3", "psycopg[binary]==3.2.9",
+  "pydantic-settings==2.9.1", "httpx==0.28.1", "sse-starlette==3.7.0",
+  "argon2-cffi==23.1.0", "PyJWT[crypto]==2.15.1", "APScheduler==3.11.0", "PyYAML==6.0.2", "boto3>=1.35,<2", "PyMySQL>=1.1.1,<2", "pymongo>=4.10,<5",
 ]
 [project.optional-dependencies]
-dev = ["pytest==8.3.5", "ruff==0.11.13"]
+dev = ["pytest==9.2.0", "ruff==0.11.13"]
 
 [tool.setuptools.packages.find]
 include = ["obs*"]

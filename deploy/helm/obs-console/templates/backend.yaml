@@ -1,0 +1,77 @@
+{{- range $component := list "api" "collector" "alerter" }}
+{{- $config := index $.Values $component }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: obs-{{ $component }}
+  {{- with $config.roleArn }}
+  annotations: {eks.amazonaws.com/role-arn: {{ . | quote }}}
+  {{- end }}
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obs-{{ $component }}
+spec:
+  replicas: {{ $config.replicas }}
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  selector:
+    matchLabels: {app.kubernetes.io/name: obs-console, component: {{ $component }}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: obs-console, component: {{ $component }}}
+    spec:
+      serviceAccountName: obs-{{ $component }}
+      terminationGracePeriodSeconds: 90
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: {{ $component }}
+          image: {{ include "obs.backendImage" $ | quote }}
+          imagePullPolicy: {{ $.Values.imagePullPolicy }}
+          {{- if eq $component "api" }}
+          args: [uvicorn, "obs.api.main:app", --host, 0.0.0.0, --port, "8000", --no-access-log]
+          ports: [{name: http, containerPort: 8000}]
+          startupProbe: {httpGet: {path: /api/health/live, port: http}, periodSeconds: 3, failureThreshold: 40}
+          livenessProbe: {httpGet: {path: /api/health/live, port: http}, periodSeconds: 20}
+          readinessProbe: {httpGet: {path: /api/health, port: http}, periodSeconds: 10, timeoutSeconds: 6}
+          {{- else }}
+          args: [python, -m, "obs.{{ $component }}"]
+          readinessProbe:
+            exec: {command: [python, -m, obs.worker_health, {{ $component }}]}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          {{- end }}
+          env:
+            - {name: OBS_CONFIG_SECRET_ID, value: {{ $config.secretId | quote }}}
+            {{- range $key, $value := $.Values.env }}
+            - {name: {{ $key }}, value: {{ $value | quote }}}
+            {{- end }}
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {medium: Memory, sizeLimit: 64Mi}}]
+      topologySpreadConstraints:
+        - {maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: {matchLabels: {component: {{ $component }}}}}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: api}
+spec:
+  selector: {app.kubernetes.io/name: obs-console, component: api}
+  ports: [{name: http, port: 8000, targetPort: http}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: obs-api}
+spec:
+  minAvailable: 1
+  selector: {matchLabels: {app.kubernetes.io/name: obs-console, component: api}}

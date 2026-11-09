@@ -23,7 +23,6 @@ export default defineConfig({
   test: {
     pool: 'threads',
     maxWorkers: 1,
-    minWorkers: 1,
     fileParallelism: false,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],

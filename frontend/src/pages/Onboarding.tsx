@@ -37,12 +37,27 @@ const INITIAL: Schema<'OnboardInput'> = {
 };
 export function Onboarding() {
   const { params, set } = useFilters();
-  const { canOperate, notify } = useApp();
+  const { canMutatePipelines: canOperate, notify, runtime } = useApp();
   const step = Math.max(1, Math.min(4, Number(params.get('step') || 1)));
   const tenant = params.get('tenant') || '';
   const [draft, setDraft] = useState<Schema<'OnboardInput'>>(() => {
     try {
-      return JSON.parse(sessionStorage.getItem('obs-onboard-draft') || 'null') || INITIAL;
+      return (
+        JSON.parse(sessionStorage.getItem(`obs-onboard-draft-${runtime.mode}`) || 'null') ||
+        (runtime.mode === 'demo'
+          ? INITIAL
+          : {
+              ...INITIAL,
+              tenant_id: '',
+              display_name: '',
+              mysql_host: '',
+              mysql_database: '',
+              mysql_secret_ref: 'aws://observability/',
+              mongo_secret_ref: 'aws://observability/',
+              warehouse_schema: '',
+              owner_email: '',
+            })
+      );
     } catch {
       return INITIAL;
     }
@@ -53,7 +68,7 @@ export function Onboarding() {
   ) {
     const next = { ...draft, [key]: value };
     setDraft(next);
-    sessionStorage.setItem('obs-onboard-draft', JSON.stringify(next));
+    sessionStorage.setItem(`obs-onboard-draft-${runtime.mode}`, JSON.stringify(next));
   }
   const preflight = useMutation({
     mutationFn: () =>
@@ -71,7 +86,7 @@ export function Onboarding() {
       }),
     onSuccess: (r) => {
       set('tenant', r.tenant_id);
-      sessionStorage.removeItem('obs-onboard-draft');
+      sessionStorage.removeItem(`obs-onboard-draft-${runtime.mode}`);
     },
     onError: (e) => notify(e.message),
   });
@@ -112,7 +127,7 @@ export function Onboarding() {
               ? 'Your tenant is ready'
               : 'Bringing your tenant online'
           }
-          description={`${tenant} · A simulated onboarding workflow, streamed live.`}
+          description={`${tenant} · ${runtime.mode === 'demo' ? 'Simulated onboarding' : 'Airflow onboarding'}, streamed live.`}
         />
         {progress.isPending ? (
           <Loading />
@@ -258,7 +273,7 @@ export function Onboarding() {
                     'A unique identity and an owner for this workspace.',
                     'We use references to resolve credentials outside the console.',
                     'Demo checks simulate connectivity, replication settings, and permissions.',
-                    'Review the configuration before starting the simulated workflow.',
+                    'Review the configuration before starting the onboarding workflow.',
                   ][step - 1]
                 }
               </p>
@@ -302,7 +317,7 @@ export function Onboarding() {
                         { key: 'mysql_user', label: 'Replication user' },
                         {
                           key: 'mysql_secret_ref',
-                          label: 'Secret reference (demo:// or vault://)',
+                          label: 'Secret reference (aws:// in live mode)',
                         },
                       ])}
                     </div>
@@ -393,8 +408,9 @@ export function Onboarding() {
                 <div className="notice info">
                   <ShieldCheck size={20} />
                   <p>
-                    This demo creates local records and simulates Airbyte and Airflow steps. No
-                    external systems are contacted.
+                    {runtime.mode === 'demo'
+                      ? 'This demo creates local records and simulates Airbyte and Airflow steps. No external systems are contacted.'
+                      : 'This workflow provisions Airbyte sources and connections through Airflow, using approved secret references.'}
                   </p>
                 </div>
               </>

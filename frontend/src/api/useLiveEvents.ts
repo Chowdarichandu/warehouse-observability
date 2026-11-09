@@ -11,9 +11,14 @@ export function useLiveEvents() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     stream.addEventListener('stream.ready', () => {
       setConnected(true);
-      void client.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'me' });
+      void client.invalidateQueries({
+        predicate: (q) => !['me', 'config'].includes(String(q.queryKey[0])),
+      });
     });
-    stream.onerror = () => setConnected(false);
+    stream.onerror = () => {
+      setConnected(false);
+      void client.invalidateQueries({ queryKey: ['me'] });
+    };
     const events = [
       'run.updated',
       'alert.fired',
@@ -38,7 +43,10 @@ export function useLiveEvents() {
       // Collapse a collector's batch into one cache refresh.
       if (timer) clearTimeout(timer);
       timer = setTimeout(
-        () => void client.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'me' }),
+        () =>
+          void client.invalidateQueries({
+            predicate: (q) => !['me', 'config'].includes(String(q.queryKey[0])),
+          }),
         250,
       );
     };

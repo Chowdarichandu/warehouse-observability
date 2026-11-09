@@ -1,0 +1,33 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: obs-console}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: obs-console}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {component: web}}}]
+      ports: [{port: 8000, protocol: TCP}]
+    # ALB IP targets arrive from VPC subnets; security groups restrict the ALB source.
+    - from:
+        {{- range .Values.networkPolicy.privateCidrs }}
+        - ipBlock: {cidr: {{ . }}}
+        {{- end }}
+      ports: [{port: 8080, protocol: TCP}]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}}]
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - to: [{podSelector: {matchLabels: {component: api}}}]
+      ports: [{port: 8000, protocol: TCP}]
+    - to:
+        {{- range .Values.networkPolicy.privateCidrs }}
+        - ipBlock: {cidr: {{ . }}}
+        {{- end }}
+      ports: [{port: 5432, protocol: TCP}, {port: 5439, protocol: TCP}, {port: 443, protocol: TCP}, {port: 3306, protocol: TCP}, {port: 27017, protocol: TCP}]
+    # AWS APIs, OIDC, approved webhook providers. Route through VPC endpoints/egress proxy where available.
+    - to: [{ipBlock: {cidr: 0.0.0.0/0, except: [169.254.169.254/32]}}]
+      ports: [{port: 443, protocol: TCP}, {port: 465, protocol: TCP}]
+    # EKS Pod Identity Agent link-local credential endpoint.
+    - to: [{ipBlock: {cidr: 169.254.170.23/32}}]
+      ports: [{port: 80, protocol: TCP}]
+{{- end }}

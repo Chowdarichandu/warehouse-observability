@@ -1,0 +1,67 @@
+# Runtime configuration
+
+Every application setting is listed below. Live integrations never run in demo mode. Secrets belong in the service-specific Secrets Manager JSON, not Git. JSON arrays/maps must be encoded on a single line.
+
+- `MODE`: typing.Literal['demo', 'live']. Default: `demo`.
+- `DATABASE_URL`: <class 'str'>. Default: `postgresql://obs:obs_local@127.0.0.1:55432/obs`.
+- `JWT_SECRET`: <class 'str'>. Default: `local-demo-only-change-before-live-use-32-characters`.
+- `DEMO_PASSWORD`: <class 'str'>. Default: `demo`.
+- `COOKIE_SECURE`: <class 'bool'>. Default: `True`.
+- `POLL_INTERVAL_SEC`: <class 'int'>. Default: `120`.
+- `PLATFORM_CHECK_SEC`: <class 'int'>. Default: `60`.
+- `WAREHOUSE_CHECK_SEC`: <class 'int'>. Default: `900`.
+- `DEMO_TICK_SEC`: <class 'float'>. Default: `60`.
+- `DEMO_RETRY_SEC`: <class 'float'>. Default: `30`.
+- `DEMO_ONBOARD_STEP_SEC`: <class 'float'>. Default: `10`.
+- `ALERT_INTERVAL_SEC`: <class 'float'>. Default: `60`.
+- `CONSOLE_URL`: <class 'str'>. Default: `http://localhost:8080`.
+- `ENVIRONMENT_NAME`: <class 'str'>. Default: `Production`.
+- `LIVE_ACTIONS_ENABLED`: <class 'bool'>. Default: `False`.
+- `HTTP_TIMEOUT_SEC`: <class 'int'>. Default: `20`.
+- `MAX_PAGES`: <class 'int'>. Default: `100`.
+- `AWS_REGION`: <class 'str'>. Default: `us-east-1`.
+- `AWS_SECRET_PREFIX`: <class 'str'>. Default: `observability/`.
+- `AIRFLOW_TRANSPORT`: typing.Literal['http', 'mwaa']. Default: `http`.
+- `AIRFLOW_API_VERSION`: typing.Literal['v1', 'v2']. Default: `v1`.
+- `AIRFLOW_URL`: <class 'str'>. Default: ``.
+- `AIRFLOW_READ_TOKEN`: <class 'str'>. Default: ``.
+- `AIRFLOW_WRITE_TOKEN`: <class 'str'>. Default: ``.
+- `MWAA_ENVIRONMENT`: <class 'str'>. Default: ``.
+- `MWAA_WRITE_ROLE_ARN`: <class 'str'>. Default: ``.
+- `AIRFLOW_DAGS`: dict[str, str]. Default: `{'mysql_initial': 'mysql_initial_load', 'mysql_cdc': 'mysql_cdc', 'mongo_initial': 'mongo_initial_load', 'mongo_cdc': 'mongo_cdc'}`.
+- `SYNC_TASK_REGEX`: <class 'str'>. Default: `(^|\.)sync(_.*)?$`.
+- `TENANT_TASK_REGEX`: <class 'str'>. Default: `^sync_(?P<tenant>[a-z0-9_]+)$`.
+- `ONBOARDING_DAG_ID`: <class 'str'>. Default: `onboard_tenant`.
+- `REGISTRY_DAGS_ENABLED`: <class 'bool'>. Default: `False`.
+- `AIRBYTE_URL`: <class 'str'>. Default: ``.
+- `AIRBYTE_TOKEN`: <class 'str'>. Default: ``.
+- `AIRBYTE_WRITE_TOKEN`: <class 'str'>. Default: ``.
+- `AIRBYTE_CLIENT_ID`: <class 'str'>. Default: ``.
+- `AIRBYTE_CLIENT_SECRET`: <class 'str'>. Default: ``.
+- `AIRBYTE_CONFIG_URL`: <class 'str'>. Default: ``.
+- `AIRBYTE_WORKSPACE_ID`: <class 'str'>. Default: ``.
+- `AIRBYTE_DESTINATION_ID`: <class 'str'>. Default: ``.
+- `WAREHOUSE_ENGINE`: typing.Literal['postgres', 'redshift']. Default: `postgres`.
+- `WAREHOUSE_URL`: <class 'str'>. Default: ``.
+- `WAREHOUSE_LOAD_COLUMN`: <class 'str'>. Default: `_airbyte_extracted_at`.
+- `WAREHOUSE_STATEMENT_TIMEOUT_MS`: <class 'int'>. Default: `10000`.
+- `SOURCE_ALLOWED_CIDRS`: list[str]. Default: `[]`.
+- `MYSQL_BINLOG_RETENTION_SEC`: <class 'int'>. Default: `259200`.
+- `SOURCE_CA_FILE`: <class 'str'>. Default: ``.
+- `AUTH_PROVIDER`: typing.Literal['local', 'oidc']. Default: `local`.
+- `OIDC_ISSUER`: <class 'str'>. Default: ``.
+- `OIDC_CLIENT_ID`: <class 'str'>. Default: ``.
+- `OIDC_CLIENT_SECRET`: <class 'str'>. Default: ``.
+- `OIDC_GROUPS_CLAIM`: <class 'str'>. Default: `groups`.
+- `OIDC_GROUP_ROLES`: dict[str, typing.Literal['viewer', 'operator', 'admin']]. Default: `{}`.
+- `SESSION_HOURS`: <class 'int'>. Default: `8`.
+- `NOTIFICATION_MAX_ATTEMPTS`: <class 'int'>. Default: `5`.
+- `NOTIFICATION_ALLOWED_HOSTS`: list[str]. Default: `['hooks.slack.com', 'outlook.office.com']`.
+- `SES_FROM_ADDRESS`: <class 'str'>. Default: ``.
+- `SES_TO_ADDRESSES`: list[str]. Default: `[]`.
+- `SNS_TOPIC_ARN`: <class 'str'>. Default: ``.
+- `RETENTION_ENABLED`: <class 'bool'>. Default: `True`.
+- `BACKUP_S3_BUCKET`: <class 'str'>. Default: ``.
+- `BACKUP_KMS_KEY_ID`: <class 'str'>. Default: ``.
+
+`OBS_CONFIG_SECRET_ID` selects a per-service Secrets Manager JSON for the entrypoint; `AWS_REGION` selects its region. `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, and `SMTP_URL` are channel target environment variables. `OBS_DB_PASSWORD` is only for the local Compose database. `OBS_DATABASE_URL` is the read-only Airflow registry DSN. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` and `OBS_NATIVE` are developer-only settings.

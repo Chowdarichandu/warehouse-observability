@@ -26,3 +26,10 @@ def test_keeps_utf8_tail() -> None:
     result = redact("é" * 400_000 + " end")
     assert len(result.encode()) <= 512 * 1024
     assert result.endswith(" end")
+
+
+def test_webhook_urls_are_secret_material():
+    from obs.redact import redact
+
+    text = "https://hooks.slack.com/services/T000/B000/private-value"
+    assert "private-value" not in redact(text)

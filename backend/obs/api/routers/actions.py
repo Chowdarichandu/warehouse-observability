@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from psycopg.types.json import Jsonb
@@ -15,7 +15,7 @@ from obs.demo.seed import make_run
 from obs.onboarding.preflight import preflight as run_preflight
 from obs.onboarding.service import start
 from obs.redact import redact
-from obs.settings import require_demo
+from obs.settings import settings
 
 router = APIRouter(tags=["Audited actions"])
 
@@ -29,7 +29,16 @@ def retry(run_key: str, user: dict = Depends(require_role("operator"))) -> dict:
 def update_tenant(
     id: str, data: s.TenantPatch, user: dict = Depends(require_role("admin"))
 ) -> dict:
-    require_demo()
+    if settings().mode == "live":
+        from obs.actions.live import enabled
+
+        enabled()
+        if data.status is not None and not settings().registry_dags_enabled:
+            fail(
+                409,
+                "registry_not_enabled",
+                "Deploy the registry-driven DAGs and enable REGISTRY_DAGS_ENABLED before pausing or resuming tenants.",
+            )
     changes = data.model_dump(exclude_none=True)
     if not changes:
         fail(422, "empty_patch", "Supply at least one change.")
@@ -51,12 +60,13 @@ def update_tenant(
         )
         audit(conn, user["email"], action, id, changes)
         notify(conn, "run.updated", {"tenant_id": id, "status": data.status or "updated"})
-    return {"message": "Tenant settings updated (demo)."}
+    return {"message": "Tenant settings updated.", "simulated": settings().mode == "demo"}
 
 
 @router.post("/tenants/{id}/resync", response_model=s.Message)
 def resync(id: str, user: dict = Depends(require_role("admin"))) -> dict:
-    require_demo()
+    if settings().mode != "demo":
+        fail(403, "demo_only", "Simulated resync is available only in demo mode.")
     now = datetime.now(UTC)
     with connection() as conn:
         tenant = conn.execute(
@@ -155,13 +165,17 @@ def update_rule(id: str, data: s.RulePatch, user: dict = Depends(require_role("a
 
 @router.post("/channels/{id}/test", response_model=s.Message)
 def test_channel(id: str, user: dict = Depends(require_role("admin"))) -> dict:
-    require_demo()
     if not one("SELECT 1 FROM obs.notification_channels WHERE channel_id=%s AND enabled", (id,)):
         fail(404, "channel_not_found", "Enabled channel not found.")
     with connection() as conn:
-        deliver(conn, id, "test", "Observability Console · Test notification · Demo delivery")
-        audit(conn, user["email"], "test_channel", id, {"simulated": True})
-    return {"message": "Test notification recorded locally. Demo mode sends no external messages."}
+        deliver(conn, id, "test", "Observability Console · Test notification")
+        audit(conn, user["email"], "test_channel", id, {"simulated": settings().mode == "demo"})
+    return {
+        "message": "Test notification recorded locally. Demo mode sends no external messages."
+        if settings().mode == "demo"
+        else "Test notification queued. Check delivery status in Administration.",
+        "simulated": settings().mode == "demo",
+    }
 
 
 @router.post("/onboarding/preflight", response_model=s.Preflight)
@@ -173,7 +187,7 @@ def preflight(data: s.OnboardInput, user: dict = Depends(require_role("operator"
             user["email"],
             "onboarding_preflight",
             data.tenant_id,
-            {"passed": result["passed"], "simulated": True},
+            {"passed": result["passed"], "simulated": result["simulated"]},
         )
     return result
 
@@ -185,6 +199,12 @@ def onboard(data: s.OnboardInput, user: dict = Depends(require_role("operator"))
 
 @router.patch("/users/{id}", response_model=s.Message)
 def update_user(id: int, data: s.UserPatch, user: dict = Depends(require_role("admin"))) -> dict:
+    if settings().auth_provider == "oidc":
+        fail(
+            409,
+            "sso_managed_roles",
+            "Manage roles through the configured identity provider groups.",
+        )
     with connection() as conn:
         conn.execute("SELECT pg_advisory_xact_lock(110531)")
         target = conn.execute(
@@ -207,3 +227,50 @@ def update_user(id: int, data: s.UserPatch, user: dict = Depends(require_role("a
             {"role": data.role, "user": redact(target["email"])},
         )
     return {"message": "User role updated.", "simulated": False}
+
+
+@router.post("/operations/{id}/reconcile", response_model=s.Message)
+def reconcile(
+    id: str, data: s.OperationResolution, user: dict = Depends(require_role("admin"))
+) -> dict:
+    with connection() as conn:
+        operation = conn.execute(
+            "SELECT * FROM obs.operations WHERE id=%s FOR UPDATE", (id,)
+        ).fetchone()
+        if not operation:
+            fail(404, "operation_not_found", "Operation not found.")
+        if operation["status"] == "sending" and operation["updated_at"] > datetime.now(
+            UTC
+        ) - timedelta(minutes=5):
+            fail(
+                409,
+                "operation_in_progress",
+                "Wait for the in-flight request to finish before reviewing its outcome.",
+            )
+        if operation["status"] not in {"failed", "uncertain", "sending"}:
+            fail(409, "operation_final", "Only unconfirmed operations can be reconciled.")
+        conn.execute(
+            "UPDATE obs.operations SET status=%s,last_error=%s,updated_at=now() WHERE id=%s",
+            (data.status, redact(data.note), id),
+        )
+        # Confirmed failure permits a new explicit operator request with a fresh key.
+        if data.status == "failed":
+            conn.execute(
+                "UPDATE obs.operations SET idempotency_key=idempotency_key||':reviewed:'||id WHERE id=%s",
+                (id,),
+            )
+        audit(conn, user["email"], "reconcile_operation", id, data.model_dump())
+    return {"message": "Operation reconciled. No upstream action was sent.", "simulated": False}
+
+
+@router.post("/users/{id}/revoke-sessions", response_model=s.Message)
+def revoke_sessions(id: int, user: dict = Depends(require_role("admin"))) -> dict:
+    with connection() as conn:
+        if not conn.execute("SELECT 1 FROM obs.users WHERE user_id=%s", (id,)).fetchone():
+            fail(404, "user_not_found", "User not found.")
+        conn.execute(
+            "UPDATE obs.sessions SET revoked_at=now() WHERE user_id=%s AND revoked_at IS NULL",
+            (id,),
+        )
+        audit(conn, user["email"], "revoke_sessions", str(id))
+    return {"message": "All existing sessions for this user were revoked.", "simulated": False}

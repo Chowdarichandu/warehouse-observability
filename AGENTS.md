@@ -98,3 +98,4 @@ Don't
   Don't modify the team's existing DAGs from this repo. Ship airflow/dags/README.md
   with the migration steps instead.
 
+Current authorized scope (2026-11-09): the user explicitly requested the missing live/production pieces, EC2/EKS integration, DAGs/alerts, smoother UI transitions, and a GitHub push. That request supersedes the original M4 review stop. Continue to preserve offline demo mode, avoid production calls, and report staging/deployment checks honestly. The actual team's DAGs remain untouched; templates ship under airflow/dags/templates.

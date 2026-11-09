@@ -10,6 +10,11 @@ def redact(text: str | None) -> str:
         r"\1[REDACTED]",
         value,
     )
+    value = re.sub(
+        r"(?i)(https://(?:hooks\.slack\.com|[^/\s]+\.webhook\.office\.com|[^/\s]+\.logic\.azure\.com)/)[^\s]+",
+        r"\1[WEBHOOK]",
+        value,
+    )
     value = re.sub(r"(?i)Bearer\s+[A-Za-z0-9_.~+/=-]+", "Bearer [REDACTED]", value)
     value = re.sub(r"\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+", "[JWT]", value)
     value = re.sub(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", "[AWS_KEY]", value)

@@ -1,6 +1,9 @@
 import logging
+import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from time import monotonic
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -9,17 +12,16 @@ from psycopg.types.json import Jsonb
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from obs.api.routers import actions, auth, read, stream
-from obs.api.schemas import ErrorEnvelope
+from obs.api.schemas import ErrorEnvelope, RuntimeConfig
 from obs.auth import hasher
 from obs.db import connection, one
 from obs.demo.seed import DEFAULT_RULES
 from obs.redact import redact
-from obs.settings import require_demo, settings
+from obs.settings import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    require_demo()
     if settings().mode == "demo":
         with connection() as conn:
             for role in ("admin", "operator", "viewer"):
@@ -49,12 +51,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                     "INSERT INTO obs.notification_channels(channel_id,kind,target_env) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
                     (channel, kind, env),
                 )
+    else:
+        with connection() as conn:
+            for key, name, severity, params in DEFAULT_RULES:
+                conn.execute(
+                    "INSERT INTO obs.alert_rules(rule_id,name,severity,params) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                    (key, name, severity, Jsonb(params)),
+                )
     yield
 
 
 app = FastAPI(
     title="Observability Console API",
-    version="0.1.0",
+    version="0.2.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
     redoc_url=None,
@@ -99,7 +108,23 @@ async def internal_error(request: Request, exc: Exception) -> JSONResponse:
 async def headers(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
+    started = monotonic()
+    supplied = request.headers.get("x-request-id", "")
+    request_id = supplied if re.fullmatch(r"[a-zA-Z0-9-]{8,64}", supplied) else str(uuid4())
     response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if settings().mode == "live":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    logging.info(
+        "request method=%s path=%s status=%s duration_ms=%d request_id=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        int((monotonic() - started) * 1000),
+        request_id,
+    )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
     response.headers["Cache-Control"] = "no-store"
@@ -109,7 +134,23 @@ async def headers(
 @app.get("/api/health", tags=["Health"])
 def health() -> dict:
     one("SELECT 1 AS ok")
-    return {"status": "ok", "mode": settings().mode, "milestone": "M4"}
+    return {"status": "ok", "mode": settings().mode, "version": "0.2.0"}
+
+
+@app.get("/api/health/live", tags=["Health"])
+def liveness() -> dict:
+    return {"status": "ok"}
+
+
+@app.get("/api/config", response_model=RuntimeConfig, tags=["Configuration"])
+def runtime_config() -> dict:
+    config = settings()
+    return {
+        "mode": config.mode,
+        "environment": "Offline demo" if config.mode == "demo" else config.environment_name,
+        "auth_provider": config.auth_provider,
+        "live_actions_enabled": config.mode == "demo" or config.live_actions_enabled,
+    }
 
 
 for router in (auth.router, read.router, actions.router, stream.router):

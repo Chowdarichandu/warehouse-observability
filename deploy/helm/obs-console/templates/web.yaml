@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: obs-web}
+spec:
+  replicas: {{ .Values.web.replicas }}
+  revisionHistoryLimit: 3
+  strategy: {type: RollingUpdate, rollingUpdate: {maxUnavailable: 0, maxSurge: 1}}
+  selector: {matchLabels: {app.kubernetes.io/name: obs-console, component: web}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: obs-console, component: web}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 101, runAsGroup: 101, fsGroup: 101, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: web
+          image: {{ include "obs.webImage" . | quote }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports: [{name: http, containerPort: 8080}]
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 20}
+          readinessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 5}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}, {name: cache, mountPath: /var/cache/nginx}]
+      volumes: [{name: tmp, emptyDir: {}}, {name: cache, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: obs-web}
+spec:
+  selector: {app.kubernetes.io/name: obs-console, component: web}
+  ports: [{name: http, port: 8080, targetPort: http}]
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: obs-web
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: obs-web, port: {number: 8080}}}
+{{- end }}

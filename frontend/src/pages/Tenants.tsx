@@ -131,7 +131,7 @@ export function Tenants() {
 export function TenantDetail() {
   const { id = '' } = useParams();
   const { range, rangeQuery, params } = useFilters();
-  const { isAdmin, notify } = useApp();
+  const { runtime, isAdmin, notify } = useApp();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const client = useQueryClient();
   const query = useQuery({
@@ -175,7 +175,7 @@ export function TenantDetail() {
             <StatusPill status={health.health} />
             <button
               className="button"
-              disabled={!isAdmin || update.isPending}
+              disabled={!isAdmin || !runtime.live_actions_enabled || update.isPending}
               title={!isAdmin ? 'Administrator role required' : ''}
               onClick={() =>
                 update.mutate({ status: config.status === 'paused' ? 'active' : 'paused' })
@@ -195,7 +195,7 @@ export function TenantDetail() {
           </>
         }
       />
-      {id === 'acme_retail' && health.health === 'down' && (
+      {runtime.mode === 'demo' && id === 'acme_retail' && health.health === 'down' && (
         <div className="notice danger">
           <RefreshCw size={21} />
           <div>

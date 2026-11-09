@@ -4,13 +4,14 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from time import monotonic
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Depends, HTTPException, Request
 
-from obs.db import one
+from obs.db import connection, one
 from obs.settings import settings
 
 hasher = PasswordHasher()
@@ -40,8 +41,15 @@ def verify_password(password: str, encoded: str) -> bool:
 
 
 def token(user: dict, csrf: str) -> str:
+    sid = str(uuid4())
+    expires = datetime.now(UTC) + timedelta(hours=settings().session_hours)
+    with connection() as conn:
+        conn.execute(
+            "INSERT INTO obs.sessions(id,user_id,expires_at) VALUES(%s,%s,%s)",
+            (sid, user["user_id"], expires),
+        )
     return jwt.encode(
-        {"sub": str(user["user_id"]), "csrf": csrf, "exp": datetime.now(UTC) + timedelta(hours=12)},
+        {"sub": str(user["user_id"]), "csrf": csrf, "jti": sid, "exp": expires},
         settings().jwt_secret,
         algorithm="HS256",
     )
@@ -53,8 +61,8 @@ def current_user(request: Request) -> dict:
             request.cookies.get("obs_session", ""), settings().jwt_secret, algorithms=["HS256"]
         )
         user = one(
-            "SELECT user_id,email,display_name,role FROM obs.users WHERE user_id=%s",
-            (int(claims["sub"]),),
+            "SELECT u.user_id,u.email,u.display_name,u.role FROM obs.users u JOIN obs.sessions s USING(user_id) WHERE u.user_id=%s AND s.id=%s AND s.revoked_at IS NULL AND s.expires_at>now()",
+            (int(claims["sub"]), claims["jti"]),
         )
         if not user:
             fail(401, "unauthenticated", "Please sign in.")
@@ -67,7 +75,7 @@ def current_user(request: Request) -> dict:
         origin = request.headers.get("origin")
         if origin and urlsplit(origin).netloc != request.headers.get("host"):
             fail(403, "csrf_origin", "Cross-origin action blocked.")
-    return {**user, "csrf_token": claims["csrf"]}
+    return {**user, "csrf_token": claims["csrf"], "session_id": claims["jti"]}
 
 
 def require_role(role: str) -> Callable[..., dict]:

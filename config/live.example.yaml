@@ -1,0 +1,28 @@
+# Reviewed registry; IDs below are examples and must be replaced before applying.
+tenants:
+  - tenant_id: example_tenant
+    display_name: Example tenant
+    warehouse_schema: example_tenant
+    has_mysql: true
+    has_mongo: false
+    freshness_sla_min: 120
+    airbyte_connections:
+      mysql_initial: 11111111-1111-4111-8111-111111111111
+      mysql_cdc: 22222222-2222-4222-8222-222222222222
+channels:
+  - channel_id: data-oncall
+    kind: sns
+    target_env: SNS_TOPIC_ARN
+rules:
+  cdc_position_lost:
+    severity: critical
+    params: {}
+    enabled: true
+    repeat_min: 60
+    channels: [data-oncall]
+  freshness_breach:
+    severity: high
+    params: {pct: 100}
+    enabled: true
+    repeat_min: 120
+    channels: [data-oncall]

@@ -115,7 +115,7 @@ export function Freshness() {
               onChange={(p) => set('page', String(p))}
             />
             <div className="panel-footer">
-              The demo contains seven days of history. Older, unobserved buckets count as
+              SLA is computed from recorded run history. Older, unobserved buckets count as
               non-compliant in the 30-day metric.
             </div>
           </>

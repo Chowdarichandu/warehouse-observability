@@ -1,8 +1,12 @@
 from obs.api.schemas import OnboardInput
-from obs.settings import require_demo
+from obs.settings import require_demo, settings
 
 
 def preflight(data: OnboardInput) -> dict:
+    if settings().mode == "live":
+        from obs.onboarding.live import preflight as live_preflight
+
+        return live_preflight(data)
     require_demo()
     checks = []
     if data.has_mysql:

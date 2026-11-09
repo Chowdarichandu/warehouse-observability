@@ -145,9 +145,33 @@ def main() -> None:
     if not (ROOT / ".env").exists():
         shutil.copy(ROOT / ".env.example", ROOT / ".env")
     if args.action == "live":
-        sys.exit(
-            "M4 review boundary: live collection/actions are not implemented. No systems contacted."
+        if not (ROOT / ".env.live").exists():
+            sys.exit(
+                "Copy .env.live.example to .env.live and configure the service secrets and ECR images. See docs/deployment.md."
+            )
+        if not shutil.which("docker"):
+            sys.exit(
+                "Live EC2 deployment requires Docker Compose. Use the Helm chart for EKS. See docs/deployment.md."
+            )
+        run(
+            [
+                "docker",
+                "compose",
+                "--env-file",
+                ".env.live",
+                "-f",
+                "deploy/ec2/compose.yaml",
+                "up",
+                "-d",
+                "--wait",
+                "--wait-timeout",
+                "240",
+            ]
         )
+        return
+    if args.action in {"demo", "seed"}:
+        os.environ["MODE"] = "demo"
+        os.environ["AUTH_PROVIDER"] = "local"
     if shutil.which("docker") and os.environ.get("OBS_NATIVE") != "1":
         commands = {
             "up": ["up", "--build", "-d"],

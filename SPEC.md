@@ -1189,3 +1189,11 @@ Additional demo-only resync and user management routes are documented in OpenAPI
 All production collection, real actions, OIDC, retention, backup, and deployment
 remain at M5-M7 for review. No existing team DAGs are edited.
 
+
+21. Authorized live/deployment extension (2026-11-09)
+
+The user requested continuation beyond M4, with AWS EC2/EKS, Airflow DAG and alert configuration, production hardening, smoother transitions, and a push to the supplied GitHub repository. The implementation now includes M5–M7 code paths; staging and shared-environment acceptance remain pending. Read MILESTONES.md for the distinction between implemented code and externally verified readiness.
+
+The complete new environment-variable reference is docs/environment.md; `.env.example` lists offline defaults and `.env.live.example` the live public configuration. Important additions include AIRFLOW_TRANSPORT/API_VERSION/DAGS and separate read/write tokens, MWAA_ENVIRONMENT/WRITE_ROLE_ARN, Airbyte public/config API URLs and credentials, WAREHOUSE_ENGINE/URL/LOAD_COLUMN, AWS_REGION/SECRET_PREFIX, source network/TLS restrictions, AUTH_PROVIDER and OIDC fields, LIVE_ACTIONS_ENABLED/REGISTRY_DAGS_ENABLED, notification hosts/retry/provider settings, retention and backup bucket/KMS settings. OBS_CONFIG_SECRET_ID loads per-service secret JSON through the entrypoint. No secret values are exposed to the browser or checked into Git.
+
+Deployment, IAM, ECR and monitoring artifacts are under deploy/ and .github/workflows/. No AWS resources have been created. Live mode requires HTTPS, verified database TLS, a unique signing secret and explicit OIDC group mapping. Airflow 2 mapped clear requests are rejected when a single tenant cannot be isolated. Existing team DAG files are not edited.

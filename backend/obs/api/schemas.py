@@ -409,3 +409,37 @@ class SearchHit(BaseModel):
 
 class UserPatch(BaseModel):
     role: Literal["viewer", "operator", "admin"]
+
+
+class RuntimeConfig(BaseModel):
+    mode: Literal["demo", "live"]
+    environment: str
+    auth_provider: Literal["local", "oidc"]
+    live_actions_enabled: bool
+
+
+class OperationResolution(BaseModel):
+    status: Literal["succeeded", "failed"]
+    note: str = Field(min_length=10, max_length=1000)
+
+
+class Operation(BaseModel):
+    id: str
+    kind: str
+    target: str
+    actor: str
+    status: str
+    last_error: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class Delivery(BaseModel):
+    id: int
+    channel_id: str
+    kind: str
+    status: str
+    attempts: int
+    last_error: str | None = None
+    at: datetime
+    delivered_at: datetime | None = None

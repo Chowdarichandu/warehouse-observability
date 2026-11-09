@@ -13,3 +13,10 @@ test-results/
 *.tsbuildinfo
 *.egg-info/
 output/console-screens.zip
+.env.*
+!.env.example
+!.env.live.example
+*.dump
+*.backup
+*.key
+*.pem.private

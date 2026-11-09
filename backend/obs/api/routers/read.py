@@ -162,6 +162,23 @@ def runs(
 def log(run_key: str) -> dict:
     run = r.detail(run_key)["run"]
     stored = one("SELECT source,content FROM obs.run_logs WHERE run_key=%s", (run_key,))
+    if not stored:
+        from obs.settings import settings
+
+        if settings().mode == "live":
+            from obs.collector.normalize import failure
+            from obs.integrations.airbyte import Airbyte
+            from obs.integrations.airflow import Airflow
+
+            if run.get("dag_id"):
+                stored = {"source": "airflow", "content": Airflow().log(run)}
+            elif run.get("airbyte_job_id"):
+                _, _, content, _ = failure(Airbyte().job(run["airbyte_job_id"]))
+                stored = {
+                    "source": "airbyte",
+                    "content": content
+                    or "This Airbyte API does not expose attempt logs. Configure AIRBYTE_CONFIG_URL for OSS diagnostics.",
+                }
     return {
         "source": stored.get("source", "airbyte"),
         "content": redact(
@@ -409,3 +426,28 @@ def users(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
         page,
         page_size,
     )
+
+
+@router.get(
+    "/operations", response_model=s.Page[s.Operation], dependencies=[Depends(require_role("admin"))]
+)
+def operations() -> dict:
+    items = rows(
+        "SELECT id::text,kind,target,actor,status,last_error,created_at,updated_at FROM obs.operations ORDER BY created_at DESC LIMIT 100"
+    )
+    for item in items:
+        item["actor"] = redact(item["actor"])
+        item["last_error"] = redact(item["last_error"]) if item["last_error"] else None
+    return {"items": items, "total": len(items), "page": 1, "page_size": 100}
+
+
+@router.get(
+    "/deliveries", response_model=s.Page[s.Delivery], dependencies=[Depends(require_role("admin"))]
+)
+def deliveries() -> dict:
+    items = rows(
+        "SELECT id,channel_id,kind,status,attempts,last_error,at,delivered_at FROM obs.notification_deliveries ORDER BY id DESC LIMIT 100"
+    )
+    for item in items:
+        item["last_error"] = redact(item["last_error"]) if item["last_error"] else None
+    return {"items": items, "total": len(items), "page": 1, "page_size": 100}

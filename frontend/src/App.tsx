@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   NavLink,
   Route,
@@ -7,13 +7,12 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   ArrowUpRight,
   Bell,
   CalendarDays,
-  ChevronDown,
   Command,
   Database,
   LayoutDashboard,
@@ -81,6 +80,12 @@ const NAV = [
 ];
 
 export function App() {
+  const runtime = useQuery({
+    queryKey: ['config'],
+    queryFn: () => api<Schema<'RuntimeConfig'>>('/config'),
+    staleTime: Infinity,
+    refetchInterval: false,
+  });
   const me = useQuery({
     queryKey: ['me'],
     queryFn: async () => {
@@ -94,7 +99,15 @@ export function App() {
   useEffect(() => {
     document.title = APP_NAME;
   }, []);
-  if (me.error instanceof ApiError && me.error.status === 401) return <Login />;
+  if (runtime.isPending)
+    return (
+      <div className="initial-loading">
+        <Loading />
+      </div>
+    );
+  if (runtime.error) return <ErrorState error={runtime.error} />;
+  if (me.error instanceof ApiError && me.error.status === 401)
+    return <Login config={runtime.data} />;
   if (me.isPending)
     return (
       <div className="initial-loading">
@@ -104,14 +117,19 @@ export function App() {
     );
   if (!me.data)
     return me.error instanceof ApiError && me.error.status === 401 ? (
-      <Login />
+      <Login config={runtime.data} />
     ) : (
       <ErrorState error={me.error || new Error('The API is unavailable.')} />
     );
-  return <Workspace user={me.data} />;
+  return <Workspace user={me.data} runtime={runtime.data} />;
 }
 
-function Workspace({ user }: { user: Schema<'User'> }) {
+function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'RuntimeConfig'> }) {
+  const searchRef = useRef<HTMLInputElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const fetching = useIsFetching({
+    predicate: (query) => !['me', 'config'].includes(String(query.queryKey[0])),
+  });
   const live = useLiveEvents();
   const [theme, setTheme] = useState(() => localStorage.getItem('obs-theme') || 'light');
   const [toast, setToast] = useState('');
@@ -147,12 +165,30 @@ function Workspace({ user }: { user: Schema<'User'> }) {
     for (const k of ['range', 'from', 'to']) if (params.get(k)) q.set(k, params.get(k)!);
     return `${path}${q.size ? `?${q}` : ''}`;
   };
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (event.key === 'Escape') setMenu(false);
+    };
+    window.addEventListener('keydown', shortcut);
+    return () => window.removeEventListener('keydown', shortcut);
+  }, []);
+  useEffect(() => {
+    mainRef.current?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0 });
+  }, [location.pathname]);
   const section =
     NAV.flatMap((g) => g.items).find((v) =>
       v.path === '/' ? location.pathname === '/' : location.pathname.startsWith(v.path),
     )?.label || 'Search';
   return (
-    <AppContext.Provider value={{ user, ...live, notify: setToast }}>
+    <AppContext.Provider value={{ user, runtime, ...live, notify: setToast }}>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <div className={`app-shell ${tv ? 'tv-mode' : ''}`}>
         {!tv && (
           <aside className={`sidebar ${menu ? 'mobile-open' : ''}`}>
@@ -169,9 +205,8 @@ function Workspace({ user }: { user: Schema<'User'> }) {
               <span className="workspace-avatar">D</span>
               <div>
                 <strong>Data workspace</strong>
-                <small>Internal · Demo environment</small>
+                <small>{runtime.environment}</small>
               </div>
-              <ChevronDown size={14} />
             </div>
             <nav>
               {NAV.map((group) => (
@@ -184,7 +219,6 @@ function Workspace({ user }: { user: Schema<'User'> }) {
                       <NavLink key={item.path} to={rangeLink(item.path)} end={item.path === '/'}>
                         <item.icon size={17} />
                         <span>{item.label}</span>
-                        {item.path === '/alerts' && <span className="nav-badge">!</span>}
                       </NavLink>
                     ))}
                 </div>
@@ -194,8 +228,16 @@ function Workspace({ user }: { user: Schema<'User'> }) {
               <div className="environment-note">
                 <ShieldCheck size={17} />
                 <div>
-                  <strong>Safe to explore</strong>
-                  <small>Demo actions stay local.</small>
+                  <strong>
+                    {runtime.mode === 'demo' ? 'Safe to explore' : 'Operations workspace'}
+                  </strong>
+                  <small>
+                    {runtime.mode === 'demo'
+                      ? 'Demo actions stay local.'
+                      : runtime.live_actions_enabled
+                        ? 'Live actions enabled'
+                        : 'Read-only connections'}
+                  </small>
                 </div>
                 <ArrowUpRight size={13} />
               </div>
@@ -238,6 +280,7 @@ function Workspace({ user }: { user: Schema<'User'> }) {
               >
                 <Search size={15} />
                 <input
+                  ref={searchRef}
                   aria-label="Search errors and logs"
                   placeholder="Search errors & logs…"
                   value={search}
@@ -247,7 +290,7 @@ function Workspace({ user }: { user: Schema<'User'> }) {
               </form>
               <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
                 <span />
-                {live.connected ? 'Live' : 'Reconnecting'}
+                {live.connected ? 'Live' : 'Polling · 30s'}
               </span>
               <button
                 className="theme-toggle"
@@ -262,7 +305,8 @@ function Workspace({ user }: { user: Schema<'User'> }) {
           <div className="range-bar">
             <div className="demo-tag">
               <span />
-              DEMO WORKSPACE<span className="muted">All times shown in your local timezone</span>
+              {runtime.environment.toUpperCase()}
+              <span className="muted">All times shown in your local timezone</span>
             </div>
             <div className="inline-flex">
               <label className="range-picker">
@@ -333,37 +377,41 @@ function Workspace({ user }: { user: Schema<'User'> }) {
               <button className="button primary">Apply range</button>
             </form>
           )}
-          <main className="page-content">
-            <Routes>
-              <Route path="/" element={<Overview />} />
-              <Route path="/tenants" element={<Tenants />} />
-              <Route path="/tenants/:id" element={<TenantDetail />} />
-              <Route path="/runs" element={<Runs />} />
-              <Route path="/runs/:key" element={<RunDetail />} />
-              <Route path="/errors" element={<Errors />} />
-              <Route path="/freshness" element={<Freshness />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/platform" element={<Platform />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/search" element={<SearchResults />} />
-              <Route
-                path="*"
-                element={
-                  <div className="empty">
-                    <h1>Page not found</h1>
-                    <NavLink to="/">Back to overview</NavLink>
-                  </div>
-                }
-              />
-            </Routes>
+          <div className={`refresh-progress ${fetching ? 'is-active' : ''}`} aria-hidden="true" />
+          <main className="page-content" id="main-content" tabIndex={-1} ref={mainRef}>
+            <div key={location.pathname} className="route-enter">
+              <Routes>
+                <Route path="/" element={<Overview />} />
+                <Route path="/tenants" element={<Tenants />} />
+                <Route path="/tenants/:id" element={<TenantDetail />} />
+                <Route path="/runs" element={<Runs />} />
+                <Route path="/runs/:key" element={<RunDetail />} />
+                <Route path="/errors" element={<Errors />} />
+                <Route path="/freshness" element={<Freshness />} />
+                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/platform" element={<Platform />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/search" element={<SearchResults />} />
+                <Route
+                  path="*"
+                  element={
+                    <div className="empty">
+                      <h1>Page not found</h1>
+                      <NavLink to="/">Back to overview</NavLink>
+                    </div>
+                  }
+                />
+              </Routes>
+            </div>
           </main>
           <footer className="app-footer">
             <span>
               <Workflow size={12} /> {APP_NAME}
             </span>
             <span>
-              Built in-house <i /> Demo · M4
+              {runtime.environment} <i />{' '}
+              {runtime.mode === 'demo' ? 'Simulated data' : 'Live integrations'}
             </span>
           </footer>
         </div>

@@ -16,6 +16,7 @@ export function setCsrf(value: string) {
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     credentials: 'same-origin',
+    signal: AbortSignal.timeout(30_000),
     ...init,
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, ...init?.headers },
   });

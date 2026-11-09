@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Alarms for the internal observability ALB and RDS database
+Parameters:
+  AlarmTopicArn: {Type: String, Description: Existing confirmed SNS operations topic ARN}
+  LoadBalancer: {Type: String, Description: ALB full name app/name/id}
+  TargetGroup: {Type: String, Description: Target group full name targetgroup/name/id}
+  DatabaseIdentifier: {Type: String}
+Resources:
+  UnhealthyTargets:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Observability web targets unavailable
+      Namespace: AWS/ApplicationELB
+      MetricName: UnHealthyHostCount
+      Dimensions:
+        - {Name: LoadBalancer, Value: {Ref: LoadBalancer}}
+        - {Name: TargetGroup, Value: {Ref: TargetGroup}}
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [{Ref: AlarmTopicArn}]
+      OKActions: [{Ref: AlarmTopicArn}]
+  ServerErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Observability upstream/API errors
+      Namespace: AWS/ApplicationELB
+      MetricName: HTTPCode_Target_5XX_Count
+      Dimensions: [{Name: LoadBalancer, Value: {Ref: LoadBalancer}}]
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [{Ref: AlarmTopicArn}]
+  LowDatabaseStorage:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Observability RDS free space below 10 GiB
+      Namespace: AWS/RDS
+      MetricName: FreeStorageSpace
+      Dimensions: [{Name: DBInstanceIdentifier, Value: {Ref: DatabaseIdentifier}}]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10737418240
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [{Ref: AlarmTopicArn}]

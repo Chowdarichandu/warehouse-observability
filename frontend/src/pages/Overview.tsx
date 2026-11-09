@@ -206,7 +206,7 @@ export function Overview() {
           <HealthGrid tenants={tenants.data!.items} />
         ) : (
           <Empty title="Your workspace is ready">
-            Run make demo to populate the console with fictional tenants.
+            Register tenants to begin monitoring. For the offline demo, run make demo.
           </Empty>
         )}
         <div className="panel-footer">
@@ -445,7 +445,7 @@ export function Overview() {
               <div className="activity-waiting">
                 <Radio size={26} />
                 <strong>Connected to your pipelines</strong>
-                <p>The next simulated batch arrives every minute.</p>
+                <p>Status updates arrive as the collector observes new runs.</p>
               </div>
             )}
           </div>

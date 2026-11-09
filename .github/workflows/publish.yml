@@ -1,0 +1,48 @@
+name: Publish immutable ECR images
+on:
+  workflow_dispatch:
+    inputs:
+      region: {description: AWS region, required: true, default: us-east-1}
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: image-publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ inputs.region }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: API image
+        id: api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/observability-api:${{ github.sha }}
+          provenance: true
+          sbom: true
+      - name: Web image
+        id: web
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/observability-web:${{ github.sha }}
+          provenance: true
+          sbom: true
+      - name: Record digests
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          API_DIGEST: ${{ steps.api.outputs.digest }}
+          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+        run: |
+          echo "API: $REGISTRY/observability-api@$API_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          echo "Web: $REGISTRY/observability-web@$WEB_DIGEST" >> "$GITHUB_STEP_SUMMARY"

@@ -3,6 +3,7 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Request, Response
 
+from obs import oidc
 from obs.api.schemas import Login, Message, User
 from obs.audit import audit
 from obs.auth import check_login_rate, current_user, fail, hasher, token, verify_password
@@ -15,6 +16,8 @@ DUMMY_HASH = hasher.hash("invalid-user-timing-padding")
 
 @router.post("/auth/login", response_model=User)
 def login(data: Login, request: Request, response: Response) -> dict:
+    if settings().auth_provider != "local" or settings().mode != "demo":
+        fail(403, "sso_required", "Use your organization account to sign in.")
     check_login_rate(request)
     origin = request.headers.get("origin")
     if origin and urlsplit(origin).netloc != request.headers.get("host"):
@@ -44,6 +47,7 @@ def logout(response: Response, user: dict = Depends(current_user)) -> dict:
         "obs_session", path="/api", secure=settings().cookie_secure, httponly=True, samesite="lax"
     )
     with connection() as conn:
+        conn.execute("UPDATE obs.sessions SET revoked_at=now() WHERE id=%s", (user["session_id"],))
         audit(conn, user["email"], "logout")
     return {"message": "Signed out.", "simulated": False}
 
@@ -51,3 +55,13 @@ def logout(response: Response, user: dict = Depends(current_user)) -> dict:
 @router.get("/me", response_model=User)
 def me(user: dict = Depends(current_user)) -> dict:
     return user
+
+
+@router.get("/auth/oidc/start")
+def oidc_start() -> Response:
+    return oidc.start()
+
+
+@router.get("/auth/oidc/callback")
+def oidc_callback(request: Request, code: str = "", state: str = "") -> Response:
+    return oidc.callback(request, code, state)

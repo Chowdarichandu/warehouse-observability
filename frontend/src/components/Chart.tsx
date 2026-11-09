@@ -9,7 +9,7 @@ import {
   MarkLineComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import type { EChartsCoreOption } from 'echarts/core';
+import type { EChartsCoreOption, EChartsType } from 'echarts/core';
 
 echarts.use([
   BarChart,
@@ -22,6 +22,7 @@ echarts.use([
   MarkLineComponent,
   CanvasRenderer,
 ]);
+
 export function Chart({
   option,
   height = 240,
@@ -32,21 +33,37 @@ export function Chart({
   label: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const chart = useRef<EChartsType | null>(null);
   useEffect(() => {
     if (!ref.current) return;
     const instance = echarts.init(ref.current);
-    instance.setOption({
-      textStyle: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: '#81909f' },
-      grid: { left: 46, right: 24, top: 30, bottom: 36, containLabel: true },
-      tooltip: { trigger: 'axis', confine: true },
-      ...option,
+    chart.current = instance;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => instance.resize());
     });
-    const observer = new ResizeObserver(() => instance.resize());
     observer.observe(ref.current);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       instance.dispose();
+      chart.current = null;
     };
+  }, []);
+  useEffect(() => {
+    chart.current?.setOption(
+      {
+        animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        animationDuration: 240,
+        animationDurationUpdate: 260,
+        textStyle: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: '#81909f' },
+        grid: { left: 46, right: 24, top: 30, bottom: 36, containLabel: true },
+        tooltip: { trigger: 'axis', confine: true },
+        ...option,
+      },
+      { replaceMerge: ['series'], lazyUpdate: true },
+    );
   }, [option]);
   return <div ref={ref} style={{ height, width: '100%' }} role="img" aria-label={label} />;
 }

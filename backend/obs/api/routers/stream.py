@@ -18,12 +18,18 @@ router = APIRouter(tags=["Live events"])
 async def stream(request: Request, user: dict = Depends(current_user)) -> EventSourceResponse:
     async def events() -> AsyncIterator[dict[str, str]]:
         async with await psycopg.AsyncConnection.connect(
-            settings().database_url, autocommit=True
+            settings().database_url, autocommit=True, connect_timeout=5
         ) as conn:
             await conn.execute("LISTEN run_events")
             yield {"event": "stream.ready", "data": json.dumps({"user_id": user["user_id"]})}
             deadline = time.monotonic() + 3600
             while time.monotonic() < deadline and not await request.is_disconnected():
+                session = await conn.execute(
+                    "SELECT 1 FROM obs.sessions WHERE id=%s AND revoked_at IS NULL AND expires_at>now()",
+                    (user["session_id"],),
+                )
+                if not await session.fetchone():
+                    break
                 async for event in conn.notifies(timeout=10, stop_after=1):
                     payload = json.loads(event.payload)
                     yield {"event": payload["event"], "data": json.dumps(payload["data"])}

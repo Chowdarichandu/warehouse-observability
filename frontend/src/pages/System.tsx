@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Database, Search, Server, ShieldCheck } from 'lucide-react';
+import { Operations } from './Operations';
 import { api, runPath } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
@@ -181,7 +182,7 @@ export function Platform() {
 }
 
 export function Admin() {
-  const { isAdmin, notify } = useApp();
+  const { isAdmin, notify, runtime } = useApp();
   const { page, set } = useFilters();
   const client = useQueryClient();
   const users = useQuery({
@@ -249,7 +250,7 @@ export function Admin() {
                       <select
                         aria-label={`Role for ${user.email}`}
                         value={user.role}
-                        disabled={update.isPending}
+                        disabled={update.isPending || runtime.auth_provider === 'oidc'}
                         onChange={(e) => update.mutate({ id: user.user_id, role: e.target.value })}
                       >
                         {['viewer', 'operator', 'admin'].map((role) => (
@@ -258,7 +259,9 @@ export function Admin() {
                       </select>
                     </td>
                     <td>
-                      <span className="tag">LOCAL · ARGON2</span>
+                      <span className="tag">
+                        {runtime.auth_provider === 'oidc' ? 'ORGANIZATION SSO' : 'LOCAL · ARGON2'}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -267,6 +270,7 @@ export function Admin() {
           </div>
         )}
       </Panel>
+      <Operations />
       <Panel
         title="Audit trail"
         subtitle="Every successful mutation records its actor, target, and timestamp."

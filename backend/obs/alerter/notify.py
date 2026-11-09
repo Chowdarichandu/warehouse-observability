@@ -1,14 +1,21 @@
+import smtplib
+import ssl
+from email.message import EmailMessage
+from urllib.parse import unquote, urlsplit
+
+import httpx
 import psycopg
 
+from obs.db import connection
+from obs.integrations import aws
 from obs.redact import redact
-from obs.settings import require_demo, settings
+from obs.settings import require_live, settings
 
 
 def deliver(
     conn: psycopg.Connection, channel_id: str, kind: str, title: str, alert_id: int | None = None
 ) -> None:
-    """M4 notifications are durable local deliveries. Never call Slack/SMTP in demo."""
-    require_demo()
+    """Queue delivery in the alert transaction; the network worker runs after commit."""
     channel = conn.execute(
         "SELECT * FROM obs.notification_channels WHERE channel_id=%s AND enabled", (channel_id,)
     ).fetchone()
@@ -27,6 +34,143 @@ def deliver(
         message += f"\n{settings().console_url.rstrip('/')}/alerts"
     conn.execute(
         """INSERT INTO obs.notification_deliveries(channel_id,alert_id,kind,status,message)
-       VALUES(%s,%s,%s,'simulated',%s)""",
-        (channel_id, alert_id, kind, redact(message)),
+        VALUES(%s,%s,%s,%s,%s)""",
+        (
+            channel_id,
+            alert_id,
+            kind,
+            "simulated" if settings().mode == "demo" else "pending",
+            redact(message),
+        ),
     )
+
+
+def send(item: dict) -> None:
+    require_live()
+    kind, message = item["channel_kind"], item["message"]
+    if kind in {"slack", "teams"}:
+        target = aws.environment_secret(item["target_env"])
+        parsed = urlsplit(target)
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname not in settings().notification_allowed_hosts
+            or parsed.username
+        ):
+            raise ValueError(
+                "Webhook must use HTTPS and a configured NOTIFICATION_ALLOWED_HOSTS host"
+            )
+        payload = (
+            {"text": message}
+            if kind == "slack"
+            else {
+                "type": "message",
+                "attachments": [
+                    {
+                        "contentType": "application/vnd.microsoft.card.adaptive",
+                        "contentUrl": None,
+                        "content": {
+                            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                            "type": "AdaptiveCard",
+                            "version": "1.2",
+                            "body": [{"type": "TextBlock", "text": message, "wrap": True}],
+                        },
+                    }
+                ],
+            }
+        )
+        with httpx.Client(timeout=settings().http_timeout_sec, follow_redirects=False) as client:
+            response = client.post(target, json=payload)
+            if not response.is_success:
+                raise RuntimeError(f"Notification provider returned HTTP {response.status_code}")
+    elif kind == "sns":
+        topic = aws.environment_secret(item["target_env"])
+        if not topic.startswith(f"arn:aws:sns:{settings().aws_region}:"):
+            raise ValueError("SNS topic must be in the configured AWS region")
+        aws.client("sns", write=True).publish(
+            TopicArn=topic, Subject=message.splitlines()[0][:100], Message=message
+        )
+    elif kind in {"ses", "email"}:
+        config = settings()
+        if not config.ses_from_address or not config.ses_to_addresses:
+            raise ValueError("Configure SES_FROM_ADDRESS and SES_TO_ADDRESSES")
+        if kind == "ses":
+            aws.client("sesv2", write=True).send_email(
+                FromEmailAddress=config.ses_from_address,
+                Destination={"ToAddresses": config.ses_to_addresses},
+                Content={
+                    "Simple": {
+                        "Subject": {"Data": message.splitlines()[0][:200]},
+                        "Body": {"Text": {"Data": message}},
+                    }
+                },
+            )
+        else:
+            target = urlsplit(aws.environment_secret(item["target_env"]))
+            if target.scheme != "smtps" or target.hostname not in config.notification_allowed_hosts:
+                raise ValueError("SMTP requires smtps:// and an allowlisted host")
+            email = EmailMessage()
+            email["Subject"] = message.splitlines()[0][:200]
+            email["From"] = config.ses_from_address
+            email["To"] = ", ".join(config.ses_to_addresses)
+            email["X-Observability-Delivery"] = str(item["id"])
+            email.set_content(message)
+            with smtplib.SMTP_SSL(
+                target.hostname,
+                target.port or 465,
+                timeout=config.http_timeout_sec,
+                context=ssl.create_default_context(),
+            ) as smtp:
+                if target.username:
+                    smtp.login(unquote(target.username), unquote(target.password or ""))
+                smtp.send_message(email)
+    else:
+        raise ValueError("Unknown notification provider")
+
+
+def dispatch(limit: int = 20) -> None:
+    if settings().mode == "demo":
+        return
+    for _ in range(limit):
+        with connection() as conn:
+            item = conn.execute("""SELECT d.*,c.kind AS channel_kind,c.target_env,c.enabled FROM obs.notification_deliveries d
+                JOIN obs.notification_channels c USING(channel_id)
+                WHERE (d.status='pending' AND d.next_attempt_at<=now()) OR (d.status='sending' AND d.lease_until<now())
+                ORDER BY d.id FOR UPDATE OF d SKIP LOCKED LIMIT 1""").fetchone()
+            if not item:
+                return
+            conn.execute(
+                "UPDATE obs.notification_deliveries SET status='sending',attempts=attempts+1,lease_until=now()+interval '5 minutes' WHERE id=%s",
+                (item["id"],),
+            )
+        error = None
+        if item["alert_id"] is not None and item["kind"] == "firing":
+            with connection() as conn:
+                current = conn.execute(
+                    "SELECT state FROM obs.alerts WHERE id=%s", (item["alert_id"],)
+                ).fetchone()
+            item["enabled"] = item["enabled"] and bool(current and current["state"] == "firing")
+        try:
+            if item["enabled"]:
+                send(item)
+        except Exception as exc:
+            # Webhook URLs and SMTP credentials never appear in persisted exceptions.
+            error = (
+                type(exc).__name__
+                + ": Delivery failed; check provider configuration, permissions, TLS and channel health."
+            )
+        with connection() as conn:
+            attempts = item["attempts"] + 1
+            status = (
+                "pending"
+                if error and attempts < settings().notification_max_attempts
+                else "failed"
+                if error
+                else "sent"
+                if item["enabled"]
+                else "cancelled"
+            )
+            conn.execute(
+                """UPDATE obs.notification_deliveries SET status=%s,last_error=%s,lease_until=NULL,
+                next_attempt_at=now()+%s*interval '1 second',delivered_at=CASE WHEN %s='sent' THEN now() ELSE NULL END WHERE id=%s""",
+                (status, error, min(30 * 2**attempts, 3600), status, item["id"]),
+            )

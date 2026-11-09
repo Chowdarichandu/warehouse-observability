@@ -1,0 +1,61 @@
+name: observability-live
+x-backend: &backend
+  image: ${OBS_API_IMAGE:?Set immutable ECR API image URI}
+  env_file: ../../.env.live
+  restart: unless-stopped
+  read_only: true
+  user: "10001:10001"
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:size=67108864,mode=1777]
+  stop_grace_period: 90s
+  mem_limit: 768m
+  cpus: 1
+  pids_limit: 256
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "5"}
+services:
+  migration:
+    <<: *backend
+    restart: "no"
+    environment: {OBS_CONFIG_SECRET_ID: "${OBS_MIGRATION_SECRET_ID:-observability/migration}"}
+    command: [python, -m, obs.migrate]
+  api:
+    <<: *backend
+    environment: {OBS_CONFIG_SECRET_ID: "${OBS_API_SECRET_ID:-observability/api}"}
+    command: [uvicorn, "obs.api.main:app", --host, 0.0.0.0, --port, "8000", --no-access-log]
+    depends_on: {migration: {condition: service_completed_successfully}}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=6)"]
+      interval: 15s
+      timeout: 8s
+      start_period: 45s
+      retries: 5
+  collector:
+    <<: *backend
+    environment: {OBS_CONFIG_SECRET_ID: "${OBS_COLLECTOR_SECRET_ID:-observability/collector}"}
+    command: [python, -m, obs.collector]
+    depends_on: {api: {condition: service_healthy}}
+    healthcheck: {test: [CMD, python, -m, obs.worker_health, collector], interval: 60s, timeout: 10s, start_period: 120s, retries: 5}
+  alerter:
+    <<: *backend
+    environment: {OBS_CONFIG_SECRET_ID: "${OBS_ALERTER_SECRET_ID:-observability/alerter}"}
+    command: [python, -m, obs.alerter]
+    depends_on: {api: {condition: service_healthy}}
+    healthcheck: {test: [CMD, python, -m, obs.worker_health, alerter], interval: 60s, timeout: 10s, start_period: 120s, retries: 5}
+  web:
+    image: ${OBS_WEB_IMAGE:?Set immutable ECR web image URI}
+    restart: unless-stopped
+    read_only: true
+    user: "101:101"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp, /var/cache/nginx]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    ports: ["${OBS_BIND_ADDRESS:-127.0.0.1}:8080:8080"]
+    depends_on: {api: {condition: service_healthy}}
+    healthcheck: {test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/healthz], interval: 15s, timeout: 3s, retries: 5}
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "5"}}

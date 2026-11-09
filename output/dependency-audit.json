@@ -1,0 +1,12 @@
+{
+  "verified_at": "2026-11-09T13:35:02.608820+00:00",
+  "python": {
+    "command": "pip-audit -r backend/requirements.lock",
+    "known_advisories": 0
+  },
+  "npm": {
+    "command": "npm audit",
+    "scope": "production and development",
+    "known_advisories": 0
+  }
+}

@@ -12,6 +12,10 @@ from obs.settings import require_demo, settings
 
 
 def retry(key: str, actor: str) -> dict:
+    if settings().mode == "live":
+        from obs.actions.live import retry as live_retry
+
+        return live_retry(key, actor)
     require_demo()
     now = datetime.now(UTC)
     with connection() as conn:

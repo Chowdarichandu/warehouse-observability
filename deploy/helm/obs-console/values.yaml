@@ -1,0 +1,48 @@
+backendImage: {repository: example.dkr.ecr.us-east-1.amazonaws.com/observability-api, tag: "0.2.0", digest: ""}
+webImage: {repository: example.dkr.ecr.us-east-1.amazonaws.com/observability-web, tag: "0.2.0", digest: ""}
+imagePullPolicy: IfNotPresent
+# Public configuration only. Credentials come from separate Secrets Manager JSON objects.
+env:
+  MODE: live
+  AWS_REGION: us-east-1
+  CONSOLE_URL: https://observability.example.com
+  ENVIRONMENT_NAME: Production
+  AUTH_PROVIDER: oidc
+  OIDC_ISSUER: https://identity.example.com
+  OIDC_CLIENT_ID: replace-client-id
+  OIDC_GROUP_ROLES: '{"data-viewers":"viewer","data-operators":"operator","data-admins":"admin"}'
+  LIVE_ACTIONS_ENABLED: "false"
+  REGISTRY_DAGS_ENABLED: "false"
+  AIRFLOW_API_VERSION: v1
+  AIRFLOW_TRANSPORT: http
+  AIRFLOW_URL: https://airflow.internal.example.com
+  AIRBYTE_URL: https://airbyte.internal.example.com/api/public/v1
+  WAREHOUSE_ENGINE: redshift
+api: {replicas: 2, secretId: observability/api, roleArn: ""}
+collector: {replicas: 1, secretId: observability/collector, roleArn: ""}
+alerter: {replicas: 1, secretId: observability/alerter, roleArn: ""}
+migration: {secretId: observability/migration, roleArn: ""}
+web: {replicas: 2}
+resources:
+  requests: {cpu: 100m, memory: 192Mi}
+  limits: {cpu: "1", memory: 768Mi}
+ingress:
+  enabled: false
+  className: alb
+  host: observability.example.com
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
+    # Add alb.ingress.kubernetes.io/certificate-arn for your ACM certificate.
+networkPolicy:
+  enabled: true
+  # VPC CIDRs needed for RDS/Airflow/Airbyte/warehouse. Review before installing.
+  privateCidrs: [10.0.0.0/8]
+backup:
+  enabled: false
+  schedule: "30 2 * * *"
+  secretId: observability/backup
+  roleArn: ""

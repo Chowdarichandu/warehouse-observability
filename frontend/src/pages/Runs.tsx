@@ -123,7 +123,7 @@ export function Runs() {
 
 export function RunDetail() {
   const { key = '' } = useParams();
-  const { canOperate, notify } = useApp();
+  const { canMutatePipelines: canOperate, notify, runtime } = useApp();
   const navigate = useNavigate();
   const client = useQueryClient();
   const query = useQuery({
@@ -162,7 +162,13 @@ export function RunDetail() {
                 !canOperate || !['failed', 'cancelled'].includes(run.status) || retry.isPending
               }
               onClick={() => retry.mutate()}
-              title={!canOperate ? 'Operator role required' : 'Simulated in demo mode'}
+              title={
+                !canOperate
+                  ? 'Operator access and enabled actions required'
+                  : runtime.mode === 'demo'
+                    ? 'Simulated in demo mode'
+                    : 'Retry this run upstream'
+              }
             >
               <RefreshCw size={14} />
               {retry.isPending ? 'Starting retry…' : 'Retry run'}
@@ -175,11 +181,13 @@ export function RunDetail() {
           <RefreshCw size={19} />
           <div>
             <strong>
-              Simulated retry · {run.status === 'running' ? 'In progress' : run.status}
+              {runtime.mode === 'demo' ? 'Simulated retry' : 'Retry attempt'} ·{' '}
+              {run.status === 'running' ? 'In progress' : run.status}
             </strong>
             <p>
-              This new attempt completes after about 30 seconds. Acme’s missing binlog still
-              requires a resync, even when a task retry completes.
+              {runtime.mode === 'demo'
+                ? 'This new attempt completes after about 30 seconds. Acme’s missing binlog still requires a resync, even when a task retry completes.'
+                : 'This retry was accepted upstream. Status will update when the collector observes the next attempt.'}
             </p>
           </div>
         </div>

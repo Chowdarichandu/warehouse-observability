@@ -1,0 +1,17 @@
+[Unit]
+Description=Warehouse observability console
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/warehouse-observability
+EnvironmentFile=/etc/observability/images.env
+ExecStart=/usr/bin/docker compose -f deploy/ec2/compose.yaml up -d --wait --wait-timeout 240
+ExecStop=/usr/bin/docker compose -f deploy/ec2/compose.yaml down
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

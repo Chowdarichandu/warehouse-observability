@@ -1,9 +1,10 @@
-# Review boundary
+# Implementation and verification status
 
-- M0: application scaffold, migrations, Compose, native developer runner, secure local login, navigation and themes.
-- M1: repeatable seed, seven-day history, ten tenants, scripted scenarios and live ticker.
-- M2: authenticated read API, paginated lists, full-text search, SSE and generated TypeScript schema.
-- M3: overview, tenants, timeline, run explorer, detail, log viewer and live query invalidation.
-- M4: grouped errors, freshness/volume/schema, alert lifecycle and rule editor, notification tests, simulated retry/pause/resync/onboarding, platform history, users/audit, TV mode and Playwright walkthrough.
+The original M0–M4 offline demo is implemented and remains the default `make demo` path. The user authorized continuing beyond the original review stop on 2026-11-09 and requested EC2/EKS support and a repository push.
 
-Stop here for review. M5–M7 remain as described in README.md and SPEC.md.
+- **M0–M4:** offline seed, read API, roles/audit, all console views, simulated actions/alerts/onboarding, SSE, walkthrough and screenshots.
+- **M5 code:** version-specific Airflow/Airbyte clients, MWAA IAM transport, pagination/watermarks, unfinished-run revisits, tenant resolution, job linking, idempotent ingest, redaction, catalog-based PostgreSQL/Redshift snapshots, platform diagnostics and contract fixtures.
+- **M6 code:** guarded real retry/pause/onboarding, durable operation outcomes and reconciliation, TLS source preflight, secret references, durable provisioning resources, reference registry/onboarding DAGs, reviewed migration instructions.
+- **M7 code:** OIDC authorization-code flow with PKCE/state/nonce/signature/issuer/audience checks, explicit group roles, revocable sessions, durable notification outbox, retention/rollups, encrypted backup/empty-target restore, non-root images, EC2 Compose, EKS Helm, IAM examples, CloudWatch alarms and CI/ECR workflows.
+
+**Release acceptance remains external:** no AWS or production systems were contacted. The SPEC acceptance criteria requiring 20 staging run comparisons, one real staging onboarding/retry, a chosen SSO/alert provider, and a shared environment deployment cannot be claimed from local contract fixtures. See `docs/deployment.md` and `tests/fixtures/README.md` for the exact evidence required. Docker images, actual Airflow DAG imports, EC2/EKS rollouts and account permissions still need an environment run.

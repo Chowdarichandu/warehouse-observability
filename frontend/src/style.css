@@ -3198,3 +3198,106 @@ th:first-child {
     scroll-behavior: auto !important;
   }
 }
+
+/* Brief motion preserves context during navigation and live refreshes. */
+.route-enter {
+  animation: route-enter 160ms ease-out both;
+}
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.button,
+.sidebar nav a,
+.icon-button,
+.theme-toggle,
+.tenant-card,
+input,
+select {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.page-content:focus {
+  outline: none;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -60px;
+  z-index: 1000;
+  background: var(--surface);
+  padding: 12px 18px;
+  border-radius: 6px;
+}
+.skip-link:focus {
+  top: 12px;
+}
+.refresh-progress {
+  height: 2px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: -2px;
+  pointer-events: none;
+}
+.refresh-progress::after {
+  content: '';
+  position: absolute;
+  width: 32%;
+  height: 100%;
+  background: var(--green);
+  opacity: 0;
+}
+.refresh-progress.is-active::after {
+  opacity: 0.7;
+  animation: refresh-progress 1.4s ease-in-out infinite;
+}
+@keyframes refresh-progress {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+.operation-review {
+  display: grid;
+  gap: 12px;
+  min-width: 300px;
+  padding: 16px 0;
+}
+.operation-review label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.operation-review input,
+.operation-review select {
+  max-width: 480px;
+  width: 100%;
+}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: obs-console
+description: In-house pipeline observability for private EC2/EKS environments
+type: application
+version: 0.2.0
+appVersion: 0.2.0

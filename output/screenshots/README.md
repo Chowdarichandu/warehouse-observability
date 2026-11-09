@@ -1,6 +1,6 @@
 # Observability Console screens
 
-Original Playwright captures of the M0–M4 offline demo. Live integrations remain at M5–M7.
+Original Playwright captures of the offline demo. Live integration and EC2/EKS deployment code is included; real staging acceptance remains pending.
 
 ## Pipeline overview
 
@@ -64,7 +64,7 @@ Component history, Airflow pools, collectors, and database health.
 
 ## Administration
 
-Users, roles, and the audit trail.
+Users, roles, operation outcomes, notification deliveries, and audit history.
 
 [![Administration](admin.png)](admin.png)
 
