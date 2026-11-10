@@ -363,10 +363,12 @@ export function Admin() {
     },
     onError: (e) => notify(e.message),
   });
+  const [removeTarget, setRemoveTarget] = useState<{ id: number; email: string } | null>(null);
   const removeUser = useMutation({
     mutationFn: (id: number) => api<Schema<'Message'>>(`/users/${id}`, { method: 'DELETE' }),
     onSuccess: (r) => {
       notify(r.message);
+      setRemoveTarget(null);
       void client.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (e) => notify(e.message),
@@ -601,14 +603,7 @@ export function Admin() {
                               ? 'You cannot remove your own account'
                               : `Remove ${user.email}`
                           }
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Remove ${user.email}? They will no longer be able to sign in.`,
-                              )
-                            )
-                              removeUser.mutate(user.user_id);
-                          }}
+                          onClick={() => setRemoveTarget({ id: user.user_id, email: user.email })}
                         >
                           <Trash2 size={13} /> Remove
                         </button>
@@ -631,6 +626,44 @@ export function Admin() {
         ))}
       {section === 'operations' && <Operations />}
       {section === 'activity' && <Activity embedded />}
+      {removeTarget && (
+        <div className="modal-scrim" role="presentation" onClick={() => setRemoveTarget(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Remove user"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Remove user</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setRemoveTarget(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Remove <strong>{removeTarget.email}</strong>? They will no longer be able to sign in,
+              and this cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setRemoveTarget(null)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={removeUser.isPending}
+                onClick={() => removeUser.mutate(removeTarget.id)}
+              >
+                <Trash2 size={14} /> {removeUser.isPending ? 'Removing…' : 'Remove user'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {resetInfo && (
         <div className="modal-scrim" role="presentation" onClick={() => setResetInfo(null)}>
           <div
