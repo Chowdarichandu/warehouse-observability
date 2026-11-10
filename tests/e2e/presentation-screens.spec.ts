@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseSelectOption } from "./select";
 import path from "node:path";
 
 test("capture the redesigned orchestration and account screens", async ({
@@ -36,10 +37,11 @@ test("capture the redesigned orchestration and account screens", async ({
     });
   }
   await page.goto("/");
-  await page.getByLabel("Run activity tenant").selectOption("acme_retail");
+  await chooseSelectOption(page.getByLabel("Run activity tenant"), "Acme Retail");
   const run = page.getByLabel("Open run log");
-  await expect(run.locator("option")).not.toHaveCount(1);
-  await run.selectOption({ index: 1 });
+  await run.click();
+  await expect(page.getByRole("option")).not.toHaveCount(1);
+  await page.getByRole("option").nth(1).click();
   await expect(page).toHaveURL(/focus=log/);
   await expect(page.locator("#run-log")).toBeInViewport();
 });

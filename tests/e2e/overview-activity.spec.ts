@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseSelectIndex, chooseSelectOption, expectSelectOptionCount, expectSelectOptionNamed } from "./select";
 
 test("tenant selection updates run choices and opens the selected log", async ({
   page,
@@ -36,13 +37,16 @@ test("tenant selection updates run choices and opens the selected log", async ({
 
   const tenant = page.getByLabel("Run activity tenant");
   const log = page.getByLabel("Open run log");
-  await tenant.selectOption("acme_retail");
-  await expect(log.locator('option[value="acme_retail-run"]')).toHaveCount(1);
-  await tenant.selectOption("orbit_logistics");
-  await expect(log.locator('option[value="orbit_logistics-run"]')).toHaveCount(
-    1,
+  await chooseSelectOption(tenant, "Acme Retail");
+  await expectSelectOptionCount(log, 2);
+  const orbitRuns = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/runs") &&
+      response.url().includes("tenant=orbit_logistics"),
   );
-  await expect(log.locator('option[value="acme_retail-run"]')).toHaveCount(0);
-  await log.selectOption("orbit_logistics-run");
+  await chooseSelectOption(tenant, "Orbit Logistics");
+  await orbitRuns;
+  await expectSelectOptionCount(log, 2);
+  await chooseSelectIndex(log, 1);
   await expect(page).toHaveURL(/\/runs\/orbit_logistics-run\?focus=log$/);
 });

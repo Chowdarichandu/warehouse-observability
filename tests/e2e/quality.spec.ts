@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseSelectOption } from "./select";
 
 test("quality definitions can be created, investigated, edited, run and disabled", async ({
   page,
@@ -31,9 +32,10 @@ test("quality definitions can be created, investigated, edited, run and disabled
   let id: number | undefined;
   try {
     await page.getByRole("button", { name: "New check", exact: true }).click();
-    await page
-      .getByLabel("Check tenant", { exact: true })
-      .selectOption("acme_retail");
+    await chooseSelectOption(
+      page.getByLabel("Check tenant", { exact: true }),
+      "Acme Retail",
+    );
     await page.getByLabel("Check name", { exact: true }).fill(name);
     await page.getByLabel("Sample limit", { exact: true }).fill("100");
     const created = page.waitForResponse(

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseSelectOption } from "./select";
 
 async function login(page: import("@playwright/test").Page, role: string) {
   await page.goto("/");
@@ -44,14 +45,14 @@ test("admin sees policy source and a role matrix; session revocation needs confi
   await expect(
     page.getByRole("button", { name: "Confirm revoke", exact: true }),
   ).toHaveCount(0);
-  await page.getByLabel("Role for viewer@demo.local").selectOption("operator");
+  await chooseSelectOption(page.getByLabel("Role for viewer@demo.local"), "operator");
   await expect(
     page.getByRole("group", {
       name: "Confirm role change for viewer@demo.local",
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByLabel("Role for viewer@demo.local")).toHaveValue(
+  await expect(page.getByLabel("Role for viewer@demo.local")).toContainText(
     "viewer",
   );
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -68,7 +69,7 @@ test("viewer can inspect their permissions without session management or privile
   await expect(
     page.getByRole("heading", { name: "User access & sessions", exact: true }),
   ).toHaveCount(0);
-  await page.getByLabel("Permission view").selectOption("available");
+  await chooseSelectOption(page.getByLabel("Permission view"), "Available to me");
   await expect(page).toHaveURL(/view=available/);
   await expect(
     page

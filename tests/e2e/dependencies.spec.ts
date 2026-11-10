@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseSelectOption } from "./select";
 
 test("dependency map explains evidence and retains tenant and node selections in URL", async ({
   page,
@@ -36,9 +37,10 @@ test("dependency map explains evidence and retains tenant and node selections in
   await expect(
     page.getByRole("button", { name: "source: MySQL", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await page
-    .getByLabel("Tenant", { exact: true })
-    .selectOption("orbit_logistics");
+  await chooseSelectOption(
+    page.getByLabel("Tenant", { exact: true }),
+    "Orbit Logistics",
+  );
   await expect(page).toHaveURL(/tenant=orbit_logistics/);
   await expect(
     page.getByRole("button", {

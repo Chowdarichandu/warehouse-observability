@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseSelectIndex, chooseSelectOption, expectSelectOptionCount, expectSelectOptionNamed } from "./select";
 
 test("personal views survive reload and run investigation compares evidence", async ({
   page,
@@ -16,24 +17,22 @@ test("personal views survive reload and run investigation compares evidence", as
   const name = `CDC investigation ${Date.now()}`;
   await page.getByLabel("New saved view name").fill(name);
   await page.getByRole("button", { name: "Save view", exact: true }).click();
-  await expect(
-    page
-      .getByLabel("Saved investigation views")
-      .locator("option", { hasText: name }),
-  ).toHaveCount(1);
+  await expectSelectOptionNamed(
+    page.getByLabel("Saved investigation views"),
+    name,
+    1,
+  );
   await page.reload();
-  await page.getByLabel("All statuses").selectOption("success");
-  await page
-    .getByLabel("Saved investigation views")
-    .selectOption({ label: name });
-  await expect(page.getByLabel("All statuses")).toHaveValue("failed");
+  await chooseSelectOption(page.getByLabel("All statuses"), "success");
+  await chooseSelectOption(page.getByLabel("Saved investigation views"), name);
+  await expect(page.getByLabel("All statuses")).toContainText("failed");
   await expect(page).toHaveURL(/status=failed/);
   await page.getByRole("button", { name: "Delete selected view" }).click();
-  await expect(
-    page
-      .getByLabel("Saved investigation views")
-      .locator("option", { hasText: name }),
-  ).toHaveCount(0);
+  await expectSelectOptionNamed(
+    page.getByLabel("Saved investigation views"),
+    name,
+    0,
+  );
   await page
     .getByRole("link", { name: "Open failed run for acme_retail" })
     .first()
@@ -42,8 +41,9 @@ test("personal views survive reload and run investigation compares evidence", as
     page.getByRole("heading", { name: "Compare runs", exact: true }),
   ).toBeVisible();
   const baseline = page.getByLabel("Comparison baseline");
-  await expect(baseline.locator("option")).not.toHaveCount(1);
-  await baseline.selectOption({ index: 1 });
+  await baseline.click();
+  await expect(page.getByRole("option")).not.toHaveCount(1);
+  await page.getByRole("option").nth(1).click();
   await expect(
     page.getByRole("table", { name: "Run comparison" }),
   ).toBeVisible();

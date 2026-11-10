@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseSelectOption } from "./select";
 
 test("search, navigation, typography, and administration work together", async ({
   page,
@@ -15,12 +16,12 @@ test("search, navigation, typography, and administration work together", async (
   await page.locator(".workspace-switch").click();
   await page.locator(".product-settings").click();
   await expect(page).toHaveURL(/\/account$/);
-  await page.goto("/");
-  await page.getByLabel("Text size").selectOption("large");
+  await chooseSelectOption(page.getByLabel("Text size"), "Large");
   await expect(page.locator("html")).toHaveCSS("zoom", "1.12");
   await page.reload();
-  await expect(page.getByLabel("Text size")).toHaveValue("large");
-  await page.getByLabel("Text size").selectOption("standard");
+  await expect(page.getByLabel("Text size")).toContainText("Large");
+  await chooseSelectOption(page.getByLabel("Text size"), "Standard");
+  await page.goto("/");
   await page.getByLabel("Search errors and logs").fill("acme");
   await page.getByRole("button", { name: "Submit global search" }).click();
   await expect(
