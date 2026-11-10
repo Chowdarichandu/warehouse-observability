@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     warehouse_check_sec: int = Field(default=900, ge=60)
     demo_tick_sec: float = 60
     demo_retry_sec: float = 30
-    demo_onboard_step_sec: float = 10
+    demo_onboard_step_sec: float = 4
     alert_interval_sec: float = Field(default=60, ge=1)
     console_url: str = "http://localhost:8080"
     environment_name: str = "Production"

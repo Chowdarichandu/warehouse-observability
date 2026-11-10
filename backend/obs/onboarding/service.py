@@ -8,13 +8,58 @@ from obs.onboarding.preflight import preflight
 from obs.settings import settings
 
 STEPS = [
-    "Create sources",
-    "Check connections",
-    "Create initial and CDC connections",
-    "Save connection IDs",
-    "Run initial loads",
+    "Validate onboarding request",
+    "Create tenant record",
+    "Create warehouse schema",
+    "Create Airbyte connections",
+    "Create dedicated MySQL database",
+    "Provision MySQL user and grants",
+    "Register shared MongoDB cluster",
+    "Configure tenant document key",
+    "Begin initial load (MySQL)",
+    "Snapshot tables to warehouse",
+    "Verify row counts",
+    "Begin initial load (MongoDB)",
+    "Snapshot collections to warehouse",
+    "Verify document counts",
+    "Enable binlog CDC",
+    "Start MySQL CDC sync",
+    "Enable change-stream CDC",
+    "Start MongoDB CDC sync",
     "Activate tenant",
 ]
+
+# Which source each step belongs to; None means the step always runs.
+STEP_SOURCE = {
+    "Create dedicated MySQL database": "mysql",
+    "Provision MySQL user and grants": "mysql",
+    "Register shared MongoDB cluster": "mongo",
+    "Configure tenant document key": "mongo",
+    "Begin initial load (MySQL)": "mysql",
+    "Snapshot tables to warehouse": "mysql",
+    "Verify row counts": "mysql",
+    "Begin initial load (MongoDB)": "mongo",
+    "Snapshot collections to warehouse": "mongo",
+    "Verify document counts": "mongo",
+    "Enable binlog CDC": "mysql",
+    "Start MySQL CDC sync": "mysql",
+    "Enable change-stream CDC": "mongo",
+    "Start MongoDB CDC sync": "mongo",
+}
+
+
+def plan_for(data: dict) -> list:
+    """The ordered onboarding steps for one tenant, filtered by its sources.
+
+    Onboarding runs seven DAGs in sequence (onboarding, per-source
+    provisioning, per-source initial load, per-source CDC); this is the flat
+    step list those DAGs emit events for.
+    """
+    return [
+        step
+        for step in STEPS
+        if STEP_SOURCE.get(step) is None or data.get(f"has_{STEP_SOURCE[step]}")
+    ]
 
 
 def start(data: OnboardInput, actor: str) -> dict:

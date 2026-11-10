@@ -247,3 +247,50 @@ def test_pause_resume_and_audit(clients: dict) -> None:
     finally:
         with connection() as conn:
             conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant,))
+
+
+def test_change_password_flow(clients: dict) -> None:
+    import os
+
+    from fastapi.testclient import TestClient
+
+    from obs.api.main import app
+
+    client = TestClient(app, base_url="https://localhost")
+    password = os.getenv("DEMO_PASSWORD", "demo")
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "viewer@demo.local", "password": password},
+    )
+    assert login.status_code == 200, login.text
+    client.headers["X-CSRF-Token"] = login.json()["csrf_token"]
+    wrong = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "not-the-password", "new_password": "new-secret-42"},
+    )
+    assert wrong.status_code == 401
+    weak = client.post(
+        "/api/auth/change-password",
+        json={"current_password": password, "new_password": "short"},
+    )
+    assert weak.status_code == 422
+    changed = client.post(
+        "/api/auth/change-password",
+        json={"current_password": password, "new_password": "new-secret-42"},
+    )
+    assert changed.status_code == 200, changed.text
+    relogin = TestClient(app, base_url="https://localhost")
+    ok = relogin.post(
+        "/api/auth/login",
+        json={"email": "viewer@demo.local", "password": "new-secret-42"},
+    )
+    assert ok.status_code == 200, ok.text
+    # Restore the shared demo password so other tests keep working.
+    relogin.headers["X-CSRF-Token"] = ok.json()["csrf_token"]
+    restored = relogin.post(
+        "/api/auth/change-password",
+        json={"current_password": "new-secret-42", "new_password": password},
+    )
+    assert restored.status_code == 200, restored.text
+    client.close()
+    relogin.close()

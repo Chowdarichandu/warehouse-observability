@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Observability Console API",
+    title="TenantScope API",
     version="0.2.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",

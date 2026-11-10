@@ -32,6 +32,10 @@ export function Runs() {
     queryKey: ['runs', qs],
     queryFn: () => api<Schema<'Page_Run_'>>(`/runs?${qs}`),
   });
+  const tenantOptions = useQuery({
+    queryKey: ['tenants'],
+    queryFn: () => api<Schema<'Page_Tenant_'>>('/tenants?page_size=200'),
+  });
   const options = [
     {
       key: 'status',
@@ -79,13 +83,18 @@ export function Runs() {
               ))}
             </select>
           ))}
-          <input
-            className="compact-input"
-            aria-label="Tenant slug filter"
-            placeholder="Tenant slug"
+          <select
+            aria-label="Tenant filter"
             value={params.get('tenant') || ''}
             onChange={(e) => set('tenant', e.target.value)}
-          />
+          >
+            <option value="">All tenants</option>
+            {(tenantOptions.data?.items || []).map((t) => (
+              <option key={t.tenant_id} value={t.tenant_id}>
+                {t.display_name}
+              </option>
+            ))}
+          </select>
           <input
             className="compact-input"
             aria-label="Error class filter"
@@ -293,9 +302,31 @@ export function RunDetail() {
         title="Run log"
         subtitle="Redacted at collection and again before display."
         action={
-          <span className="redacted-label">
-            <LockKeyhole size={12} />
-            SECRETS REDACTED
+          <span className="inline-flex">
+            <select
+              aria-label="Choose a run to view its log"
+              value={run.run_key}
+              onChange={(e) => navigate(runPath(e.target.value))}
+            >
+              {[run, ...previous_runs].map((r) => (
+                <option key={r.run_key} value={r.run_key}>
+                  {r.run_key === run.run_key ? 'This run' : 'Run'} ·{' '}
+                  {r.started_at
+                    ? new Date(r.started_at).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'queued'}{' '}
+                  · {r.status}
+                </option>
+              ))}
+            </select>
+            <span className="redacted-label">
+              <LockKeyhole size={12} />
+              SECRETS REDACTED
+            </span>
           </span>
         }
       >

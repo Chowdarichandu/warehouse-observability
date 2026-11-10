@@ -32,7 +32,7 @@ import {
 
 export function Overview() {
   const { rangeQuery } = useFilters();
-  const { activity, connected, canOperate } = useApp();
+  const { activity, connected } = useApp();
   const overview = useQuery({
     queryKey: ['overview', rangeQuery],
     queryFn: () => api<Schema<'Overview'>>(`/overview?${rangeQuery}`),
@@ -66,7 +66,7 @@ export function Overview() {
       foot: (
         <>
           <span className="positive-text">
-            <TrendingUp size={12} /> Completed runs
+            <TrendingUp size={12} /> Passed runs
           </span>
         </>
       ),
@@ -121,11 +121,6 @@ export function Overview() {
             <span className="updated-label">
               Updated <Time value={data.as_of} relative />
             </span>
-            {canOperate && (
-              <Link to="/onboarding" className="button primary">
-                + Onboard tenant
-              </Link>
-            )}
           </>
         }
       />
@@ -219,7 +214,7 @@ export function Overview() {
       <div className="two-column charts-row">
         <Panel
           title="Run activity"
-          subtitle="Completed and active pipeline runs"
+          subtitle="Passed, failed and active pipeline runs"
           action={<span className="chart-label">RUNS / HOUR</span>}
         >
           <Chart
@@ -234,6 +229,7 @@ export function Overview() {
               },
               xAxis: {
                 type: 'category',
+                boundaryGap: false,
                 data: hours,
                 axisLine: { show: false },
                 axisTick: { show: false },
@@ -248,13 +244,18 @@ export function Overview() {
                 splitLine: { lineStyle: { color: '#8b98a61b', type: 'dashed' } },
               },
               series: ['success', 'failed', 'running'].map((status) => ({
-                name: status[0].toUpperCase() + status.slice(1),
-                type: 'bar',
+                name: status === 'success' ? 'Passed' : status[0].toUpperCase() + status.slice(1),
+                type: 'line',
                 stack: 'runs',
-                barMaxWidth: 16,
+                smooth: 0.35,
+                symbol: 'circle',
+                symbolSize: 5,
+                showSymbol: false,
+                lineStyle: { width: 2 },
+                areaStyle: { opacity: 0.22 },
+                emphasis: { focus: 'series' },
                 itemStyle: {
                   color: STATUS_COLORS[status],
-                  borderRadius: status === 'running' ? [3, 3, 0, 0] : 0,
                 },
                 data: data.series.map((s) => s[status as 'success' | 'failed' | 'running']),
               })),

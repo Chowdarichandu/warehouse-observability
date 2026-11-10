@@ -5,7 +5,7 @@ from psycopg.types.json import Jsonb
 from obs.db import connection, notify
 from obs.demo.scenarios import MESSAGES, enrich_failure, upsert_run
 from obs.demo.seed import make_run
-from obs.onboarding.service import STEPS
+from obs.onboarding.service import plan_for
 from obs.settings import settings
 
 
@@ -54,7 +54,9 @@ def process_jobs() -> None:
                         step = job["step"]
                         tenant = job["tenant_id"]
                         data = job["payload"]
-                        if step == 2:
+                        plan = plan_for(data)
+                        step_name = plan[step]
+                        if step_name == "Create Airbyte connections":
                             mapping = {
                                 f"{s}_{load_kind}": f"demo-{tenant}-{s}-{load_kind}"
                                 for s in ("mysql", "mongo")
@@ -65,7 +67,12 @@ def process_jobs() -> None:
                                 "UPDATE obs.tenants SET airbyte_connections=%s WHERE tenant_id=%s",
                                 (Jsonb(mapping), tenant),
                             )
-                        if step == 4 and data["run_initial"]:
+                        if (
+                            step_name.startswith("Begin initial load")
+                            and data["run_initial"]
+                            and not data.get("initial_runs_created")
+                        ):
+                            data["initial_runs_created"] = True
                             for source in ("mysql", "mongo"):
                                 if data[f"has_{source}"]:
                                     run = make_run(
@@ -79,7 +86,7 @@ def process_jobs() -> None:
                                         "onboarding",
                                     )
                                     upsert_run(conn, run)
-                        if step == 5:
+                        if step_name == "Activate tenant":
                             conn.execute(
                                 "UPDATE obs.tenants SET status='active',updated_at=now() WHERE tenant_id=%s",
                                 (tenant,),
@@ -107,23 +114,24 @@ def process_jobs() -> None:
                                     )
                         conn.execute(
                             "INSERT INTO obs.tenant_events(tenant_id,step,status,message) VALUES(%s,%s,'ok',%s)",
-                            (tenant, STEPS[step], "Completed in demo mode"),
+                            (tenant, plan[step], "Completed in demo mode"),
                         )
                         notify(
                             conn,
                             "onboarding.step",
-                            {"tenant_id": tenant, "step": STEPS[step], "status": "ok"},
+                            {"tenant_id": tenant, "step": plan[step], "status": "ok"},
                         )
-                        if step < 5:
+                        if step < len(plan) - 1:
                             conn.execute(
                                 "INSERT INTO obs.tenant_events(tenant_id,step,status,message) VALUES(%s,%s,'started','In progress')",
-                                (tenant, STEPS[step + 1]),
+                                (tenant, plan[step + 1]),
                             )
                         conn.execute(
-                            "UPDATE obs.demo_jobs SET step=step+1,done=%s,due_at=%s WHERE job_key=%s",
+                            "UPDATE obs.demo_jobs SET step=step+1,done=%s,due_at=%s,payload=%s WHERE job_key=%s",
                             (
-                                step >= 5,
+                                step >= len(plan) - 1,
                                 now + timedelta(seconds=settings().demo_onboard_step_sec),
+                                Jsonb(data),
                                 job["job_key"],
                             ),
                         )

@@ -447,6 +447,23 @@ export function TenantDetail() {
             <span>Warehouse schema</span>
             <code>{config.warehouse_schema}</code>
           </div>
+          {config.has_mysql && (
+            <div>
+              <span>MySQL layout</span>
+              <strong>
+                Dedicated database <code>{config.tenant_id}</code> — one database per tenant
+              </strong>
+            </div>
+          )}
+          {config.has_mongo && (
+            <div>
+              <span>MongoDB layout</span>
+              <strong>
+                Shared cluster — documents carry the tenant key{' '}
+                <code>tenant_id: "{config.tenant_id}"</code>
+              </strong>
+            </div>
+          )}
           {Object.entries(config.airbyte_connections).map(([key, value]) => (
             <div key={key}>
               <span>{key.replaceAll('_', ' ')}</span>

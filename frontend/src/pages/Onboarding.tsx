@@ -16,6 +16,7 @@ import { api } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
 import { StatusPill } from '../components/StatusPill';
+import { ONBOARDING_FINAL_STEP, dagsFor } from '../onboardingPlan';
 import { ErrorState, Loading, PageHeader, Panel, useFilters } from '../components/ui';
 
 const INITIAL: Schema<'OnboardInput'> = {
@@ -150,44 +151,98 @@ export function Onboarding() {
                   ? 'Connected. Synced. Observable.'
                   : 'Setting up your pipelines…'}
               </h2>
-              <p>Steps run locally and take about 60 seconds in total.</p>
-              <div className="onboard-steps">
-                {[
-                  'Create sources',
-                  'Check connections',
-                  'Create initial and CDC connections',
-                  'Save connection IDs',
-                  'Run initial loads',
-                  'Activate tenant',
-                ].map((name) => {
-                  const event = progress.data.events
-                    .slice()
-                    .reverse()
-                    .find((e) => e.step === name);
+              <p>
+                Seven DAGs run in sequence — onboarding, provisioning, initial load and CDC for each
+                source. Steps take about 90 seconds in total.
+              </p>
+              <div className="onboard-dags">
+                {dagsFor(draft).map((dag, dagIndex) => {
+                  const states = dag.steps.map((name) => {
+                    const event = progress.data.events
+                      .slice()
+                      .reverse()
+                      .find((e) => e.step === name);
+                    return { name, event };
+                  });
+                  const doneCount = states.filter((s) => s.event?.status === 'ok').length;
+                  const dagState =
+                    doneCount === states.length
+                      ? 'done'
+                      : states.some((s) => s.event)
+                        ? 'active'
+                        : 'pending';
                   return (
-                    <div key={name} className={event?.status === 'ok' ? 'done' : ''}>
-                      {event?.status === 'ok' ? (
-                        <CheckCircle2 size={20} />
-                      ) : event?.status === 'started' ? (
-                        <LoaderCircle size={20} className="spin" />
-                      ) : (
-                        <Circle size={20} />
-                      )}
-                      <span>{name}</span>
-                      {event && (
-                        <StatusPill
-                          status={
-                            event.status === 'ok'
-                              ? 'success'
-                              : event.status === 'started'
-                                ? 'running'
-                                : 'failed'
-                          }
-                        />
-                      )}
+                    <div key={dag.id} className={`onboard-dag ${dagState}`}>
+                      <div className="onboard-dag-head">
+                        <span className="onboard-dag-index">
+                          {dagState === 'done' ? (
+                            <CheckCircle2 size={18} />
+                          ) : dagState === 'active' ? (
+                            <LoaderCircle size={18} className="spin" />
+                          ) : (
+                            <Circle size={18} />
+                          )}
+                        </span>
+                        <strong>
+                          {dagIndex + 1}. {dag.name}
+                        </strong>
+                        <small>
+                          {doneCount}/{states.length} steps
+                        </small>
+                      </div>
+                      <div className="onboard-steps">
+                        {states.map(({ name, event }) => (
+                          <div key={name} className={event?.status === 'ok' ? 'done' : ''}>
+                            {event?.status === 'ok' ? (
+                              <CheckCircle2 size={17} />
+                            ) : event?.status === 'started' ? (
+                              <LoaderCircle size={17} className="spin" />
+                            ) : (
+                              <Circle size={17} />
+                            )}
+                            <span>{name}</span>
+                            {event && (
+                              <StatusPill
+                                status={
+                                  event.status === 'ok'
+                                    ? 'success'
+                                    : event.status === 'started'
+                                      ? 'running'
+                                      : 'failed'
+                                }
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
                 })}
+                {(() => {
+                  const event = progress.data.events
+                    .slice()
+                    .reverse()
+                    .find((e) => e.step === ONBOARDING_FINAL_STEP);
+                  return (
+                    <div
+                      className={`onboard-dag ${event?.status === 'ok' ? 'done' : event ? 'active' : 'pending'}`}
+                    >
+                      <div className="onboard-dag-head">
+                        <span className="onboard-dag-index">
+                          {event?.status === 'ok' ? (
+                            <CheckCircle2 size={18} />
+                          ) : event ? (
+                            <LoaderCircle size={18} className="spin" />
+                          ) : (
+                            <Circle size={18} />
+                          )}
+                        </span>
+                        <strong>{ONBOARDING_FINAL_STEP}</strong>
+                        <small>Tenant goes live</small>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               {progress.data.status === 'active' && (
                 <div className="inline-flex centered">

@@ -35,6 +35,11 @@ class Login(BaseModel):
     password: str = Field(max_length=256)
 
 
+class ChangePassword(BaseModel):
+    current_password: str = Field(max_length=256)
+    new_password: str = Field(max_length=256)
+
+
 class Message(BaseModel):
     message: str
     simulated: bool = True

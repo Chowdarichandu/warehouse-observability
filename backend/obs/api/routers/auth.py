@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, Request, Response
 
 from obs import oidc
-from obs.api.schemas import Login, Message, User
+from obs.api.schemas import ChangePassword, Login, Message, User
 from obs.audit import audit
 from obs.auth import check_login_rate, current_user, fail, hasher, token, verify_password
 from obs.db import connection, one
@@ -40,6 +40,29 @@ def login(data: Login, request: Request, response: Response) -> dict:
     with connection() as conn:
         audit(conn, user["email"], "login", str(user["user_id"]))
     return {**user, "csrf_token": csrf}
+
+
+@router.post("/auth/change-password", response_model=Message)
+def change_password(
+    data: ChangePassword, user: dict = Depends(current_user)
+) -> dict:
+    if settings().auth_provider != "local":
+        fail(403, "sso_required", "Use your organization account to manage your password.")
+    row = one("SELECT * FROM obs.users WHERE user_id=%s", (user["user_id"],))
+    valid = verify_password(data.current_password, row.get("password_hash") or DUMMY_HASH)
+    if not row or not valid:
+        fail(401, "invalid_credentials", "Current password is incorrect.")
+    if len(data.new_password) < 8:
+        fail(422, "weak_password", "New password must be at least 8 characters.")
+    if data.new_password == data.current_password:
+        fail(422, "password_reused", "New password must differ from the current password.")
+    with connection() as conn:
+        conn.execute(
+            "UPDATE obs.users SET password_hash=%s WHERE user_id=%s",
+            (hasher.hash(data.new_password), user["user_id"]),
+        )
+        audit(conn, user["email"], "change_password", str(user["user_id"]))
+    return {"message": "Password changed.", "simulated": False}
 
 
 @router.post("/auth/logout", response_model=Message)
