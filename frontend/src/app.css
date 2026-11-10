@@ -1634,6 +1634,7 @@ th:first-child {
   text-align: left;
   display: flex;
   flex-direction: column;
+  width: 100%;
   max-width: 400px;
   padding: 0;
   color: var(--text);
@@ -1648,6 +1649,7 @@ th:first-child {
   color: var(--muted);
   margin-top: 7px;
   width: 100%;
+  min-width: 0;
 }
 .group-button .sample-text {
   display: -webkit-box;
