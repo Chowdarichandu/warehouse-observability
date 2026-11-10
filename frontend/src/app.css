@@ -1655,6 +1655,14 @@ th:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.group-button .has-tip::after {
+  left: 0;
+  transform: translate(0, -4px);
+}
+.group-button .has-tip:hover::after,
+.group-button .has-tip:focus-visible::after {
+  transform: translate(0, 0);
+}
 .count-pill {
   color: #be6b6f;
   background: #df535611;
