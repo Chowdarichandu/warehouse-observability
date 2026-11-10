@@ -94,9 +94,17 @@ const NAV = [
       { path: '/platform', label: 'Platform', icon: Server },
       { path: '/access', label: 'Access & roles', icon: ShieldCheck },
       { path: '/admin', label: 'Administration', icon: Settings2 },
+      { path: '/account', label: 'Settings', icon: Settings2 },
     ],
   },
 ];
+
+function ActivityRedirect() {
+  const [params] = useSearchParams();
+  const activityParams = new URLSearchParams(params);
+  activityParams.set('section', 'activity');
+  return <Navigate to={`/admin?${activityParams.toString()}`} replace />;
+}
 
 export function App() {
   const runtime = useQuery({
@@ -337,7 +345,10 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <div className="nav-group" key={group.group}>
                   <span className="nav-label">{group.group}</span>
                   {group.items
-                    .filter((item) => item.path !== '/admin' || user.role === 'admin')
+                    .filter(
+                      (item) =>
+                        item.path !== '/admin' || user.permissions?.includes('manage_users'),
+                    )
                     .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer')
                     .map((item) => (
                       <NavLink key={item.path} to={rangeLink(item.path)} end={item.path === '/'}>
@@ -664,10 +675,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/tenants/:id" element={<TenantDetail />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/runs/:key" element={<RunDetail />} />
-                <Route
-                  path="/activity"
-                  element={<Navigate to="/admin?section=activity" replace />}
-                />
+                <Route path="/activity" element={<ActivityRedirect />} />
                 <Route path="/pipelines" element={<Pipelines />} />
                 <Route path="/workspace" element={<Navigate to="/" replace />} />
                 <Route path="/workspace/pipelines" element={<Navigate to="/pipelines" replace />} />

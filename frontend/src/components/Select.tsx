@@ -124,9 +124,42 @@ export function Select({
         !rootRef.current?.contains(event.target as Node) &&
         !panelRef.current?.contains(event.target as Node)
       )
-        close();
+        setOpen(false);
     };
-    const onScroll = () => close();
+    const onScroll = (event: Event) => {
+      // Scrolling the option list is part of normal selection. Keep the menu
+      // attached while its trigger remains visible, including page movement
+      // caused by focusing the control.
+      if (event.target instanceof Node && panelRef.current?.contains(event.target)) return;
+      const trigger = buttonRef.current;
+      if (!trigger) {
+        setOpen(false);
+        return;
+      }
+      const rect = trigger.getBoundingClientRect();
+      if (rect.bottom <= 0 || rect.top >= window.innerHeight) {
+        setOpen(false);
+        return;
+      }
+      const currentPanel = panelRef.current?.getBoundingClientRect();
+      const width = currentPanel?.width || rect.width;
+      const height = currentPanel?.height || Math.min(288, flat.length * 37 + 14);
+      const below = window.innerHeight - rect.bottom;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+      const style: Record<string, string> = {
+        left: `${left}px`,
+        minWidth: `${rect.width}px`,
+        maxWidth: `${Math.min(360, window.innerWidth - 16)}px`,
+        maxHeight: '288px',
+        visibility: 'visible',
+      };
+      if (below < height + 12 && rect.top > below) {
+        style.bottom = `${window.innerHeight - rect.top + 6}px`;
+      } else {
+        style.top = `${rect.bottom + 6}px`;
+      }
+      setPanelStyle(style);
+    };
     document.addEventListener('pointerdown', onPointer, true);
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', onScroll);
@@ -135,7 +168,7 @@ export function Select({
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', onScroll);
     };
-  }, [open]);
+  }, [open, flat.length]);
 
   const choose = (option: OptionItem) => {
     if (option.disabled) return;

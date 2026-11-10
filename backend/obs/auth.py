@@ -25,6 +25,7 @@ def temporary_password() -> str:
     alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     return "Pravah-" + "".join(secrets.choice(alphabet) for _ in range(10))
 
+
 # Permission catalog. System roles map to fixed bundles; a custom role
 # (obs.roles) assigned via role_name replaces the bundle for its user.
 PERMISSIONS = [

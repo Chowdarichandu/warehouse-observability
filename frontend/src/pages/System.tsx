@@ -2,7 +2,19 @@ import { useState } from 'react';
 import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Database, KeyRound, Plus, Search, Server, ShieldCheck, Trash2, X } from 'lucide-react';
+import {
+  Copy,
+  Database,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Plus,
+  Search,
+  Server,
+  ShieldCheck,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { Operations } from './Operations';
 import { Activity } from '../components/Investigation';
 import { api, runPath } from '../api/client';
@@ -468,7 +480,8 @@ export function Admin() {
     queryFn: () => api<Schema<'Page_AuditEntry_'>>(`/audit?page=${page}`),
     enabled: isAdmin,
   });
-  const [resetInfo, setResetInfo] = useState<{ temporary: string } | null>(null);
+  const [resetInfo, setResetInfo] = useState<{ temporary: string; email?: string } | null>(null);
+  const [revealTemporary, setRevealTemporary] = useState(false);
   const [permTarget, setPermTarget] = useState<{ id: number; email: string } | null>(null);
   const [roleChange, setRoleChange] = useState<{ id: number; email: string; value: string } | null>(
     null,
@@ -481,10 +494,13 @@ export function Admin() {
         method: 'POST',
         body: JSON.stringify(body),
       }),
-    onSuccess: (r) => {
+    onSuccess: (r, body) => {
       notify(r.message);
       setAddOpen(false);
-      if (r.temporary_password) setResetInfo({ temporary: r.temporary_password });
+      if (r.temporary_password) {
+        setRevealTemporary(false);
+        setResetInfo({ temporary: r.temporary_password, email: body.email });
+      }
       void client.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (e) => notify(e.message),
@@ -508,7 +524,13 @@ export function Admin() {
   const reset = useMutation({
     mutationFn: (id: number) =>
       api<Schema<'PasswordResetResult'>>(`/users/${id}/reset-password`, { method: 'POST' }),
-    onSuccess: (r) => setResetInfo({ temporary: r.temporary_password }),
+    onSuccess: (r, id) => {
+      setRevealTemporary(false);
+      setResetInfo({
+        temporary: r.temporary_password,
+        email: users.data?.items.find((account) => account.user_id === id)?.email,
+      });
+    },
     onError: (e) => notify(e.message),
   });
   const update = useMutation({
@@ -901,12 +923,48 @@ export function Admin() {
               </button>
             </div>
             <p>
-              Share this with the user once. It is not stored anywhere, so you won't be able to see
-              it again. They sign in with it, then change it from their profile menu.
+              {resetInfo.email ? (
+                <>
+                  For <strong>{resetInfo.email}</strong>.{' '}
+                </>
+              ) : null}
+              This one-time password is shown only in this dialog. Share it securely, then ask the
+              user to change it after signing in.
             </p>
-            <p className="temp-password mono">{resetInfo.temporary}</p>
+            <p className="temp-password mono" aria-live="polite">
+              {revealTemporary ? resetInfo.temporary : '••••••••••••'}
+            </p>
             <div className="modal-actions">
-              <button className="button primary" onClick={() => setResetInfo(null)}>
+              <button
+                className="button"
+                aria-pressed={revealTemporary}
+                onClick={() => setRevealTemporary((shown) => !shown)}
+              >
+                {revealTemporary ? <EyeOff size={14} /> : <Eye size={14} />}
+                {revealTemporary ? 'Hide password' : 'Reveal password'}
+              </button>
+              <button
+                className="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(resetInfo.temporary);
+                    notify('Temporary password copied. Share it securely.');
+                  } catch {
+                    notify(
+                      'Clipboard access is unavailable. Reveal the password to copy it manually.',
+                    );
+                  }
+                }}
+              >
+                <Copy size={14} /> Copy password
+              </button>
+              <button
+                className="button primary"
+                onClick={() => {
+                  setRevealTemporary(false);
+                  setResetInfo(null);
+                }}
+              >
                 Done
               </button>
             </div>

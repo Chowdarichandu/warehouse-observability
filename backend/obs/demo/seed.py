@@ -41,7 +41,11 @@ TENANT_TABLES: dict[str, list[tuple[str, float, list[str]]]] = {
     "acme_retail": [
         ("customers", 0.7, ["email:text", "full_name:text", "segment:text"]),
         ("orders", 1.6, ["customer_id:bigint", "amount:numeric", "status:text"]),
-        ("order_items", 2.6, ["order_id:bigint", "product_id:bigint", "quantity:integer", "unit_price:numeric"]),
+        (
+            "order_items",
+            2.6,
+            ["order_id:bigint", "product_id:bigint", "quantity:integer", "unit_price:numeric"],
+        ),
         ("products", 0.35, ["sku:text", "name:text", "price:numeric", "category:text"]),
         ("payments", 1.5, ["order_id:bigint", "amount:numeric", "method:text"]),
         ("refunds", 0.3, ["payment_id:bigint", "amount:numeric", "reason:text"]),
@@ -52,18 +56,30 @@ TENANT_TABLES: dict[str, list[tuple[str, float, list[str]]]] = {
     ],
     "bluefin_health": [
         ("patients", 0.8, ["full_name:text", "date_of_birth:date", "gender:text"]),
-        ("appointments", 1.7, ["patient_id:bigint", "provider_id:bigint", "scheduled_at:timestamp", "status:text"]),
+        (
+            "appointments",
+            1.7,
+            ["patient_id:bigint", "provider_id:bigint", "scheduled_at:timestamp", "status:text"],
+        ),
         ("encounters", 1.9, ["patient_id:bigint", "department_id:bigint", "diagnosis_code:text"]),
         ("prescriptions", 1.4, ["patient_id:bigint", "medication:text", "dosage:text"]),
         ("claims", 1.2, ["patient_id:bigint", "amount:numeric", "status:text"]),
         ("providers", 0.15, ["full_name:text", "specialty:text"]),
         ("departments", 0.05, ["name:text"]),
-        ("lab_results", 2.4, ["patient_id:bigint", "test_code:text", "result_value:numeric", "unit:text"]),
+        (
+            "lab_results",
+            2.4,
+            ["patient_id:bigint", "test_code:text", "result_value:numeric", "unit:text"],
+        ),
     ],
     "northwind": [
         ("customers", 0.6, ["company_name:text", "contact_name:text", "country:text"]),
         ("orders", 1.5, ["customer_id:bigint", "amount:numeric", "ship_country:text"]),
-        ("order_details", 2.8, ["order_id:bigint", "product_id:bigint", "quantity:integer", "unit_price:numeric"]),
+        (
+            "order_details",
+            2.8,
+            ["order_id:bigint", "product_id:bigint", "quantity:integer", "unit_price:numeric"],
+        ),
         ("products", 0.3, ["name:text", "category_id:bigint", "unit_price:numeric"]),
         ("suppliers", 0.12, ["company_name:text", "country:text"]),
         ("shippers", 0.05, ["company_name:text", "phone:text"]),
@@ -178,6 +194,8 @@ def stream_shares(tenant_id: str) -> list[tuple[str, float]]:
     tables = _tables(tenant_id)
     total = sum(weight for _, weight, _ in tables)
     return [(name, weight / total) for name, weight, _ in tables]
+
+
 DEFAULT_RULES = [
     ("cdc_consecutive_failures", "Consecutive CDC failures", "high", {"n": 2}),
     ("cdc_position_lost", "CDC replication position lost", "critical", {}),
@@ -205,9 +223,7 @@ def make_run(
     dag = f"{source}_{'initial_load' if load == 'initial' else 'cdc'}"
     # Deterministic per-run variation: identical durations must not produce
     # identical queue delays and row counts across tenants (a visible demo tell).
-    jitter = int(
-        hashlib.sha256(f"{tenant}|{source}|{load}|{job_id}".encode()).hexdigest()[:6], 16
-    )
+    jitter = int(hashlib.sha256(f"{tenant}|{source}|{load}|{job_id}".encode()).hexdigest()[:6], 16)
     queue_delay = 8 + jitter % 40
     rows_per_s = 380 + jitter % 120
     return {

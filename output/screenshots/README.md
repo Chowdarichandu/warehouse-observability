@@ -56,6 +56,12 @@ Sample-based checks, aggregate evidence, and result history.
 
 [![Data quality](quality.png)](quality.png)
 
+## Warehouse
+
+Schema and table health for the connected warehouse.
+
+[![Warehouse](warehouse.png)](warehouse.png)
+
 ## Activity
 
 A chronological view of run, alert, onboarding, action, and quality events.
@@ -109,6 +115,8 @@ Component history, Airflow pools, collectors, and database health.
 Users, roles, operation outcomes, notification deliveries, and audit history.
 
 [![Administration](admin.png)](admin.png)
+
+[Roles](admin-roles.png) · [Operations](admin-operations.png) · [Activity](admin-activity.png) · [Audit trail](admin-audit.png)
 
 ## Global search
 

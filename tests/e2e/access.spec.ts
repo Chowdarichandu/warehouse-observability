@@ -45,7 +45,10 @@ test("admin sees policy source and a role matrix; session revocation needs confi
   await expect(
     page.getByRole("button", { name: "Confirm revoke", exact: true }),
   ).toHaveCount(0);
-  await chooseSelectOption(page.getByLabel("Role for viewer@demo.local"), "operator");
+  await chooseSelectOption(
+    page.getByLabel("Role for viewer@demo.local"),
+    "operator",
+  );
   await expect(
     page.getByRole("group", {
       name: "Confirm role change for viewer@demo.local",
@@ -53,7 +56,7 @@ test("admin sees policy source and a role matrix; session revocation needs confi
   ).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByLabel("Role for viewer@demo.local")).toContainText(
-    "viewer",
+    /viewer/i,
   );
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
@@ -69,7 +72,10 @@ test("viewer can inspect their permissions without session management or privile
   await expect(
     page.getByRole("heading", { name: "User access & sessions", exact: true }),
   ).toHaveCount(0);
-  await chooseSelectOption(page.getByLabel("Permission view"), "Available to me");
+  await chooseSelectOption(
+    page.getByLabel("Permission view"),
+    "Available to me",
+  );
   await expect(page).toHaveURL(/view=available/);
   await expect(
     page
@@ -91,4 +97,84 @@ test("viewer can inspect their permissions without session management or privile
   });
   expect(response.status()).toBe(403);
   expect((await response.json()).error.code).toBe("forbidden");
+});
+
+test("admin can onboard and remove a user with one-time credentials", async ({
+  page,
+  context,
+}) => {
+  await login(page, "admin");
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/admin");
+  const email = `demo-e2e-${Date.now()}@example.com`;
+  await page.getByRole("button", { name: /Add user/ }).click();
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Display name", { exact: true }).fill("E2E Demo User");
+  await page.getByRole("button", { name: /Create user/ }).click();
+
+  const credentials = page.getByRole("dialog", { name: "Temporary password" });
+  await expect(credentials).toContainText(email);
+  await expect(credentials.locator(".temp-password")).toHaveText(
+    "••••••••••••",
+  );
+  await credentials.getByRole("button", { name: "Copy password" }).click();
+  await expect(page.getByRole("status")).toContainText("password copied");
+  const copiedPassword = await page.evaluate(async () => {
+    const password = await navigator.clipboard.readText();
+    await navigator.clipboard.writeText("");
+    return password;
+  });
+  expect(copiedPassword.length).toBeGreaterThan(12);
+  await credentials.getByRole("button", { name: "Reveal password" }).click();
+  await expect(credentials.locator(".temp-password")).toHaveText(
+    copiedPassword,
+  );
+  await credentials.getByRole("button", { name: "Hide password" }).click();
+  await credentials.getByRole("button", { name: "Done" }).click();
+
+  const userRow = page.locator("tr").filter({ hasText: email });
+  await expect(userRow).toBeVisible();
+  await page.locator(".profile-main").click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(copiedPassword);
+  await page.getByRole("button", { name: "Sign in to workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Tenant health" }),
+  ).toBeVisible();
+
+  await page.goto("/account");
+  const changedPassword = `e2e-updated-passphrase-${Date.now()}`;
+  await page.getByLabel("Current password").fill(copiedPassword);
+  await page.getByLabel("New password").fill(changedPassword);
+  await page.getByRole("button", { name: "Update password" }).click();
+  await expect(page.getByRole("status")).toContainText("Password updated");
+
+  await page.locator(".profile-main").click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(changedPassword);
+  await page.getByRole("button", { name: "Sign in to workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Tenant health" }),
+  ).toBeVisible();
+
+  await page.locator(".profile-main").click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByLabel("Email address").fill("admin@demo.local");
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill(process.env.DEMO_PASSWORD || "demo");
+  await page.getByRole("button", { name: "Sign in to workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Tenant health" }),
+  ).toBeVisible();
+  await page.goto("/admin");
+  const createdUser = page.locator("tr").filter({ hasText: email });
+  await expect(createdUser).toBeVisible();
+  await createdUser.getByRole("button", { name: "Remove" }).click();
+  const removeDialog = page.getByRole("dialog", { name: "Remove user" });
+  await expect(removeDialog).toContainText(email);
+  await removeDialog.getByRole("button", { name: "Remove user" }).click();
+  await expect(createdUser).toHaveCount(0);
 });

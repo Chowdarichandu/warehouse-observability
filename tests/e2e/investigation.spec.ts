@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { chooseSelectIndex, chooseSelectOption, expectSelectOptionCount, expectSelectOptionNamed } from "./select";
+import {
+  chooseSelectIndex,
+  chooseSelectOption,
+  expectSelectOptionCount,
+  expectSelectOptionNamed,
+} from "./select";
 
 test("personal views survive reload and run investigation compares evidence", async ({
   page,
@@ -25,9 +30,16 @@ test("personal views survive reload and run investigation compares evidence", as
   await page.reload();
   await chooseSelectOption(page.getByLabel("All statuses"), "success");
   await chooseSelectOption(page.getByLabel("Saved investigation views"), name);
-  await expect(page.getByLabel("All statuses")).toContainText("failed");
+  await expect(page.getByLabel("All statuses")).toContainText(/failed/i);
   await expect(page).toHaveURL(/status=failed/);
   await page.getByRole("button", { name: "Delete selected view" }).click();
+  await page
+    .getByRole("dialog", { name: "Delete saved view" })
+    .getByRole("button", { name: "Delete view", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Delete saved view" }),
+  ).toHaveCount(0);
   await expectSelectOptionNamed(
     page.getByLabel("Saved investigation views"),
     name,
@@ -40,9 +52,9 @@ test("personal views survive reload and run investigation compares evidence", as
   await expect(
     page.getByRole("heading", { name: "Compare runs", exact: true }),
   ).toBeVisible();
-  const baseline = page.getByLabel("Comparison baseline");
+  const baseline = page.getByRole("button", { name: "Comparison baseline" });
   await baseline.click();
-  await expect(page.getByRole("option")).not.toHaveCount(1);
+  await expect(baseline).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("option").nth(1).click();
   await expect(
     page.getByRole("table", { name: "Run comparison" }),
@@ -63,9 +75,16 @@ test("personal views survive reload and run investigation compares evidence", as
     page.locator(".investigation-timeline li").first(),
   ).toBeVisible();
   await page.goto("/activity?tenant=acme_retail&range=7d");
+  await expect(page).toHaveURL(/\/admin\?.*section=activity/);
   await expect(
-    page.getByRole("heading", { name: "Activity", exact: true }),
+    page.getByRole("heading", { name: "Administration", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Event timeline", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Activity tenant filter")).toHaveValue(
+    "acme_retail",
+  );
   await expect(
     page.getByText("Unable to load this view", { exact: true }),
   ).toHaveCount(0);

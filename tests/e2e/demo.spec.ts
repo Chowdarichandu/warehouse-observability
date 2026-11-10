@@ -106,8 +106,8 @@ test("filters, pagination, CSV, and searchable logs", async ({ page }) => {
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Export CSV" }).click();
   expect((await download).suggestedFilename()).toBe("runs.csv");
-  await page.getByLabel("Search errors and logs").fill("binlog");
-  await page.getByLabel("Search errors and logs").press("Enter");
+  await page.getByLabel("Search tenants, logs, pages").fill("binlog");
+  await page.getByLabel("Search tenants, logs, pages").press("Enter");
   await expect(page.locator(".search-results")).toContainText(
     "MYSQL_BINLOG_PURGED",
   );
@@ -143,7 +143,9 @@ test("errors, heatmap, recovery metrics, freshness, and schema drift", async ({
   await expect(
     page.getByRole("heading", { name: "Data freshness" }),
   ).toBeVisible();
-  await expect(page.locator(".anomaly-card")).toContainText("orbit logistics");
+  await expect(
+    page.locator(".anomaly-card").filter({ hasText: /orbit logistics/i }).first(),
+  ).toBeVisible();
   await expect(page.locator(".schema-card")).toContainText("delivery_region");
   await page.screenshot({
     path: path.join(screenshots, "freshness.png"),

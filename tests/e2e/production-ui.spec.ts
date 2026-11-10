@@ -78,7 +78,7 @@ test("navigation, keyboard search and reduced motion remain accessible", async (
   ).toBeVisible();
   await expect(page.locator("#main-content")).toBeFocused();
   await page.keyboard.press("Control+k");
-  await expect(page.getByLabel("Search errors and logs")).toBeFocused();
+  await expect(page.getByLabel("Search tenants, logs, pages")).toBeFocused();
   const duration = await page
     .locator(".route-enter")
     .evaluate((element) =>

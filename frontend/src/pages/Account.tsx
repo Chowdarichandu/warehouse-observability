@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Select } from '../components/Select';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useApp } from '../AppContext';
 import { api } from '../api/client';
 import type { Schema } from '../api/client';
 import { PageHeader, Panel } from '../components/ui';
-import { Link } from 'react-router-dom';
+import { Select } from '../components/Select';
 
 export function Account() {
   const { user, runtime, notify, textSize, setTextSize, isAdmin, access } = useApp();
@@ -28,7 +28,7 @@ export function Account() {
     <>
       <PageHeader
         title="Account settings"
-        description="Manage your sign-in and review your workspace identity."
+        description="Manage your sign-in, appearance, and workspace identity."
       />
       <Panel title="Your account">
         <div className="governance-link">
@@ -41,13 +41,13 @@ export function Account() {
         </div>
       </Panel>
       <Panel title="Display" subtitle="Text size for this console, saved on this device.">
-        <form className="settings-form" onSubmit={(e) => e.preventDefault()}>
+        <form className="settings-form" onSubmit={(event) => event.preventDefault()}>
           <label>
             Text size
             <Select
               aria-label="Text size"
               value={textSize}
-              onChange={(e) => setTextSize(e.target.value)}
+              onChange={(event) => setTextSize(event.target.value)}
             >
               <option value="standard">Standard</option>
               <option value="large">Large</option>
@@ -58,22 +58,29 @@ export function Account() {
       {isAdmin && (
         <Panel
           title="Admin privileges"
-          subtitle="Extra controls your admin role unlocks across this workspace."
+          subtitle="Review and manage the controls available to your administrator account."
         >
           <div className="governance-link">
             <div>
               <strong>
-                {access?.permissions.filter((p) => p.minimum_role === 'admin' && p.enabled)
-                  .length ?? 0}{' '}
+                {access?.permissions.filter(
+                  (permission) => permission.minimum_role === 'admin' && permission.enabled,
+                ).length ?? 0}{' '}
                 admin controls available
               </strong>
               <p>
-                Assign roles, revoke sessions, configure tenants, alerts and quality checks, and
-                review audit history.
+                Create users, assign roles, grant user permissions, revoke sessions, configure
+                workspace operations, and review audit history.
               </p>
             </div>
+            <Link className="button small" to="/admin?section=users">
+              Manage users
+            </Link>
+            <Link className="button small" to="/admin?section=roles">
+              Manage roles
+            </Link>
             <Link className="button small" to="/access">
-              Open privilege access
+              Privilege access
             </Link>
           </div>
         </Panel>
@@ -93,8 +100,8 @@ export function Account() {
         ) : (
           <form
             className="settings-form"
-            onSubmit={(e) => {
-              e.preventDefault();
+            onSubmit={(event) => {
+              event.preventDefault();
               change.mutate();
             }}
           >
@@ -104,7 +111,7 @@ export function Account() {
                 type="password"
                 autoComplete="current-password"
                 value={current}
-                onChange={(e) => setCurrent(e.target.value)}
+                onChange={(event) => setCurrent(event.target.value)}
                 required
               />
             </label>
@@ -116,7 +123,7 @@ export function Account() {
                 minLength={12}
                 maxLength={256}
                 value={next}
-                onChange={(e) => setNext(e.target.value)}
+                onChange={(event) => setNext(event.target.value)}
                 required
               />
             </label>

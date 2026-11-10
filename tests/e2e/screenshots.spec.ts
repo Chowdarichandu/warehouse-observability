@@ -47,6 +47,7 @@ test("capture all console screens from the running workspace", async ({
     },
     { url: "/dependencies?tenant=acme_retail", file: "dependencies.png" },
     { url: "/quality", file: "quality.png" },
+    { url: "/warehouse", file: "warehouse.png" },
     { url: "/activity?tenant=acme_retail&range=1h", file: "activity.png" },
     {
       url: `/runs/${encodeURIComponent(failed.items[0].run_key)}?compare=${encodeURIComponent(detail.previous_runs[0].run_key)}`,
@@ -58,6 +59,10 @@ test("capture all console screens from the running workspace", async ({
     { url: "/onboarding", file: "onboarding.png" },
     { url: "/platform", file: "platform.png" },
     { url: "/admin", file: "admin.png" },
+    { url: "/admin?section=roles", file: "admin-roles.png" },
+    { url: "/admin?section=operations", file: "admin-operations.png" },
+    { url: "/admin?section=activity", file: "admin-activity.png" },
+    { url: "/admin?section=audit", file: "admin-audit.png" },
     { url: "/search?q=binlog", file: "search.png" },
     { url: "/?tv=1", file: "tv-mode.png" },
   ];

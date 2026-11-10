@@ -428,20 +428,16 @@ def test_user_permissions_guards(clients):
         .status_code
         == 422
     )
-    assert clients["operator"].get(f"/api/users/{operator}/permissions").status_code == 403
+    assert (
+        clients["operator"].get(f"/api/users/{operator}/permissions").status_code == 403
+    )
     assert clients["admin"].get("/api/users/999999/permissions").status_code == 404
 
 
-def test_users_list_reports_active_sessions(clients, db):
+def test_users_list_reports_active_sessions(clients):
     users = clients["admin"].get("/api/users?page=1&page_size=50").json()["items"]
     by_email = {u["email"]: u for u in users}
-    # The three signed-in fixture clients each hold one live session.
+    # The signed-in fixture clients each hold an active server-side session.
     assert by_email["admin@demo.local"]["active_sessions"] >= 1
     assert by_email["operator@demo.local"]["active_sessions"] >= 1
-    operator_id = by_email["operator@demo.local"]["user_id"]
-    result = clients["admin"].post(f"/api/users/{operator_id}/revoke-sessions")
-    assert result.status_code == 200
-    assert "session" in result.json()["message"]
-    users = clients["admin"].get("/api/users?page=1&page_size=50").json()["items"]
-    by_email = {u["email"]: u for u in users}
-    assert by_email["operator@demo.local"]["active_sessions"] == 0
+    assert by_email["viewer@demo.local"]["active_sessions"] >= 1

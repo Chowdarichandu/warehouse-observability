@@ -344,10 +344,7 @@ def create_user(
         )
     message = "User created."
     if generated:
-        message += (
-            " Share the temporary password with them;"
-            " they can change it after signing in."
-        )
+        message += " Share the temporary password with them; they can change it after signing in."
     return {
         "message": message,
         "user_id": new_id,
@@ -357,9 +354,7 @@ def create_user(
 
 
 @router.delete("/users/{id}", response_model=s.Message)
-def delete_user(
-    id: int, user: dict = Depends(require_role("admin", "manage_users"))
-) -> dict:
+def delete_user(id: int, user: dict = Depends(require_role("admin", "manage_users"))) -> dict:
     if settings().auth_provider == "oidc":
         fail(
             403,

@@ -22,7 +22,7 @@ test("search, navigation, typography, and administration work together", async (
   await expect(page.getByLabel("Text size")).toContainText("Large");
   await chooseSelectOption(page.getByLabel("Text size"), "Standard");
   await page.goto("/");
-  await page.getByLabel("Search errors and logs").fill("acme");
+  await page.getByLabel("Search tenants, logs, pages").fill("acme");
   await page.getByRole("button", { name: "Submit global search" }).click();
   await expect(
     page.getByRole("heading", { name: "Tenants", exact: true }),
@@ -58,6 +58,50 @@ test("search, navigation, typography, and administration work together", async (
   await expect(
     page.getByRole("heading", { name: "Users & roles" }),
   ).toBeVisible();
+  const viewerRow = page.locator("tr").filter({ hasText: "viewer@demo.local" });
+  await viewerRow.getByRole("button", { name: "Permissions" }).click();
+  const permissionsDialog = page.getByRole("dialog", {
+    name: "User permissions",
+  });
+  await expect(permissionsDialog).toContainText("viewer@demo.local");
+  await expect(
+    permissionsDialog.getByText(
+      "Permissions from a higher tier can't be added here",
+      { exact: false },
+    ),
+  ).toBeVisible();
+  await permissionsDialog.getByRole("button", { name: "Close" }).click();
+  await page.route("**/api/users/*/reset-password", async (route) => {
+    await route.fulfill({
+      json: {
+        message: "Password reset",
+        temporary_password: "Demo-Temporary-Only-42",
+        simulated: true,
+      },
+    });
+  });
+  await viewerRow.getByRole("button", { name: "Reset" }).click();
+  await page
+    .getByRole("dialog", { name: "Reset password" })
+    .getByRole("button", { name: "Reset password" })
+    .click();
+  const temporaryDialog = page.getByRole("dialog", {
+    name: "Temporary password",
+  });
+  await expect(temporaryDialog.locator(".temp-password")).toHaveText(
+    "••••••••••••",
+  );
+  await expect(temporaryDialog).not.toContainText("Demo-Temporary-Only-42");
+  await temporaryDialog
+    .getByRole("button", { name: "Reveal password" })
+    .click();
+  await expect(temporaryDialog.locator(".temp-password")).toHaveText(
+    "Demo-Temporary-Only-42",
+  );
+  await temporaryDialog.getByRole("button", { name: "Done" }).click();
+  await expect(page.locator("body")).not.toContainText(
+    "Demo-Temporary-Only-42",
+  );
   await page.getByRole("button", { name: "Audit trail", exact: true }).click();
   await expect(page).toHaveURL(/section=audit/);
   await expect(
