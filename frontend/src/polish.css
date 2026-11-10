@@ -421,3 +421,13 @@ select:focus-visible,
 .health-distribution > .has-tip:last-child:hover::after {
   transform: translate(0, 0);
 }
+
+.dag-card-head .has-tip::after {
+  left: auto;
+  right: -6px;
+  transform: translate(0, -4px);
+}
+.dag-card-head .has-tip:hover::after,
+.dag-card-head .has-tip:focus-visible::after {
+  transform: translate(0, 0);
+}

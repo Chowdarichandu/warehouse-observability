@@ -559,10 +559,21 @@ export function TenantDetail() {
                   {metricRows.map((row) => (
                     <tr key={row.name}>
                       <td>{row.name}</td>
-                      <td>{formatMinutes(row.avg)}</td>
-                      <td>{formatMinutes(row.p95)}</td>
-                      <td>{formatMinutes(row.queueAvg)}</td>
-                      <td>{formatMinutes(row.queueP95)}</td>
+                      {row.count === 0 ? (
+                        <td colSpan={4} className="muted">
+                          No runs in the selected range
+                          {row.name.endsWith('initial')
+                            ? ' — initial loads run once, at onboarding'
+                            : ''}
+                        </td>
+                      ) : (
+                        <>
+                          <td>{formatMinutes(row.avg)}</td>
+                          <td>{formatMinutes(row.p95)}</td>
+                          <td>{formatMinutes(row.queueAvg)}</td>
+                          <td>{formatMinutes(row.queueP95)}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
