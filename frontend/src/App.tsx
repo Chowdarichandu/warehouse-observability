@@ -34,7 +34,7 @@ import {
   Timer,
   TriangleAlert,
   Users,
-  Warehouse,
+  Warehouse as WarehouseIcon,
   Workflow,
   X,
 } from 'lucide-react';
@@ -82,7 +82,7 @@ const NAV = [
     items: [
       { path: '/errors', label: 'Errors', icon: TriangleAlert },
       { path: '/freshness', label: 'Freshness & volume', icon: Timer },
-      { path: '/warehouse', label: 'Warehouse', icon: Warehouse },
+      { path: '/warehouse', label: 'Warehouse', icon: WarehouseIcon },
       { path: '/dependencies', label: 'Dependencies', icon: Network },
       { path: '/quality', label: 'Data quality', icon: BadgeCheck },
       { path: '/alerts', label: 'Alerts', icon: Bell },
