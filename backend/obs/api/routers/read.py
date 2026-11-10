@@ -495,7 +495,13 @@ def audit(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
 )
 def users(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     return a.page(
-        rows("SELECT user_id,email,display_name,role,role_name FROM obs.users ORDER BY user_id"),
+        rows(
+            """SELECT u.user_id,u.email,u.display_name,u.role,u.role_name,
+                      (SELECT count(*) FROM obs.sessions ss
+                        WHERE ss.user_id=u.user_id AND ss.revoked_at IS NULL
+                          AND ss.expires_at>now()) AS active_sessions
+               FROM obs.users u ORDER BY u.user_id"""
+        ),
         page,
         page_size,
     )

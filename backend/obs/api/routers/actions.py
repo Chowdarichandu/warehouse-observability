@@ -637,12 +637,19 @@ def revoke_sessions(id: int, user: dict = Depends(require_role("admin", "manage_
     with connection() as conn:
         if not conn.execute("SELECT 1 FROM obs.users WHERE user_id=%s", (id,)).fetchone():
             fail(404, "user_not_found", "User not found.")
-        conn.execute(
+        cursor = conn.execute(
             "UPDATE obs.sessions SET revoked_at=now() WHERE user_id=%s AND revoked_at IS NULL",
             (id,),
         )
         audit(conn, user["email"], "revoke_sessions", str(id))
-    return {"message": "All existing sessions for this user were revoked.", "simulated": False}
+    revoked = cursor.rowcount or 0
+    if revoked == 0:
+        message = "This user had no active sessions to revoke."
+    elif revoked == 1:
+        message = "1 active session was revoked. That user is signed out everywhere."
+    else:
+        message = f"{revoked} active sessions were revoked. That user is signed out everywhere."
+    return {"message": message, "simulated": False}
 
 
 ANALYTICS_DAGS = [

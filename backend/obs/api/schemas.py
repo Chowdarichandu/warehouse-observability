@@ -29,6 +29,7 @@ class User(BaseModel):
     role: Literal["viewer", "operator", "admin"]
     role_name: str | None = None
     permissions: list[str] = []
+    active_sessions: int = 0
     csrf_token: str = ""
 
 

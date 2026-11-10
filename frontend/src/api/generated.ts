@@ -2996,6 +2996,11 @@ export interface components {
              */
             permissions: string[];
             /**
+             * Active Sessions
+             * @default 0
+             */
+            active_sessions: number;
+            /**
              * Csrf Token
              * @default
              */

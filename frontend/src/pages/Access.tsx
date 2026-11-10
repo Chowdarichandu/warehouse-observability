@@ -55,6 +55,7 @@ export function Access() {
       setConfirmation(null);
       notify(result.message);
       void client.invalidateQueries({ queryKey: ['audit'] });
+      void client.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => notify(error.message),
   });
@@ -293,6 +294,13 @@ export function Access() {
                       <div>
                         <strong>{account.display_name || account.email}</strong>
                         <p>{account.email}</p>
+                        <p className="muted">
+                          {account.active_sessions === 1
+                            ? '1 active session'
+                            : account.active_sessions > 1
+                              ? `${account.active_sessions} active sessions`
+                              : 'No active sessions'}
+                        </p>
                       </div>
                       {canAssign ? (
                         <Select

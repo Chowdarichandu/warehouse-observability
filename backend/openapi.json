@@ -14019,6 +14019,11 @@
             "title": "Permissions",
             "default": []
           },
+          "active_sessions": {
+            "type": "integer",
+            "title": "Active Sessions",
+            "default": 0
+          },
           "csrf_token": {
             "type": "string",
             "title": "Csrf Token",
