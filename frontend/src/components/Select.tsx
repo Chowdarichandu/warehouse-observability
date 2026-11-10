@@ -89,10 +89,15 @@ export function Select({
     const rect = buttonRef.current.getBoundingClientRect();
     const estimated = Math.min(288, flat.length * 37 + 14);
     const below = window.innerHeight - rect.bottom;
+    // The panel is at least as wide as its trigger but grows to fit the
+    // longest option (up to the cap); it starts hidden so the follow-up
+    // layout pass can clamp its left edge once its real width is known.
     const style: Record<string, string> = {
-      left: `${Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8))}px`,
-      width: `${rect.width}px`,
+      left: `${rect.left}px`,
+      minWidth: `${rect.width}px`,
+      maxWidth: `${Math.min(360, window.innerWidth - 16)}px`,
       maxHeight: '288px',
+      visibility: 'hidden',
     };
     if (below < estimated + 12 && rect.top > below) {
       style.bottom = `${window.innerHeight - rect.top + 6}px`;
@@ -104,6 +109,13 @@ export function Select({
     setActive(index >= 0 ? index : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open || panelStyle.visibility !== 'hidden' || !panelRef.current) return;
+    const panel = panelRef.current.getBoundingClientRect();
+    const left = Math.max(8, Math.min(panel.left, window.innerWidth - panel.width - 8));
+    setPanelStyle((style) => ({ ...style, left: `${left}px`, visibility: 'visible' }));
+  }, [open, panelStyle]);
 
   useEffect(() => {
     if (!open) return;

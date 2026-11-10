@@ -5425,6 +5425,7 @@ table td {
 .ui-select-panel {
   position: fixed;
   z-index: 500;
+  width: max-content;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -5509,4 +5510,17 @@ table td {
   height: 36px;
   min-height: 36px;
   box-sizing: border-box;
+}
+
+/* Filter-bar search box: the bordered field itself is the 36px chip, so it
+   lines up exactly with the dropdown chips beside it (its inner input
+   must not add its own min-height on top). */
+.filter-bar .search-field {
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+}
+.filter-bar .search-field input {
+  min-height: 0;
+  height: 100%;
 }
