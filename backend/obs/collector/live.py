@@ -270,6 +270,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     from obs.maintenance import retain
+    from obs.onboarding.workflow import reconcile_live
     from obs.quality.engine import evaluate_due
 
     jobs = [
@@ -278,6 +279,7 @@ def main() -> None:
         (snapshots, settings().warehouse_check_sec),
         (retain, 86400),
         (evaluate_due, settings().quality_interval_sec),
+        (reconcile_live, 60),
     ]
     due = {fn.__name__: 0.0 for fn, _ in jobs}
     while not stopping:

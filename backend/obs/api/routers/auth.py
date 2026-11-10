@@ -2,6 +2,7 @@ import secrets
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Request, Response
+from pydantic import BaseModel, ConfigDict, Field
 
 from obs import oidc
 from obs.api.schemas import Login, Message, User
@@ -12,6 +13,39 @@ from obs.settings import settings
 
 router = APIRouter(tags=["Authentication"])
 DUMMY_HASH = hasher.hash("invalid-user-timing-padding")
+
+
+class PasswordChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    current_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=12, max_length=256)
+
+
+@router.post("/auth/password", response_model=Message)
+def change_password(
+    data: PasswordChange, request: Request, user: dict = Depends(current_user)
+) -> dict:
+    if settings().auth_provider != "local" or settings().mode != "demo":
+        fail(403, "sso_managed", "Change your password through your identity provider.")
+    check_login_rate(request)
+    with connection() as conn:
+        account = conn.execute(
+            "SELECT password_hash FROM obs.users WHERE user_id=%s FOR UPDATE", (user["user_id"],)
+        ).fetchone()
+        if not account or not verify_password(
+            data.current_password, account["password_hash"] or DUMMY_HASH
+        ):
+            fail(403, "invalid_credentials", "Current password is incorrect.")
+        conn.execute(
+            "UPDATE obs.users SET password_hash=%s WHERE user_id=%s",
+            (hasher.hash(data.new_password), user["user_id"]),
+        )
+        conn.execute(
+            "UPDATE obs.sessions SET revoked_at=now() WHERE user_id=%s AND id<>%s",
+            (user["user_id"], user["session_id"]),
+        )
+        audit(conn, user["email"], "change_password", str(user["user_id"]))
+    return {"message": "Password updated. Other sessions have been signed out.", "simulated": False}
 
 
 @router.post("/auth/login", response_model=User)

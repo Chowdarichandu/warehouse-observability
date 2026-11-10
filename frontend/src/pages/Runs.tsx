@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Download, ExternalLink, FileText, LockKeyhole, RefreshCw, Search } from 'lucide-react';
@@ -125,6 +125,8 @@ export function Runs() {
 
 export function RunDetail() {
   const { key = '' } = useParams();
+  const { params: detailParams } = useFilters();
+  const focusLog = detailParams.get('focus') === 'log';
   const { canMutatePipelines: canOperate, notify, runtime } = useApp();
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -136,6 +138,12 @@ export function RunDetail() {
     queryKey: ['log', key],
     queryFn: () => api<Schema<'Log'>>(`${runPath(key)}/log`),
   });
+  useEffect(() => {
+    if (focusLog && !log.isPending && !query.isPending)
+      document.getElementById('run-log')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+  }, [key, focusLog, log.isPending, query.isPending]);
   const retry = useMutation({
     mutationFn: () => api<Schema<'RetryResult'>>(`${runPath(key)}/retry`, { method: 'POST' }),
     onSuccess: (result) => {
@@ -289,24 +297,26 @@ export function RunDetail() {
           </dl>
         </Panel>
       </div>
-      <Panel
-        title="Run log"
-        subtitle="Redacted at collection and again before display."
-        action={
-          <span className="redacted-label">
-            <LockKeyhole size={12} />
-            SECRETS REDACTED
-          </span>
-        }
-      >
-        {log.isPending ? (
-          <Loading />
-        ) : log.error ? (
-          <ErrorState error={log.error} />
-        ) : (
-          <LogViewer content={log.data.content} />
-        )}
-      </Panel>
+      <div id="run-log">
+        <Panel
+          title="Run log"
+          subtitle="Redacted at collection and again before display."
+          action={
+            <span className="redacted-label">
+              <LockKeyhole size={12} />
+              SECRETS REDACTED
+            </span>
+          }
+        >
+          {log.isPending ? (
+            <Loading />
+          ) : log.error ? (
+            <ErrorState error={log.error} />
+          ) : (
+            <LogViewer content={log.data.content} />
+          )}
+        </Panel>
+      </div>
       {!!streams.length && (
         <Panel title="Per-stream record counts" subtitle="Counts reported by the sync job">
           <Chart

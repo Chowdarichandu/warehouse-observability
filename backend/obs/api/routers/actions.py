@@ -43,10 +43,13 @@ def update_tenant(
     if not changes:
         fail(422, "empty_patch", "Supply at least one change.")
     with connection() as conn:
-        if not conn.execute(
-            "SELECT 1 FROM obs.tenants WHERE tenant_id=%s FOR UPDATE", (id,)
-        ).fetchone():
+        tenant = conn.execute(
+            "SELECT status FROM obs.tenants WHERE tenant_id=%s FOR UPDATE", (id,)
+        ).fetchone()
+        if not tenant:
             fail(404, "tenant_not_found", "Tenant not found.")
+        if data.status is not None and tenant["status"] not in {"active", "paused"}:
+            fail(409, "tenant_not_ready", "Complete onboarding before changing tenant status.")
         for key, value in changes.items():
             conn.execute(
                 f"UPDATE obs.tenants SET {key}=%s,updated_at=now() WHERE tenant_id=%s", (value, id)
@@ -201,7 +204,7 @@ def onboard(data: s.OnboardInput, user: dict = Depends(require_role("operator"))
 def update_user(id: int, data: s.UserPatch, user: dict = Depends(require_role("admin"))) -> dict:
     if settings().auth_provider == "oidc":
         fail(
-            409,
+            403,
             "sso_managed_roles",
             "Manage roles through the configured identity provider groups.",
         )

@@ -1,0 +1,19 @@
+# Workspace access
+
+The console uses three server-enforced roles. Viewers inspect health and investigation evidence and save personal views. Operators can also respond to alerts, retry failed runs, evaluate enabled quality checks, and onboard tenants. Administrators configure tenant settings, alert rules and quality definitions, inspect audit history, manage local role assignments and revoke user sessions. Local role changes require an explicit confirmation; the last-administrator guard remains enforced by the API.
+
+`GET /api/access` describes the signed-in user's role, policy authority, role grants and currently available capabilities. It requires a valid, unexpired server session. The Workspace access screen presents the same policy, explains environment restrictions, and includes an explicit role matrix. The matrix is informational; it cannot switch identity, simulate higher privileges, or authorize an operation.
+
+`obs/access.py` is the canonical role ranking and capability catalog. Existing endpoint `require_role` dependencies enforce that ranking. Live action switches, reviewed registry DAGs, quality enablement, per-tenant state and operation-specific safeguards remain additional checks. The capability response helps the UI explain access; the API remains authoritative for every request. Tenant settings may require the registry integration when changing lifecycle state even when other settings are available.
+
+## Role authority
+
+In local demo mode, workspace administrators assign roles. In OIDC mode, the existing verified authorization-code flow resolves configured identity-provider groups to Viewer, Operator or Admin. The access page identifies this as **Organization SSO**. Role assignments must be changed through the configured identity provider; direct role-edit API requests are rejected with HTTP 403. An administrator can still revoke sessions immediately. Sessions otherwise use the stored role on every request, and sign-in refreshes it from verified group membership.
+
+The console does not yet claim a connection to a separate role-management REST service. If your organization already has one, supply its provider/protocol, issuer, claim names and role mapping before wiring it in. The integration point is the server-side identity resolution in `obs/oidc.py`: accept groups or role claims only after signature, issuer, audience, nonce and identity validation. Never trust browser-selected roles or unsigned proxy headers. Keep the canonical Viewer/Operator/Admin policy unless a separately reviewed policy change is authorized.
+
+The response exposes no upstream credentials, client secrets, raw tokens or identity-provider group lists. All authenticated roles can view the role guide; only administrators can retrieve the user list and revoke user sessions. Revocation requires CSRF protection, explicit UI confirmation and an audit entry. The UI directs the current administrator to Sign out for their own session.
+
+## Verification
+
+Backend coverage checks unauthenticated denial, each role's policy, unknown-role rejection, live environment restrictions, OIDC-managed role-edit denial, Viewer/Operator denial of administrator mutations, Operator onboarding/retry access, and audited session revocation inside a rolled-back transaction. Browser coverage verifies the matrix and authority presentation, revocation confirmation, shareable permission filters and the Viewer's restricted controls. No external access service or production identity provider is contacted by these tests.

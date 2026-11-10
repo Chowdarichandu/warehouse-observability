@@ -20,7 +20,6 @@ import {
   Maximize2,
   Menu,
   Moon,
-  Plus,
   Search,
   Server,
   Settings2,
@@ -46,6 +45,9 @@ import { Alerts } from './pages/Alerts';
 import { Onboarding } from './pages/Onboarding';
 import { Admin, Platform, SearchResults } from './pages/System';
 import { Quality } from './pages/Quality';
+import { Account } from './pages/Account';
+import { Pipelines } from './pages/Pipelines';
+import { Access } from './pages/Access';
 import { Dependencies } from './pages/Dependencies';
 import { Activity as ActivityPage } from './components/Investigation';
 
@@ -61,6 +63,7 @@ const NAV = [
     items: [
       { path: '/', label: 'Overview', icon: LayoutDashboard },
       { path: '/tenants', label: 'Tenants', icon: Users },
+      { path: '/pipelines', label: 'Orchestration', icon: Workflow },
       { path: '/runs', label: 'Pipeline runs', icon: Activity },
       { path: '/activity', label: 'Activity', icon: CalendarDays },
     ],
@@ -78,8 +81,8 @@ const NAV = [
   {
     group: 'MANAGE',
     items: [
-      { path: '/onboarding', label: 'Onboard tenant', icon: Plus },
       { path: '/platform', label: 'Platform', icon: Server },
+      { path: '/access', label: 'Access & roles', icon: ShieldCheck },
       { path: '/admin', label: 'Administration', icon: Settings2 },
     ],
   },
@@ -137,6 +140,10 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     predicate: (query) => !['me', 'config'].includes(String(query.queryKey[0])),
   });
   const live = useLiveEvents();
+  const access = useQuery({
+    queryKey: ['access'],
+    queryFn: () => api<Schema<'AccessContext'>>('/access'),
+  });
   const [theme, setTheme] = useState(() => localStorage.getItem('obs-theme') || 'light');
   const [toast, setToast] = useState('');
   const [menu, setMenu] = useState(false);
@@ -191,7 +198,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
       v.path === '/' ? location.pathname === '/' : location.pathname.startsWith(v.path),
     )?.label || 'Search';
   return (
-    <AppContext.Provider value={{ user, runtime, ...live, notify: setToast }}>
+    <AppContext.Provider value={{ user, runtime, access: access.data, ...live, notify: setToast }}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -207,13 +214,13 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <small>PIPELINE CONSOLE</small>
               </span>
             </NavLink>
-            <div className="workspace-switch">
+            <NavLink className="workspace-switch" to="/tenants" aria-label="Open tenant workspace">
               <span className="workspace-avatar">D</span>
               <div>
                 <strong>Data workspace</strong>
                 <small>{runtime.environment}</small>
               </div>
-            </div>
+            </NavLink>
             <nav>
               {NAV.map((group) => (
                 <div className="nav-group" key={group.group}>
@@ -294,6 +301,22 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 />
                 <Command size={12} />
               </form>
+              <NavLink
+                to="/alerts?state=firing"
+                className="icon-button"
+                aria-label="Open alerts"
+                title="Open alerts"
+              >
+                <Bell size={18} />
+              </NavLink>
+              <NavLink
+                to="/account"
+                className="icon-button"
+                aria-label="Account settings"
+                title="Account settings"
+              >
+                <Settings2 size={18} />
+              </NavLink>
               <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
                 <span />
                 {live.connected ? 'Live' : 'Polling · 30s'}
@@ -393,6 +416,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/runs/:key" element={<RunDetail />} />
                 <Route path="/activity" element={<ActivityPage />} />
+                <Route path="/pipelines" element={<Pipelines />} />
                 <Route path="/dependencies" element={<Dependencies />} />
                 <Route path="/quality" element={<Quality />} />
                 <Route path="/errors" element={<Errors />} />
@@ -400,6 +424,8 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/alerts" element={<Alerts />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/platform" element={<Platform />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/access" element={<Access />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route

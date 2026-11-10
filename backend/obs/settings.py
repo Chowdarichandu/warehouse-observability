@@ -11,6 +11,7 @@ DEMO_KEY = "local-demo-only-change-before-live-use-32-characters"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     mode: Literal["demo", "live"] = "demo"
+    service_kind: Literal["console", "airflow_worker"] = "console"
     database_url: str = "postgresql://obs:obs_local@127.0.0.1:55432/obs"
     jwt_secret: str = DEMO_KEY
     demo_password: str = "demo"
@@ -45,6 +46,7 @@ class Settings(BaseSettings):
     sync_task_regex: str = r"(^|\.)sync(_.*)?$"
     tenant_task_regex: str = r"^sync_(?P<tenant>[a-z0-9_]+)$"
     onboarding_dag_id: str = "onboard_tenant"
+    onboarding_dag_ids: dict[str, str] = {}
     registry_dags_enabled: bool = False
     airbyte_url: str = ""
     airbyte_token: str = ""
@@ -79,19 +81,46 @@ class Settings(BaseSettings):
     backup_s3_bucket: str = ""
     backup_kms_key_id: str = ""
 
+    def resolved_onboarding_dags(self) -> dict[str, str]:
+        configured = {
+            "coordinator": self.onboarding_dag_id,
+            "mysql_provision": "obs_mysql_provision",
+            "mongo_provision": "obs_mongo_provision",
+            **{
+                key: self.airflow_dags[key]
+                for key in ("mysql_initial", "mysql_cdc", "mongo_initial", "mongo_cdc")
+            },
+        }
+        unknown = self.onboarding_dag_ids.keys() - configured.keys()
+        if unknown:
+            raise ValueError("ONBOARDING_DAG_IDS contains unsupported workflow nodes")
+        configured.update(self.onboarding_dag_ids)
+        if len(set(configured.values())) != 7 or any(
+            not value.strip() for value in configured.values()
+        ):
+            raise ValueError("Onboarding requires seven distinct nonempty DAG IDs")
+        return configured
+
     @model_validator(mode="after")
     def production_constraints(self) -> "Settings":
         if self.mode == "live":
-            if self.jwt_secret == DEMO_KEY or len(self.jwt_secret) < 32:
-                raise ValueError("Live mode requires a unique JWT_SECRET of at least 32 characters")
-            if not self.cookie_secure or urlsplit(self.console_url).scheme != "https":
-                raise ValueError("Live mode requires HTTPS CONSOLE_URL and Secure cookies")
+            if self.service_kind == "console":
+                if self.jwt_secret == DEMO_KEY or len(self.jwt_secret) < 32:
+                    raise ValueError(
+                        "Live mode requires a unique JWT_SECRET of at least 32 characters"
+                    )
+                if not self.cookie_secure or urlsplit(self.console_url).scheme != "https":
+                    raise ValueError("Live mode requires HTTPS CONSOLE_URL and Secure cookies")
+                if self.auth_provider != "oidc" or not self.oidc_group_roles:
+                    raise ValueError("Live mode requires OIDC and explicit OIDC_GROUP_ROLES")
+                if not self.oidc_client_id or urlsplit(self.oidc_issuer).scheme != "https":
+                    raise ValueError("OIDC requires an HTTPS issuer and client ID")
+            elif not self.live_actions_enabled or not self.registry_dags_enabled:
+                raise ValueError(
+                    "Airflow workers require explicitly enabled live actions and reviewed registry DAGs"
+                )
             if "sslmode=verify-full" not in self.database_url:
                 raise ValueError("Live DATABASE_URL must use sslmode=verify-full and a trusted CA")
-            if self.auth_provider != "oidc" or not self.oidc_group_roles:
-                raise ValueError("Live mode requires OIDC and explicit OIDC_GROUP_ROLES")
-            if not self.oidc_client_id or urlsplit(self.oidc_issuer).scheme != "https":
-                raise ValueError("OIDC requires an HTTPS issuer and client ID")
             for url in (self.airflow_url, self.airbyte_url, self.airbyte_config_url):
                 if url and urlsplit(url).scheme != "https":
                     raise ValueError("Live upstream HTTP APIs require HTTPS")

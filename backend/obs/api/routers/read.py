@@ -363,20 +363,11 @@ def channels(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
 @router.get(
     "/onboarding/{tenant_id}",
     response_model=s.OnboardProgress,
-    dependencies=[Depends(require_role("operator"))],
 )
 def onboarding(tenant_id: str) -> dict:
-    tenant = one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant_id,))
-    if not tenant:
-        fail(404, "tenant_not_found", "Tenant not found.")
-    return {
-        "tenant_id": tenant_id,
-        "status": tenant["status"],
-        "events": rows(
-            "SELECT * FROM obs.tenant_events WHERE tenant_id=%s ORDER BY at,id LIMIT 100",
-            (tenant_id,),
-        ),
-    }
+    from obs.onboarding.workflow import progress
+
+    return progress(tenant_id)
 
 
 @router.get("/platform/health", response_model=s.Platform)

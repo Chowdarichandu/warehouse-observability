@@ -11,6 +11,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Depends, HTTPException, Request
 
+from obs.access import ROLE_RANK, role_at_least
 from obs.db import connection, one
 from obs.settings import settings
 
@@ -80,12 +81,11 @@ def current_user(request: Request) -> dict:
 
 
 def require_role(role: str) -> Callable[..., dict]:
+    if role not in ROLE_RANK:
+        raise ValueError("Unknown required workspace role")
+
     def dependency(user: dict = Depends(current_user)) -> dict:
-        if {"viewer": 0, "operator": 1, "admin": 2}[user["role"]] < {
-            "viewer": 0,
-            "operator": 1,
-            "admin": 2,
-        }[role]:
+        if not role_at_least(user.get("role", ""), role):
             fail(403, "forbidden", f"This action requires the {role} role.")
         return user
 

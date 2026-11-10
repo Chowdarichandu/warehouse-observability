@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Database, Search, Server, ShieldCheck } from 'lucide-react';
 import { Operations } from './Operations';
@@ -182,27 +182,12 @@ export function Platform() {
 }
 
 export function Admin() {
-  const { isAdmin, notify, runtime } = useApp();
+  const { isAdmin } = useApp();
   const { page, set } = useFilters();
-  const client = useQueryClient();
-  const users = useQuery({
-    queryKey: ['users'],
-    queryFn: () => api<Schema<'Page_User_'>>('/users'),
-    enabled: isAdmin,
-  });
   const audit = useQuery({
     queryKey: ['audit', page],
     queryFn: () => api<Schema<'Page_AuditEntry_'>>(`/audit?page=${page}`),
     enabled: isAdmin,
-  });
-  const update = useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) =>
-      api<Schema<'Message'>>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify({ role }) }),
-    onSuccess: (r) => {
-      notify(r.message);
-      void client.invalidateQueries();
-    },
-    onError: (e) => notify(e.message),
   });
   if (!isAdmin)
     return (
@@ -221,54 +206,19 @@ export function Admin() {
         description="Manage workspace access and review a complete history of actions."
       />
       <Panel
-        title="Users & roles"
-        subtitle="Viewers inspect. Operators act. Administrators manage access and settings."
+        title="Workspace governance"
+        subtitle="Review operational decisions, access, and the evidence behind every change."
       >
-        {users.isPending ? (
-          <Loading />
-        ) : users.error ? (
-          <ErrorState error={users.error} />
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Authentication</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.data.items.map((user) => (
-                  <tr key={user.user_id}>
-                    <td>
-                      <strong>{user.display_name}</strong>
-                    </td>
-                    <td>{user.email}</td>
-                    <td>
-                      <select
-                        aria-label={`Role for ${user.email}`}
-                        value={user.role}
-                        disabled={update.isPending || runtime.auth_provider === 'oidc'}
-                        onChange={(e) => update.mutate({ id: user.user_id, role: e.target.value })}
-                      >
-                        {['viewer', 'operator', 'admin'].map((role) => (
-                          <option key={role}>{role}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <span className="tag">
-                        {runtime.auth_provider === 'oidc' ? 'ORGANIZATION SSO' : 'LOCAL · ARGON2'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="governance-link">
+          <ShieldCheck size={21} />
+          <div>
+            <strong>Access & roles</strong>
+            <p>Manage team permissions, identity source, and active sessions in one place.</p>
           </div>
-        )}
+          <Link className="button" to="/access">
+            Manage access
+          </Link>
+        </div>
       </Panel>
       <Operations />
       <Panel

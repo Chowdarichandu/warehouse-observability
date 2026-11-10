@@ -147,6 +147,18 @@ class Airflow:
             },
         )
 
+    def dag_run(self, dag_id: str, run_id: str) -> dict:
+        return self.call("GET", f"/dags/{part(dag_id)}/dagRuns/{part(run_id)}")
+
+    def trigger_workflow_dag(self, dag_id: str, run_id: str, conf: dict) -> dict:
+        if dag_id not in self.config.resolved_onboarding_dags().values():
+            raise ValueError("DAG is outside the configured onboarding allowlist")
+        return self.call(
+            "POST",
+            f"/dags/{part(dag_id)}/dagRuns",
+            body={"dag_run_id": run_id, "logical_date": None, "conf": conf},
+        )
+
     def health(self) -> dict:
         path = "/monitor/health" if self.config.airflow_api_version == "v2" else "/health"
         return self.call("GET", path)

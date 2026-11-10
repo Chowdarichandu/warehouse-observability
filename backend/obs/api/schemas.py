@@ -384,10 +384,67 @@ class Preflight(BaseModel):
     simulated: bool = True
 
 
+OnboardState = Literal[
+    "pending",
+    "queued",
+    "running",
+    "success",
+    "failed",
+    "blocked",
+    "skipped",
+    "uncertain",
+    "awaiting_initial",
+]
+
+
+class OnboardTask(BaseModel):
+    task_id: str
+    label: str
+    status: OnboardState
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    last_error: str | None = None
+
+
+class OnboardDag(BaseModel):
+    node_id: str
+    label: str
+    source_type: Literal["mysql", "mongo"] | None = None
+    phase: Literal["coordinator", "provision", "initial", "cdc"]
+    dag_id: str
+    dag_run_id: str | None = None
+    parent_node_id: str | None = None
+    parent_dag_run_id: str | None = None
+    status: OnboardState
+    attempt: int
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    blocked_reason: str | None = None
+    last_error: str | None = None
+    run_key: str | None = None
+    tasks: list[OnboardTask] = []
+
+
+class OnboardResume(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    start_initial: bool = True
+
+
 class OnboardProgress(BaseModel):
     tenant_id: str
     status: str
     events: list[TenantEvent]
+    workflow_id: str | None = None
+    display_name: str = ""
+    workflow_status: Literal["running", "failed", "uncertain", "awaiting_initial", "success"] = (
+        "running"
+    )
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    simulated: bool = True
+    can_resume: bool = False
+    resume_reason: str | None = None
+    dags: list[OnboardDag] = []
 
 
 class AuditEntry(BaseModel):

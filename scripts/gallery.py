@@ -59,6 +59,17 @@ SCREENS = [
         "Run comparison",
         "Side-by-side run metrics and per-stream record differences.",
     ),
+    (
+        "orchestration",
+        "Pipeline orchestration",
+        "Seven configured DAGs and their source branches.",
+    ),
+    (
+        "access",
+        "Access & roles",
+        "Effective permissions, role guide, and account management.",
+    ),
+    ("account", "Account settings", "Sign-in settings and secure password change."),
     ("alerts", "Alerts", "Alert lifecycle, notification channels, and built-in rules."),
     ("onboarding", "Onboarding", "The guided setup flow and CDC pre-flight checks."),
     (
@@ -97,7 +108,7 @@ def main() -> None:
         )
     document = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Observability Console — Screen gallery</title>
+<title>Flowmark — Screen gallery</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f7f9;color:#213447;font-family:system-ui,-apple-system,sans-serif}
 main{max-width:1450px;margin:auto;padding:48px 32px}header{margin-bottom:34px}.label{font-size:11px;letter-spacing:1.8px;color:#16836b;font-weight:700}
@@ -116,7 +127,7 @@ footer{font-size:11px;color:#81909d;border-top:1px solid #dfe7ed;margin-top:35px
     document += """</div><footer>All tenants and data are fictional. Retry, onboarding, and notification actions are simulated.
 Live integration, OIDC, and deployment code is included in the repository; AWS staging acceptance remains pending. These screens show offline demo data. Images preserve the original Playwright captures.</footer></main></body></html>"""
     (DIRECTORY / "index.html").write_text(document)
-    markdown = "# Observability Console screens\n\nOriginal Playwright captures of the offline demo. Live integration and EC2/EKS deployment code is included; real staging acceptance remains pending.\n\n"
+    markdown = "# Flowmark screens\n\nOriginal Playwright captures of the offline demo. Live integration and EC2/EKS deployment code is included; real staging acceptance remains pending.\n\n"
     markdown += "\n\n".join(
         f"## {title}\n\n{description}\n\n[![{title}]({slug}.png)]({slug}.png)"
         for slug, title, description in SCREENS

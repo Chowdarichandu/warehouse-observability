@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Activity,
   ArrowDownRight,
@@ -8,6 +8,9 @@ import {
   CheckCheck,
   Clock3,
   Radio,
+  Workflow,
+  Database,
+  ArrowUpRight,
   ShieldCheck,
   TrendingUp,
   Users,
@@ -31,8 +34,19 @@ import {
 } from '../components/ui';
 
 export function Overview() {
-  const { rangeQuery } = useFilters();
-  const { activity, connected, canOperate } = useApp();
+  const { rangeQuery, params, set } = useFilters();
+  const navigate = useNavigate();
+  const selectedTenant = params.get('activity_tenant') || '';
+  const filteredRuns = useQuery({
+    queryKey: ['activity-runs', selectedTenant, rangeQuery],
+    queryFn: () =>
+      api<Schema<'Page_Run_'>>(
+        `/runs?${rangeQuery}&tenant=${encodeURIComponent(selectedTenant)}&page_size=200`,
+      ),
+    enabled: !!selectedTenant,
+    placeholderData: undefined,
+  });
+  const { activity, connected } = useApp();
   const overview = useQuery({
     queryKey: ['overview', rangeQuery],
     queryFn: () => api<Schema<'Overview'>>(`/overview?${rangeQuery}`),
@@ -108,6 +122,13 @@ export function Overview() {
       ),
     },
   ];
+  const attention = tenants.data!.items.filter((t) => ['down', 'degraded'].includes(t.health));
+  const primaryIssue = attention[0];
+  const total = tenants.data!.total;
+  const healthyPercent = total ? Math.round((k.healthy / total) * 100) : 0;
+  const metrics = stats.filter((s) =>
+    ['Success rate', 'SLA compliance', 'CDC duration', 'Failed runs'].includes(s.label),
+  );
   const hours = data.series.map((s) =>
     new Date(s.hour).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
@@ -115,22 +136,95 @@ export function Overview() {
     <>
       <PageHeader
         title="Pipeline overview"
-        description="Every tenant. Every pipeline. One clear picture."
+        description="Delivery, reliability, and the work that needs your attention."
+        eyebrow="OPERATIONS"
         actions={
           <>
             <span className="updated-label">
               Updated <Time value={data.as_of} relative />
             </span>
-            {canOperate && (
-              <Link to="/onboarding" className="button primary">
-                + Onboard tenant
-              </Link>
-            )}
           </>
         }
       />
-      <div className="kpi-grid">
-        {stats.map((stat) => (
+      <section className="workspace-pulse" aria-label="Workspace health summary">
+        <div className="pulse-summary">
+          <div className="pulse-eyebrow">
+            <span
+              className="status-dot"
+              style={{ background: k.down ? STATUS_COLORS.down : STATUS_COLORS.healthy }}
+            />{' '}
+            WORKSPACE HEALTH <span className="pulse-current">Current status</span>
+          </div>
+          <h2>
+            <span>{k.healthy}</span> of {total} tenants healthy
+          </h2>
+          <p>
+            {k.down + k.degraded
+              ? `${k.down + k.degraded} tenants need a closer look.`
+              : 'No tenants currently need attention.'}{' '}
+            {k.running_now} pipeline {k.running_now === 1 ? 'run is' : 'runs are'} in progress.
+          </p>
+          <div className="health-distribution" aria-label={`${healthyPercent}% of tenants healthy`}>
+            {[
+              ['healthy', k.healthy],
+              ['degraded', k.degraded],
+              ['down', k.down],
+              ['paused', Math.max(0, total - k.healthy - k.degraded - k.down)],
+            ].map(([state, count]) => (
+              <span
+                key={state}
+                style={{
+                  width: `${total ? (Number(count) / total) * 100 : 0}%`,
+                  background: STATUS_COLORS[String(state)],
+                }}
+              />
+            ))}
+          </div>
+          <div className="pulse-breakdown">
+            <Link to="/tenants?health=healthy">
+              <i className="status-dot green" />
+              {k.healthy} healthy
+            </Link>
+            <Link to="/tenants?health=degraded">
+              <i className="status-dot amber" />
+              {k.degraded} degraded
+            </Link>
+            <Link to="/tenants?health=down">
+              <i className="status-dot red" />
+              {k.down} down
+            </Link>
+            <span>{healthyPercent}% healthy</span>
+          </div>
+        </div>
+        <div className="pulse-journey">
+          <div className="pulse-journey-top">
+            <span className="journey-icon">
+              <Workflow size={20} />
+            </span>
+            <span>PIPELINE TOPOLOGY</span>
+            <span className="tag">7 DAGs</span>
+          </div>
+          <h3>Pipeline orchestration</h3>
+          <p>Monitor source provisioning, initial loads, and continuous synchronization.</p>
+          <div className="journey-mini">
+            <span>
+              <Database size={13} />
+              Provision
+            </span>
+            <ArrowRight size={12} />
+            <span>Initial load</span>
+            <ArrowRight size={12} />
+            <span>CDC</span>
+          </div>
+          <div className="pulse-journey-actions">
+            <Link to="/pipelines" className="text-link">
+              View DAG catalog <ArrowUpRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </section>
+      <div className="kpi-grid executive-metrics">
+        {metrics.map((stat) => (
           <div className="kpi-card" key={stat.label}>
             <div className="kpi-label">
               {stat.label}
@@ -169,25 +263,29 @@ export function Overview() {
           View platform <ArrowRight size={12} />
         </Link>
       </div>
-      {k.down > 0 && (
+      {primaryIssue && (
         <div className="attention-banner">
           <span className="attention-icon">
             <ShieldCheck size={17} />
           </span>
           <div>
             <strong>
-              {k.down} tenant {k.down === 1 ? 'needs' : 'need'} your attention
+              {k.down + k.degraded} tenant {k.down + k.degraded === 1 ? 'needs' : 'need'} your
+              attention
             </strong>
-            <span>Acme Retail’s replication position is lost. A full resync is required.</span>
+            <span>
+              {primaryIssue.display_name} · {primaryIssue.failures_24h} failed runs in 24 hours.
+              Review current evidence before taking action.
+            </span>
           </div>
-          <Link to="/tenants/acme_retail">
+          <Link to={`/tenants/${primaryIssue.tenant_id}`}>
             Investigate <ArrowRight size={14} />
           </Link>
         </div>
       )}
       <Panel
         title="Tenant health"
-        subtitle="Latest status across your four pipelines. Problems appear first."
+        subtitle="Latest source pipeline status across your tenants. Issues appear first."
         action={
           <div className="inline-flex">
             <span className="legend-dot green" />
@@ -219,8 +317,44 @@ export function Overview() {
       <div className="two-column charts-row">
         <Panel
           title="Run activity"
-          subtitle="Completed and active pipeline runs"
-          action={<span className="chart-label">RUNS / HOUR</span>}
+          subtitle={
+            selectedTenant
+              ? `Latest ${Math.min(filteredRuns.data?.total || 0, 200)} runs for this tenant`
+              : 'Completed and active pipeline runs'
+          }
+          action={
+            <div className="activity-controls">
+              <select
+                aria-label="Run activity tenant"
+                value={selectedTenant}
+                onChange={(e) => set('activity_tenant', e.target.value)}
+              >
+                <option value="">All tenants</option>
+                {tenants.data!.items.map((t) => (
+                  <option key={t.tenant_id} value={t.tenant_id}>
+                    {t.display_name}
+                  </option>
+                ))}
+              </select>
+              {selectedTenant && (
+                <select
+                  aria-label="Open run log"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) navigate(`${runPath(e.target.value)}?focus=log`);
+                  }}
+                >
+                  <option value="">Select a run log</option>
+                  {filteredRuns.data?.items.map((r) => (
+                    <option key={r.run_key} value={r.run_key}>
+                      {r.source_type} {r.load_type} · {r.status} ·{' '}
+                      {new Date(r.started_at || r.collected_at).toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          }
         >
           <Chart
             label="Runs per hour by status"
@@ -249,14 +383,25 @@ export function Overview() {
               },
               series: ['success', 'failed', 'running'].map((status) => ({
                 name: status[0].toUpperCase() + status.slice(1),
-                type: 'bar',
-                stack: 'runs',
-                barMaxWidth: 16,
+                type: 'line',
+                smooth: true,
+                showSymbol: false,
+                areaStyle: { opacity: 0.06 },
                 itemStyle: {
                   color: STATUS_COLORS[status],
                   borderRadius: status === 'running' ? [3, 3, 0, 0] : 0,
                 },
-                data: data.series.map((s) => s[status as 'success' | 'failed' | 'running']),
+                data: data.series.map((point) =>
+                  selectedTenant
+                    ? (filteredRuns.data?.items || []).filter(
+                        (r) =>
+                          r.status === status &&
+                          r.started_at &&
+                          new Date(r.started_at).toISOString().slice(0, 13) ===
+                            new Date(point.hour).toISOString().slice(0, 13),
+                      ).length
+                    : point[status as 'success' | 'failed' | 'running'],
+                ),
               })),
             }}
           />
@@ -444,8 +589,14 @@ export function Overview() {
             ) : (
               <div className="activity-waiting">
                 <Radio size={26} />
-                <strong>Connected to your pipelines</strong>
-                <p>Status updates arrive as the collector observes new runs.</p>
+                <strong>
+                  {connected ? 'Ready for the next update' : 'Monitoring with automatic refresh'}
+                </strong>
+                <p>
+                  {connected
+                    ? 'New run and alert events will appear here.'
+                    : 'Your workspace refreshes every 30 seconds while the live stream reconnects.'}
+                </p>
               </div>
             )}
           </div>
