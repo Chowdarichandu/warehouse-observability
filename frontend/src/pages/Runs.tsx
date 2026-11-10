@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Download, ExternalLink, FileText, LockKeyhole, RefreshCw, Search } from 'lucide-react';
@@ -31,10 +31,6 @@ export function Runs() {
   const query = useQuery({
     queryKey: ['runs', qs],
     queryFn: () => api<Schema<'Page_Run_'>>(`/runs?${qs}`),
-  });
-  const tenantOptions = useQuery({
-    queryKey: ['tenants'],
-    queryFn: () => api<Schema<'Page_Tenant_'>>('/tenants?page_size=200'),
   });
   const options = [
     {
@@ -83,18 +79,13 @@ export function Runs() {
               ))}
             </select>
           ))}
-          <select
-            aria-label="Tenant filter"
+          <input
+            className="compact-input"
+            aria-label="Tenant slug filter"
+            placeholder="Tenant slug"
             value={params.get('tenant') || ''}
             onChange={(e) => set('tenant', e.target.value)}
-          >
-            <option value="">All tenants</option>
-            {(tenantOptions.data?.items || []).map((t) => (
-              <option key={t.tenant_id} value={t.tenant_id}>
-                {t.display_name}
-              </option>
-            ))}
-          </select>
+          />
           <input
             className="compact-input"
             aria-label="Error class filter"
@@ -134,6 +125,8 @@ export function Runs() {
 
 export function RunDetail() {
   const { key = '' } = useParams();
+  const { params: detailParams } = useFilters();
+  const focusLog = detailParams.get('focus') === 'log';
   const { canMutatePipelines: canOperate, notify, runtime } = useApp();
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -145,6 +138,12 @@ export function RunDetail() {
     queryKey: ['log', key],
     queryFn: () => api<Schema<'Log'>>(`${runPath(key)}/log`),
   });
+  useEffect(() => {
+    if (focusLog && !log.isPending && !query.isPending)
+      document.getElementById('run-log')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+  }, [key, focusLog, log.isPending, query.isPending]);
   const retry = useMutation({
     mutationFn: () => api<Schema<'RetryResult'>>(`${runPath(key)}/retry`, { method: 'POST' }),
     onSuccess: (result) => {
@@ -298,46 +297,40 @@ export function RunDetail() {
           </dl>
         </Panel>
       </div>
-      <Panel
-        title="Run log"
-        subtitle="Redacted at collection and again before display."
-        action={
-          <span className="inline-flex">
-            <select
-              aria-label="Choose a run to view its log"
-              value={run.run_key}
-              onChange={(e) => navigate(runPath(e.target.value))}
-            >
-              {[run, ...previous_runs].map((r) => (
-                <option key={r.run_key} value={r.run_key}>
-                  {r.run_key === run.run_key ? 'This run' : 'Run'} ·{' '}
-                  {r.started_at
-                    ? new Date(r.started_at).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'queued'}{' '}
-                  · {r.status}
-                </option>
-              ))}
-            </select>
-            <span className="redacted-label">
-              <LockKeyhole size={12} />
-              SECRETS REDACTED
+      <div id="run-log">
+        <Panel
+          title="Run log"
+          subtitle="Redacted at collection and again before display."
+          action={
+            <span className="inline-flex">
+              <select
+                aria-label="Choose a run to view its log"
+                value={run.run_key}
+                onChange={(e) => navigate(runPath(e.target.value))}
+              >
+                {[run, ...previous_runs].map((r) => (
+                  <option key={r.run_key} value={r.run_key}>
+                    {r.run_key === run.run_key ? 'This run' : 'Run'} ·{' '}
+                    {r.started_at ? new Date(r.started_at).toLocaleString() : 'queued'} · {r.status}
+                  </option>
+                ))}
+              </select>
+              <span className="redacted-label">
+                <LockKeyhole size={12} />
+                SECRETS REDACTED
+              </span>
             </span>
-          </span>
-        }
-      >
-        {log.isPending ? (
-          <Loading />
-        ) : log.error ? (
-          <ErrorState error={log.error} />
-        ) : (
-          <LogViewer content={log.data.content} />
-        )}
-      </Panel>
+          }
+        >
+          {log.isPending ? (
+            <Loading />
+          ) : log.error ? (
+            <ErrorState error={log.error} />
+          ) : (
+            <LogViewer content={log.data.content} />
+          )}
+        </Panel>
+      </div>
       {!!streams.length && (
         <Panel title="Per-stream record counts" subtitle="Counts reported by the sync job">
           <Chart

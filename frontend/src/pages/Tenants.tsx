@@ -164,7 +164,7 @@ function stageLabel(status: string) {
 }
 
 function WorkflowPanel({ tenantId }: { tenantId: string }) {
-  const { canOperate, notify } = useApp();
+  const { canOperate, notify, runtime } = useApp();
   const client = useQueryClient();
   const workflow = useQuery({
     queryKey: ['workflow', tenantId],
@@ -190,17 +190,27 @@ function WorkflowPanel({ tenantId }: { tenantId: string }) {
     },
     onError: (e) => notify(e.message),
   });
-  if (workflow.isPending || workflow.error || !workflow.data) return null;
+  if (workflow.isPending)
+    return (
+      <Panel title="Workflows">
+        <Loading />
+      </Panel>
+    );
+  if (workflow.error || !workflow.data)
+    return (
+      <Panel title="Workflows">
+        <ErrorState error={workflow.error || new Error('Workflow information is unavailable.')} />
+      </Panel>
+    );
   const data = workflow.data;
   return (
     <Panel
       title="Workflows"
-      subtitle="Initial load first — when it passes, CDC starts keeping the warehouse current, and the MySQL load unlocks analytics. Trigger any DAG yourself."
+      subtitle="Source pipelines are managed automatically. Analytics becomes available after MySQL initial load succeeds; manual analytics actions are simulated in demo mode."
     >
       <div className="wf-grid">
         {data.sources.map((source) => {
           const initialPassed = source.initial_status === 'success';
-          const cdcLocked = !initialPassed && source.cdc_status !== 'running';
           return (
             <div className="wf-card" key={source.source}>
               <div className="wf-card-head">
@@ -219,13 +229,7 @@ function WorkflowPanel({ tenantId }: { tenantId: string }) {
                     </small>
                   )}
                 </div>
-                <button
-                  className="button small"
-                  disabled={!canOperate || trigger.isPending || source.initial_status === 'running'}
-                  onClick={() => trigger.mutate(`${source.source}_initial`)}
-                >
-                  <Play size={13} /> Trigger
-                </button>
+                <span className="wf-auto">Managed by onboarding</span>
               </div>
               <div className="wf-arrow">
                 <ArrowRight size={14} />
@@ -247,16 +251,7 @@ function WorkflowPanel({ tenantId }: { tenantId: string }) {
                     </small>
                   )}
                 </div>
-                <button
-                  className="button small"
-                  disabled={
-                    !canOperate || trigger.isPending || cdcLocked || source.cdc_status === 'running'
-                  }
-                  title={cdcLocked ? 'Finish the initial load first' : ''}
-                  onClick={() => trigger.mutate(`${source.source}_cdc`)}
-                >
-                  {cdcLocked ? <Lock size={13} /> : <Play size={13} />} Trigger
-                </button>
+                <span className="wf-auto">Managed by schedule</span>
               </div>
             </div>
           );
@@ -294,10 +289,20 @@ function WorkflowPanel({ tenantId }: { tenantId: string }) {
                 </div>
                 <button
                   className="button small"
-                  disabled={!canOperate || trigger.isPending || dag.last_status === 'started'}
+                  disabled={
+                    !canOperate ||
+                    runtime.mode !== 'demo' ||
+                    trigger.isPending ||
+                    dag.last_status === 'started'
+                  }
+                  title={
+                    runtime.mode !== 'demo'
+                      ? 'Manual analytics actions are only available in demo mode'
+                      : undefined
+                  }
                   onClick={() => trigger.mutate(dag.id)}
                 >
-                  <Play size={13} /> Run
+                  <Play size={13} /> Simulate
                 </button>
               </div>
             ))

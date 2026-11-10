@@ -5,27 +5,51 @@ import type { Activity } from './api/useLiveEvents';
 export const AppContext = createContext<{
   user: Schema<'User'>;
   runtime: Schema<'RuntimeConfig'>;
+  access?: Schema<'AccessContext'>;
   connected: boolean;
   activity: Activity[];
   notify: (message: string) => void;
 } | null>(null);
+
 export function useApp() {
   const value = useContext(AppContext);
   if (!value) throw new Error('Application context is unavailable');
-  const permissions = value.user.permissions ?? [];
+  const permissions = value.user.permissions;
   const has = (permission: string) =>
-    permissions.length > 0
+    Array.isArray(permissions)
       ? permissions.includes(permission)
       : value.user.role === 'admin' ||
         (permission !== 'manage_users' &&
           permission !== 'manage_platform' &&
           value.user.role !== 'viewer');
+  const related: Record<string, string> = {
+    'workspace.read': 'view_console',
+    'investigations.save': 'view_console',
+    'pipelines.retry': 'trigger_pipelines',
+    'alerts.respond': 'manage_alerts',
+    'onboarding.start': 'manage_tenants',
+    'tenants.configure': 'manage_tenants',
+    'alerts.configure': 'manage_alerts',
+    'quality.run': 'trigger_pipelines',
+    'quality.configure': 'manage_platform',
+    'audit.read': 'manage_users',
+    'operations.reconcile': 'manage_platform',
+    'access.assign_roles': 'manage_users',
+    'access.revoke_sessions': 'manage_users',
+  };
+  const can = (permission: string) =>
+    Boolean(
+      value.access?.capabilities.includes(permission) &&
+        related[permission] &&
+        has(related[permission]),
+    );
   return {
     ...value,
-    permissions,
+    permissions: permissions || [],
     hasPermission: has,
+    can,
     canOperate: has('trigger_pipelines'),
-    canMutatePipelines: has('trigger_pipelines') && value.runtime.live_actions_enabled,
+    canMutatePipelines: can('pipelines.retry'),
     isAdmin: has('manage_users'),
   };
 }

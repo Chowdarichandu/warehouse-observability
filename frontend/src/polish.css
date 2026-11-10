@@ -1,0 +1,328 @@
+/* Consistent, readable controls and a quieter administration surface. */
+body {
+  font-size: 14px;
+}
+.nav-group a {
+  font-size: 13px;
+}
+.nav-label,
+.brand small {
+  font-size: 10px;
+}
+.workspace-switch strong,
+.profile-text strong {
+  font-size: 13px;
+}
+.workspace-switch small,
+.profile-text small {
+  font-size: 11px;
+}
+.panel-heading h2 {
+  font-size: 16px;
+}
+.panel-heading p,
+.page-heading p {
+  font-size: 13px;
+}
+.button,
+.button.small {
+  font-size: 13px;
+}
+table th {
+  font-size: 11px;
+}
+table td {
+  font-size: 13px;
+}
+.global-search {
+  width: min(340px, 28vw);
+}
+.global-search input {
+  font-size: 13px;
+  min-width: 0;
+}
+.global-search-submit {
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px;
+  cursor: pointer;
+}
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  color: var(--title);
+}
+select:not([multiple]) {
+  appearance: none;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background-color: var(--surface);
+  color: var(--text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23788c97' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  font-size: 13px;
+  cursor: pointer;
+}
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+select:focus-visible,
+.admin-tabs button:focus-visible,
+.global-search-submit:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.text-size-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 16px;
+  color: #c1d0d4;
+  font-size: 12px;
+}
+.text-size-control select {
+  min-height: 32px;
+  padding: 5px 30px 5px 8px;
+  background-color: #19333d;
+  border-color: #36515a;
+  color: #e1eeee;
+  font-size: 12px;
+}
+.sidebar.collapsed .text-size-control {
+  display: none;
+}
+.product-menu {
+  padding: 14px;
+}
+.product-menu-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+.product-menu .product-active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--title);
+  text-decoration: none;
+}
+.product-menu .product-active > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.product-menu .product-active strong,
+.product-menu .product-active small {
+  display: block;
+}
+.product-menu .product-active small,
+.product-menu p {
+  color: var(--muted);
+  font-size: 12px;
+}
+.product-current {
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+}
+.product-menu .product-settings {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 10px;
+}
+.admin-intro strong,
+.admin-intro span {
+  display: block;
+}
+.admin-intro strong {
+  color: var(--title);
+  font-size: 15px;
+}
+.admin-intro span {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.admin-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 5px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.admin-tabs button {
+  flex: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 16px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.admin-tabs button[aria-current='page'] {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+.search-form {
+  padding: 20px 22px;
+}
+.search-sections {
+  border-top: 1px solid var(--line);
+}
+.search-section {
+  padding: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.search-section:last-child {
+  border: 0;
+}
+.search-section h2 {
+  font-size: 15px;
+  color: var(--title);
+}
+.search-section h2 span {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-left: 5px;
+}
+.search-hint,
+.search-empty {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+}
+.search-shortcuts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.search-shortcuts a {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--title);
+  text-decoration: none;
+  font-size: 13px;
+}
+.search-shortcuts a:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+.search-shortcuts span {
+  margin-left: 12px;
+  color: var(--muted);
+}
+.search-section :is(.search-results, .tenant-search-results) {
+  margin-top: 12px;
+}
+.search-section :is(.search-results, .tenant-search-results) > a {
+  padding: 14px 0;
+}
+.search-section :is(.search-results, .tenant-search-results) strong,
+.search-section :is(.search-results, .tenant-search-results) p {
+  font-size: 13px;
+}
+.search-section :is(.search-results, .tenant-search-results) small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.health-row {
+  cursor: pointer;
+}
+.health-row:hover {
+  background: var(--subtle);
+}
+.wf-auto {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+.dag-phase,
+.dag-unobserved,
+.dag-observed,
+.dag-card-foot,
+.dag-card > code,
+.catalog-note,
+.source-branch-heading {
+  font-size: 12px;
+}
+.dag-card > p,
+.coordinator-explainer p,
+.catalog-intro,
+.catalog-intro > div {
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .admin-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .admin-tabs button {
+    padding: 11px 12px;
+  }
+  .global-search {
+    width: 150px;
+  }
+  .breadcrumb > a {
+    display: none;
+  }
+  .global-search input {
+    font-size: 12px;
+  }
+  .text-size-control {
+    padding: 6px 14px;
+  }
+}
+
+.tenant-search-results > a {
+  display: block;
+  border-top: 1px solid var(--line);
+  text-decoration: none;
+}
+.tenant-search-results > a:hover {
+  background: var(--subtle);
+}
+.tenant-search-results strong {
+  color: var(--green);
+}
+.tenant-search-results small {
+  color: var(--muted);
+}
+
+/* Keep sidebar menus above the outside-click layer so their links remain usable. */
+.sidebar.panel-open {
+  z-index: 50;
+}

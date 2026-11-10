@@ -8,7 +8,14 @@ from obs.alerter.notify import deliver
 from obs.alerter.rules import PARAMS
 from obs.api import schemas as s
 from obs.audit import audit
-from obs.auth import PERMISSIONS, SYSTEM_ROLE_PERMISSIONS, fail, require_permission, require_role
+from obs.auth import (
+    PERMISSIONS,
+    SYSTEM_ROLE_PERMISSIONS,
+    effective_permissions,
+    fail,
+    require_permission,
+    require_role,
+)
 from obs.db import connection, notify, one
 from obs.demo.scenarios import upsert_run
 from obs.demo.seed import make_run
@@ -20,14 +27,31 @@ from obs.settings import settings
 router = APIRouter(tags=["Audited actions"])
 
 
+def _check_grantable(actor: dict, role: str, bundle: list[str]) -> None:
+    actor_rights = effective_permissions(actor.get("role", ""), actor.get("permissions", []))
+    if not effective_permissions(role, bundle).issubset(actor_rights):
+        fail(403, "permission_escalation", "You cannot grant permissions beyond your own.")
+
+
+def _target_bundle(conn, target: dict) -> list[str]:
+    if target.get("role_name"):
+        row = conn.execute(
+            "SELECT permissions FROM obs.roles WHERE name=%s", (target["role_name"],)
+        ).fetchone()
+        return row["permissions"] if row and isinstance(row.get("permissions"), list) else []
+    return SYSTEM_ROLE_PERMISSIONS.get(target.get("role"), [])
+
+
 @router.post("/runs/{run_key}/retry", response_model=s.RetryResult)
-def retry(run_key: str, user: dict = Depends(require_role("operator"))) -> dict:
+def retry(
+    run_key: str, user: dict = Depends(require_role("operator", "trigger_pipelines"))
+) -> dict:
     return retry_action(run_key, user["email"])
 
 
 @router.patch("/tenants/{id}", response_model=s.Message)
 def update_tenant(
-    id: str, data: s.TenantPatch, user: dict = Depends(require_role("admin"))
+    id: str, data: s.TenantPatch, user: dict = Depends(require_role("admin", "manage_tenants"))
 ) -> dict:
     if settings().mode == "live":
         from obs.actions.live import enabled
@@ -43,10 +67,13 @@ def update_tenant(
     if not changes:
         fail(422, "empty_patch", "Supply at least one change.")
     with connection() as conn:
-        if not conn.execute(
-            "SELECT 1 FROM obs.tenants WHERE tenant_id=%s FOR UPDATE", (id,)
-        ).fetchone():
+        tenant = conn.execute(
+            "SELECT status FROM obs.tenants WHERE tenant_id=%s FOR UPDATE", (id,)
+        ).fetchone()
+        if not tenant:
             fail(404, "tenant_not_found", "Tenant not found.")
+        if data.status is not None and tenant["status"] not in {"active", "paused"}:
+            fail(409, "tenant_not_ready", "Complete onboarding before changing tenant status.")
         for key, value in changes.items():
             conn.execute(
                 f"UPDATE obs.tenants SET {key}=%s,updated_at=now() WHERE tenant_id=%s", (value, id)
@@ -64,7 +91,7 @@ def update_tenant(
 
 
 @router.post("/tenants/{id}/resync", response_model=s.Message)
-def resync(id: str, user: dict = Depends(require_role("admin"))) -> dict:
+def resync(id: str, user: dict = Depends(require_role("admin", "manage_tenants"))) -> dict:
     if settings().mode != "demo":
         fail(403, "demo_only", "Simulated resync is available only in demo mode.")
     now = datetime.now(UTC)
@@ -100,7 +127,7 @@ def resync(id: str, user: dict = Depends(require_role("admin"))) -> dict:
 
 
 @router.post("/alerts/{id}/ack", response_model=s.Message)
-def ack(id: int, user: dict = Depends(require_role("operator"))) -> dict:
+def ack(id: int, user: dict = Depends(require_role("operator", "manage_alerts"))) -> dict:
     with connection() as conn:
         alert = conn.execute("SELECT * FROM obs.alerts WHERE id=%s FOR UPDATE", (id,)).fetchone()
         if not alert:
@@ -117,7 +144,7 @@ def ack(id: int, user: dict = Depends(require_role("operator"))) -> dict:
 
 
 @router.post("/alerts/{id}/resolve", response_model=s.Message)
-def resolve(id: int, user: dict = Depends(require_role("operator"))) -> dict:
+def resolve(id: int, user: dict = Depends(require_role("operator", "manage_alerts"))) -> dict:
     with connection() as conn:
         alert = conn.execute("SELECT * FROM obs.alerts WHERE id=%s FOR UPDATE", (id,)).fetchone()
         if not alert:
@@ -134,7 +161,9 @@ def resolve(id: int, user: dict = Depends(require_role("operator"))) -> dict:
 
 
 @router.put("/alert-rules/{id}", response_model=s.Rule)
-def update_rule(id: str, data: s.RulePatch, user: dict = Depends(require_role("admin"))) -> dict:
+def update_rule(
+    id: str, data: s.RulePatch, user: dict = Depends(require_role("admin", "manage_alerts"))
+) -> dict:
     if (
         id not in PARAMS
         or set(data.params) != PARAMS[id]
@@ -164,7 +193,7 @@ def update_rule(id: str, data: s.RulePatch, user: dict = Depends(require_role("a
 
 
 @router.post("/channels/{id}/test", response_model=s.Message)
-def test_channel(id: str, user: dict = Depends(require_role("admin"))) -> dict:
+def test_channel(id: str, user: dict = Depends(require_role("admin", "manage_alerts"))) -> dict:
     if not one("SELECT 1 FROM obs.notification_channels WHERE channel_id=%s AND enabled", (id,)):
         fail(404, "channel_not_found", "Enabled channel not found.")
     with connection() as conn:
@@ -179,7 +208,9 @@ def test_channel(id: str, user: dict = Depends(require_role("admin"))) -> dict:
 
 
 @router.post("/onboarding/preflight", response_model=s.Preflight)
-def preflight(data: s.OnboardInput, user: dict = Depends(require_role("operator"))) -> dict:
+def preflight(
+    data: s.OnboardInput, user: dict = Depends(require_role("operator", "manage_tenants"))
+) -> dict:
     result = run_preflight(data)
     with connection() as conn:
         audit(
@@ -193,15 +224,19 @@ def preflight(data: s.OnboardInput, user: dict = Depends(require_role("operator"
 
 
 @router.post("/onboarding", response_model=s.OnboardProgress, status_code=201)
-def onboard(data: s.OnboardInput, user: dict = Depends(require_role("operator"))) -> dict:
+def onboard(
+    data: s.OnboardInput, user: dict = Depends(require_role("operator", "manage_tenants"))
+) -> dict:
     return start(data, user["email"])
 
 
 @router.patch("/users/{id}", response_model=s.Message)
-def update_user(id: int, data: s.UserPatch, user: dict = Depends(require_role("admin"))) -> dict:
+def update_user(
+    id: int, data: s.UserPatch, user: dict = Depends(require_role("admin", "manage_users"))
+) -> dict:
     if settings().auth_provider == "oidc":
         fail(
-            409,
+            403,
             "sso_managed_roles",
             "Manage roles through the configured identity provider groups.",
         )
@@ -216,15 +251,20 @@ def update_user(id: int, data: s.UserPatch, user: dict = Depends(require_role("a
         new_role_name = data.role_name
         if data.role_name:
             bundle = conn.execute(
-                "SELECT * FROM obs.roles WHERE name=%s", (data.role_name,)
+                "SELECT * FROM obs.roles WHERE name=%s FOR SHARE", (data.role_name,)
             ).fetchone()
             if not bundle:
                 fail(404, "role_not_found", "That role does not exist.")
             new_role = bundle["base_level"]
+            granted_bundle = (
+                bundle["permissions"] if isinstance(bundle["permissions"], list) else []
+            )
         elif data.role is not None:
             new_role_name = None
+            granted_bundle = SYSTEM_ROLE_PERMISSIONS.get(new_role, [])
         else:
             fail(422, "role_required", "Choose a role or a custom role bundle.")
+        _check_grantable(user, new_role, granted_bundle)
         if target["role"] == "admin" and new_role != "admin":
             admins = conn.execute(
                 "SELECT count(*) AS n FROM obs.users WHERE role='admin'"
@@ -283,6 +323,7 @@ def create_role(data: s.RoleIn, user: dict = Depends(require_permission("manage_
     permissions = [p for p in dict.fromkeys(data.permissions) if p in PERMISSIONS]
     if "view_console" not in permissions:
         permissions.insert(0, "view_console")
+    _check_grantable(user, data.base_level, permissions)
     with connection() as conn:
         if conn.execute("SELECT 1 FROM obs.roles WHERE name=%s", (name,)).fetchone():
             fail(409, "role_exists", "A role with this name already exists.")
@@ -306,9 +347,10 @@ def delete_role(name: str, user: dict = Depends(require_permission("manage_users
     if name in SYSTEM_ROLE_PERMISSIONS:
         fail(409, "reserved_role", "Built-in roles cannot be deleted.")
     with connection() as conn:
-        if not conn.execute("SELECT 1 FROM obs.roles WHERE name=%s", (name,)).fetchone():
+        if not conn.execute("SELECT 1 FROM obs.roles WHERE name=%s FOR UPDATE", (name,)).fetchone():
             fail(404, "role_not_found", "That role does not exist.")
-        conn.execute("UPDATE obs.users SET role_name=NULL WHERE role_name=%s", (name,))
+        if conn.execute("SELECT 1 FROM obs.users WHERE role_name=%s LIMIT 1", (name,)).fetchone():
+            fail(409, "role_in_use", "Reassign users before deleting this role.")
         conn.execute("DELETE FROM obs.roles WHERE name=%s", (name,))
         audit(conn, user["email"], "delete_role", name)
     return {"message": f"Role {name} deleted.", "simulated": False}
@@ -325,10 +367,11 @@ def reset_password(id: int, user: dict = Depends(require_permission("manage_user
     temporary = "Pravah-" + _secrets.token_urlsafe(9)
     with connection() as conn:
         target = conn.execute(
-            "SELECT * FROM obs.users WHERE user_id=%s", (id,)
+            "SELECT * FROM obs.users WHERE user_id=%s FOR UPDATE", (id,)
         ).fetchone()
         if not target:
             fail(404, "user_not_found", "User not found.")
+        _check_grantable(user, target["role"], _target_bundle(conn, target))
         conn.execute(
             "UPDATE obs.users SET password_hash=%s WHERE user_id=%s",
             (hasher.hash(temporary), id),
@@ -347,7 +390,9 @@ def reset_password(id: int, user: dict = Depends(require_permission("manage_user
 
 @router.post("/operations/{id}/reconcile", response_model=s.Message)
 def reconcile(
-    id: str, data: s.OperationResolution, user: dict = Depends(require_role("admin"))
+    id: str,
+    data: s.OperationResolution,
+    user: dict = Depends(require_role("admin", "manage_platform")),
 ) -> dict:
     with connection() as conn:
         operation = conn.execute(
@@ -380,7 +425,7 @@ def reconcile(
 
 
 @router.post("/users/{id}/revoke-sessions", response_model=s.Message)
-def revoke_sessions(id: int, user: dict = Depends(require_role("admin"))) -> dict:
+def revoke_sessions(id: int, user: dict = Depends(require_role("admin", "manage_users"))) -> dict:
     with connection() as conn:
         if not conn.execute("SELECT 1 FROM obs.users WHERE user_id=%s", (id,)).fetchone():
             fail(404, "user_not_found", "User not found.")
@@ -431,9 +476,7 @@ def _iso(value):
 @router.get("/tenants/{id}/workflow", response_model=s.WorkflowState)
 def workflow(id: str, user: dict = Depends(require_permission("view_console"))) -> dict:
     with connection() as conn:
-        tenant = conn.execute(
-            "SELECT * FROM obs.tenants WHERE tenant_id=%s", (id,)
-        ).fetchone()
+        tenant = conn.execute("SELECT * FROM obs.tenants WHERE tenant_id=%s", (id,)).fetchone()
         if not tenant:
             fail(404, "tenant_not_found", "Tenant not found.")
         sources = []
@@ -487,28 +530,15 @@ def trigger(
         fail(422, "demo_only", "Manual DAG triggers are available in demo mode.")
     dag = data.dag
     with connection() as conn:
-        tenant = conn.execute(
-            "SELECT * FROM obs.tenants WHERE tenant_id=%s", (id,)
-        ).fetchone()
+        tenant = conn.execute("SELECT * FROM obs.tenants WHERE tenant_id=%s", (id,)).fetchone()
         if not tenant:
             fail(404, "tenant_not_found", "Tenant not found.")
         if dag in PIPELINE_DAGS:
-            source, load, label = PIPELINE_DAGS[dag]
-            if not tenant[f"has_{source}"]:
-                fail(422, "source_absent", f"This tenant has no {source} source.")
-            if load == "cdc" and not _initial_done(conn, id, source):
-                fail(
-                    422,
-                    "initial_required",
-                    f"Complete the {label.split()[0]} initial load before starting CDC.",
-                )
-            running = conn.execute(
-                """SELECT 1 FROM obs.pipeline_runs WHERE tenant_id=%s AND source_type=%s
-                   AND load_type=%s AND status='running' LIMIT 1""",
-                (id, source, load),
-            ).fetchone()
-            if running:
-                fail(409, "already_running", f"{label} is already running.")
+            fail(
+                403,
+                "manual_trigger_disabled",
+                "Source pipelines are controlled by onboarding and cannot be triggered here.",
+            )
         elif dag in {d["id"] for d in ANALYTICS_DAGS}:
             label = next(d["name"] for d in ANALYTICS_DAGS if d["id"] == dag)
             source, load = None, "analytics"

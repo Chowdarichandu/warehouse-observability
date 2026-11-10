@@ -5,6 +5,8 @@ import { keepPreviousData, QueryClient, QueryClientProvider } from '@tanstack/re
 import { App } from './App';
 import { API_POLL_MS } from './config';
 import './style.css';
+import './design.css';
+import './polish.css';
 
 const client = new QueryClient({
   defaultOptions: {

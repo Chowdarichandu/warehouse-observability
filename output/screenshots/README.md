@@ -1,4 +1,4 @@
-# Observability Console screens
+# Pravah screens
 
 Original Playwright captures of the offline demo. Live integration and EC2/EKS deployment code is included; real staging acceptance remains pending.
 
@@ -67,6 +67,24 @@ A chronological view of run, alert, onboarding, action, and quality events.
 Side-by-side run metrics and per-stream record differences.
 
 [![Run comparison](comparison.png)](comparison.png)
+
+## Pipeline orchestration
+
+Seven configured DAGs and their source branches.
+
+[![Pipeline orchestration](orchestration.png)](orchestration.png)
+
+## Access & roles
+
+Effective permissions, role guide, and account management.
+
+[![Access & roles](access.png)](access.png)
+
+## Account settings
+
+Sign-in settings and secure password change.
+
+[![Account settings](account.png)](account.png)
 
 ## Alerts
 

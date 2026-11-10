@@ -1,5 +1,5 @@
 import { ArrowUpRight, Check, Circle, LoaderCircle, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Schema } from '../api/client';
 import { runPath } from '../api/client';
 import { StatusPill } from './StatusPill';
@@ -7,6 +7,7 @@ import { STATUS_COLORS } from './statusColors';
 import { Time } from './ui';
 
 export function HealthGrid({ tenants }: { tenants: Schema<'Tenant'>[] }) {
+  const navigate = useNavigate();
   return (
     <div className="table-scroll">
       <table className="health-table">
@@ -25,7 +26,14 @@ export function HealthGrid({ tenants }: { tenants: Schema<'Tenant'>[] }) {
         </thead>
         <tbody>
           {tenants.map((tenant) => (
-            <tr key={tenant.tenant_id} className={`health-row health-${tenant.health}`}>
+            <tr
+              key={tenant.tenant_id}
+              className={`health-row health-${tenant.health}`}
+              onClick={(event) => {
+                if (!(event.target as HTMLElement).closest('a, button, select, input'))
+                  navigate(`/tenants/${encodeURIComponent(tenant.tenant_id)}`);
+              }}
+            >
               <td>
                 <Link className="tenant-name" to={`/tenants/${tenant.tenant_id}`}>
                   <span className={`tenant-avatar avatar-${tenant.health}`}>

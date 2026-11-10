@@ -11,6 +11,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Depends, HTTPException, Request
 
+from obs.access import ROLE_RANK, role_at_least
 from obs.db import connection, one
 from obs.settings import settings
 
@@ -34,19 +35,43 @@ SYSTEM_ROLE_PERMISSIONS = {
 }
 
 
+PERMISSION_MIN_ROLE = {
+    "view_console": "viewer",
+    "trigger_pipelines": "operator",
+    "manage_tenants": "operator",
+    "manage_alerts": "operator",
+    "manage_users": "admin",
+    "manage_platform": "admin",
+}
+
+
+def effective_permissions(role: str, bundle: list[str]) -> set[str]:
+    return {
+        p
+        for p in bundle
+        if p in PERMISSION_MIN_ROLE and role_at_least(role, PERMISSION_MIN_ROLE[p])
+    }
+
+
 def user_permissions(user: dict) -> list:
     """Effective permission bundle for a user row (role + optional role_name)."""
     role_name = user.get("role_name")
-    if role_name:
+    if role_name and settings().auth_provider != "oidc":
         row = one("SELECT permissions FROM obs.roles WHERE name=%s", (role_name,))
         if row and isinstance(row.get("permissions"), list):
             return [p for p in row["permissions"] if p in PERMISSIONS]
-    return list(SYSTEM_ROLE_PERMISSIONS.get(user.get("role") or "viewer", ["view_console"]))
+        return []
+    return list(SYSTEM_ROLE_PERMISSIONS.get(user.get("role"), []))
 
 
 def require_permission(permission: str) -> Callable[..., dict]:
     def dependency(user: dict = Depends(current_user)) -> dict:
-        if permission not in user.get("permissions", []):
+        minimum = PERMISSION_MIN_ROLE.get(permission)
+        if (
+            not minimum
+            or not role_at_least(user.get("role", ""), minimum)
+            or permission not in user.get("permissions", [])
+        ):
             fail(403, "forbidden", "Your role does not allow this action.")
         return user
 
@@ -111,22 +136,26 @@ def current_user(request: Request) -> dict:
         allowed_hosts = {request.headers.get("host"), urlsplit(settings().console_url).netloc}
         if origin and urlsplit(origin).netloc not in allowed_hosts:
             fail(403, "csrf_origin", "Cross-origin action blocked.")
+    granted = user_permissions(user)
+    if "view_console" not in granted:
+        fail(403, "forbidden", "Your assigned role cannot access this workspace.")
     return {
         **user,
         "csrf_token": claims["csrf"],
         "session_id": claims["jti"],
-        "permissions": user_permissions(user),
+        "permissions": granted,
     }
 
 
-def require_role(role: str) -> Callable[..., dict]:
+def require_role(role: str, permission: str = "view_console") -> Callable[..., dict]:
+    if role not in ROLE_RANK:
+        raise ValueError("Unknown required workspace role")
+
     def dependency(user: dict = Depends(current_user)) -> dict:
-        if {"viewer": 0, "operator": 1, "admin": 2}[user["role"]] < {
-            "viewer": 0,
-            "operator": 1,
-            "admin": 2,
-        }[role]:
+        if not role_at_least(user.get("role", ""), role):
             fail(403, "forbidden", f"This action requires the {role} role.")
+        if permission not in user.get("permissions", []):
+            fail(403, "forbidden", "Your assigned role does not grant this permission.")
         return user
 
     return dependency

@@ -26,3 +26,13 @@ def clients() -> dict[str, TestClient]:
     yield result
     for client in result.values():
         client.close()
+
+
+@pytest.fixture(autouse=True)
+def isolate_login_rate_limits():
+    # Login throttling is process-local; tests must not inherit earlier attempts.
+    from obs.auth import login_attempts
+
+    login_attempts.clear()
+    yield
+    login_attempts.clear()

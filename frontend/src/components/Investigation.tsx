@@ -127,7 +127,7 @@ export function SavedRunViews() {
       <span className="muted">
         {views.error
           ? views.error.message
-          : 'Private to your account · includes filters and time range'}
+          : 'Save your current filters and time range to reopen this investigation later. Private to your account.'}
       </span>
     </div>
   );

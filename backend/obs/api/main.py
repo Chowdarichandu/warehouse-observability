@@ -11,17 +11,31 @@ from fastapi.responses import JSONResponse, Response
 from psycopg.types.json import Jsonb
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from obs.api.routers import actions, auth, dependencies, investigation, quality, read, stream
+from obs.api.routers import (
+    access,
+    actions,
+    auth,
+    dependencies,
+    investigation,
+    pipelines,
+    quality,
+    read,
+    stream,
+)
 from obs.api.schemas import ErrorEnvelope, RuntimeConfig
 from obs.auth import hasher
 from obs.db import connection, one
 from obs.demo.seed import DEFAULT_RULES
+from obs.onboarding.api import router as onboarding_workflow_router
+from obs.onboarding.workflow import WorkflowError
 from obs.redact import redact
 from obs.settings import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    if settings().service_kind != "console":
+        raise RuntimeError("The console API requires SERVICE_KIND=console.")
     if settings().mode == "demo":
         with connection() as conn:
             for role in ("admin", "operator", "viewer"):
@@ -79,6 +93,13 @@ async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
         else {"code": f"http_{exc.status_code}", "message": str(exc.detail)}
     )
     return JSONResponse({"error": detail}, status_code=exc.status_code)
+
+
+@app.exception_handler(WorkflowError)
+async def workflow_error(request: Request, exc: WorkflowError) -> JSONResponse:
+    return JSONResponse(
+        {"error": {"code": exc.code, "message": redact(exc.message)}}, status_code=exc.status
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -161,6 +182,9 @@ for router in (
     dependencies.router,
     investigation.router,
     quality.router,
+    access.router,
+    pipelines.router,
+    onboarding_workflow_router,
 ):
     app.include_router(
         router,

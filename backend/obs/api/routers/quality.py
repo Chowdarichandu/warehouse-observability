@@ -55,7 +55,9 @@ def checks(
 
 
 @router.post("/quality/checks", response_model=QualityCheck, status_code=201)
-def create(data: QualityCheckInput, user: dict = Depends(require_role("admin"))) -> dict:
+def create(
+    data: QualityCheckInput, user: dict = Depends(require_role("admin", "manage_platform"))
+) -> dict:
     write_enabled()
     try:
         with connection() as conn:
@@ -88,7 +90,9 @@ def create(data: QualityCheckInput, user: dict = Depends(require_role("admin")))
 
 
 @router.put("/quality/checks/{id}", response_model=QualityCheck)
-def update(id: int, data: QualityCheckInput, user: dict = Depends(require_role("admin"))) -> dict:
+def update(
+    id: int, data: QualityCheckInput, user: dict = Depends(require_role("admin", "manage_platform"))
+) -> dict:
     write_enabled()
     try:
         with connection() as conn:
@@ -128,7 +132,9 @@ def update(id: int, data: QualityCheckInput, user: dict = Depends(require_role("
 
 
 @router.patch("/quality/checks/{id}", response_model=QualityCheck)
-def toggle(id: int, data: QualityCheckPatch, user: dict = Depends(require_role("admin"))) -> dict:
+def toggle(
+    id: int, data: QualityCheckPatch, user: dict = Depends(require_role("admin", "manage_platform"))
+) -> dict:
     write_enabled()
     with connection() as conn:
         item = conn.execute(
@@ -149,7 +155,7 @@ def toggle(id: int, data: QualityCheckPatch, user: dict = Depends(require_role("
 
 
 @router.post("/quality/checks/{id}/run", response_model=QualityResult)
-def run(id: int, user: dict = Depends(require_role("operator"))) -> dict:
+def run(id: int, user: dict = Depends(require_role("operator", "trigger_pipelines"))) -> dict:
     write_enabled()
     if settings().mode == "live" and not settings().quality_enabled:
         fail(

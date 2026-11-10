@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   NavLink,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -10,6 +11,7 @@ import {
 import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
+  ArrowRight,
   Bell,
   CalendarDays,
   ChevronDown,
@@ -22,7 +24,6 @@ import {
   Menu,
   Moon,
   PanelLeft,
-  Plus,
   Search,
   Server,
   Settings2,
@@ -50,6 +51,9 @@ import { Onboarding } from './pages/Onboarding';
 import { Admin, Platform, SearchResults } from './pages/System';
 import { Quality } from './pages/Quality';
 import { Warehouse } from './pages/Warehouse';
+import { Account } from './pages/Account';
+import { Pipelines } from './pages/Pipelines';
+import { Access } from './pages/Access';
 import { Dependencies } from './pages/Dependencies';
 import { Activity as ActivityPage } from './components/Investigation';
 
@@ -65,6 +69,7 @@ const NAV = [
     items: [
       { path: '/', label: 'Overview', icon: LayoutDashboard },
       { path: '/tenants', label: 'Tenants', icon: Users },
+      { path: '/pipelines', label: 'Orchestration', icon: Workflow },
       { path: '/runs', label: 'Pipeline runs', icon: Activity },
       { path: '/activity', label: 'Activity', icon: CalendarDays },
     ],
@@ -83,8 +88,8 @@ const NAV = [
   {
     group: 'MANAGE',
     items: [
-      { path: '/onboarding', label: 'Onboard tenant', icon: Plus },
       { path: '/platform', label: 'Platform', icon: Server },
+      { path: '/access', label: 'Access & roles', icon: ShieldCheck },
       { path: '/admin', label: 'Administration', icon: Settings2 },
     ],
   },
@@ -142,7 +147,14 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     predicate: (query) => !['me', 'config'].includes(String(query.queryKey[0])),
   });
   const live = useLiveEvents();
+  const access = useQuery({
+    queryKey: ['access'],
+    queryFn: () => api<Schema<'AccessContext'>>('/access'),
+  });
   const [theme, setTheme] = useState(() => localStorage.getItem('obs-theme') || 'light');
+  const [textSize, setTextSize] = useState(() =>
+    localStorage.getItem('obs-text-size') === 'large' ? 'large' : 'standard',
+  );
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('obs-sidebar') === 'collapsed',
   );
@@ -168,6 +180,10 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('obs-theme', theme);
   }, [theme]);
+  useEffect(() => {
+    document.documentElement.style.setProperty('zoom', textSize === 'large' ? '1.12' : '1');
+    localStorage.setItem('obs-text-size', textSize);
+  }, [textSize]);
   useEffect(() => {
     localStorage.setItem('obs-sidebar', collapsed ? 'collapsed' : 'open');
   }, [collapsed]);
@@ -213,7 +229,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
       v.path === '/' ? location.pathname === '/' : location.pathname.startsWith(v.path),
     )?.label || 'Search';
   return (
-    <AppContext.Provider value={{ user, runtime, ...live, notify: setToast }}>
+    <AppContext.Provider value={{ user, runtime, access: access.data, ...live, notify: setToast }}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -222,47 +238,46 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
           <div className="popover-scrim" onClick={() => setPanel('none')} aria-hidden />
         )}
         {!tv && (
-          <aside className={`sidebar ${menu ? 'mobile-open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+          <aside
+            className={`sidebar ${menu ? 'mobile-open' : ''} ${collapsed ? 'collapsed' : ''} ${panel === 'workspace' || panel === 'profile' ? 'panel-open' : ''}`}
+          >
             <NavLink to="/" className="brand">
               <span className="brand-icon">
                 <Workflow size={23} />
               </span>
               <span>
                 {APP_NAME}
-                <small>PIPELINE CONSOLE</small>
+                <small>OPERATIONS PLATFORM</small>
               </span>
             </NavLink>
             <button
               className="workspace-switch"
               onClick={() => setPanel(panel === 'workspace' ? 'none' : 'workspace')}
               aria-expanded={panel === 'workspace'}
-              title="About this workspace"
+              title="Product navigation"
             >
-              <span className="workspace-avatar">D</span>
+              <span className="workspace-avatar">O</span>
               <div>
-                <strong>Data workspace</strong>
+                <strong>Observability</strong>
                 <small>{runtime.environment}</small>
               </div>
               <ChevronDown size={14} className="switch-chevron" />
             </button>
             {panel === 'workspace' && (
-              <div className="popover workspace-pop">
-                <strong>Data workspace</strong>
-                <p>
-                  Every tenant, pipeline and alert for the {runtime.environment} environment lives
-                  in this workspace. You are signed in as {user.display_name} ({user.role}
-                  ).
-                </p>
-                <div className="pop-actions">
-                  {user.role === 'admin' && (
-                    <NavLink to="/admin" className="button small">
-                      Manage access
-                    </NavLink>
-                  )}
-                  <NavLink to="/platform" className="button small">
-                    Platform health
-                  </NavLink>
-                </div>
+              <div className="popover workspace-pop product-menu">
+                <span className="product-menu-label">YOUR PRODUCTS</span>
+                <NavLink to="/" className="product-active">
+                  <span className="workspace-avatar">O</span>
+                  <span>
+                    <strong>Observability</strong>
+                    <small>Monitor data operations</small>
+                  </span>
+                  <span className="product-current">Current</span>
+                </NavLink>
+                <p>Additional business modules can be added here as they become available.</p>
+                <NavLink to="/account" className="product-settings">
+                  Account settings <ArrowRight size={14} />
+                </NavLink>
               </div>
             )}
             <nav>
@@ -282,6 +297,17 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               ))}
             </nav>
             <div className="sidebar-bottom">
+              <label className="text-size-control">
+                <span>Text size</span>
+                <select
+                  aria-label="Text size"
+                  value={textSize}
+                  onChange={(event) => setTextSize(event.target.value)}
+                >
+                  <option value="standard">Standard</option>
+                  <option value="large">Large</option>
+                </select>
+              </label>
               <button
                 className="collapse-toggle"
                 onClick={() => setCollapsed(!collapsed)}
@@ -307,6 +333,9 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 </button>
                 {panel === 'profile' && (
                   <div className="popover profile-pop">
+                    <NavLink to="/account" className="button small">
+                      Account settings
+                    </NavLink>
                     <button
                       onClick={() => {
                         setPanel('none');
@@ -335,7 +364,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Menu size={19} />
               </button>
               <Workflow size={15} />
-              <span>Workspace</span>
+              <NavLink to="/">Observability</NavLink>
               <span className="slash">/</span>
               <strong>{section}</strong>
             </div>
@@ -344,19 +373,29 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 className="global-search"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  if (search.trim().length > 1)
-                    navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+                  if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`);
                 }}
               >
                 <Search size={15} />
                 <input
                   ref={searchRef}
                   aria-label="Search errors and logs"
-                  placeholder="Search errors & logs…"
+                  placeholder="Search tenants, logs, pages…"
+                  maxLength={200}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
-                <Command size={12} />
+                {search.trim() ? (
+                  <button
+                    type="submit"
+                    aria-label="Submit global search"
+                    className="global-search-submit"
+                  >
+                    Search
+                  </button>
+                ) : (
+                  <Command size={12} aria-hidden="true" />
+                )}
               </form>
               <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
                 <span />
@@ -497,6 +536,11 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/runs/:key" element={<RunDetail />} />
                 <Route path="/activity" element={<ActivityPage />} />
+                <Route path="/pipelines" element={<Pipelines />} />
+                <Route path="/workspace" element={<Navigate to="/" replace />} />
+                <Route path="/workspace/pipelines" element={<Navigate to="/pipelines" replace />} />
+                <Route path="/access" element={<Access />} />
+                <Route path="/account" element={<Account />} />
                 <Route path="/dependencies" element={<Dependencies />} />
                 <Route path="/quality" element={<Quality />} />
                 <Route path="/errors" element={<Errors />} />

@@ -4,9 +4,11 @@ from obs.api.schemas import OnboardInput
 from obs.audit import audit
 from obs.auth import fail
 from obs.db import connection, notify
+from obs.onboarding import workflow
 from obs.onboarding.preflight import preflight
 from obs.settings import settings
 
+# Legacy event labels remain readable; workflow DAG/task state is authoritative.
 STEPS = [
     "Validate onboarding request",
     "Create tenant record",
@@ -65,93 +67,40 @@ def plan_for(data: dict) -> list:
 def start(data: OnboardInput, actor: str) -> dict:
     live = settings().mode == "live"
     if live:
-        return start_live(data, actor)
-    result = preflight(data)
-    if not result["passed"]:
-        fail(422, "preflight_failed", "Preflight checks must pass before onboarding.")
-    with connection() as conn:
-        if conn.execute(
-            "SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (data.tenant_id,)
-        ).fetchone():
-            fail(409, "tenant_exists", "This tenant slug is already registered.")
-        conn.execute(
-            """INSERT INTO obs.tenants(tenant_id,display_name,status,has_mysql,has_mongo,warehouse_schema,freshness_sla_min,owner_email)
-            VALUES(%s,%s,'onboarding',%s,%s,%s,%s,%s)""",
-            (
-                data.tenant_id,
-                data.display_name,
-                data.has_mysql,
-                data.has_mongo,
-                data.warehouse_schema or data.tenant_id,
-                data.freshness_sla_min,
-                data.owner_email,
-            ),
-        )
-        # Store references, never a password or a raw connection string.
-        payload = data.model_dump()
-        if not live:
-            conn.execute(
-                "INSERT INTO obs.demo_jobs(job_key,kind,tenant_id,payload) VALUES(%s,'onboarding',%s,%s)",
-                (f"onboard:{data.tenant_id}", data.tenant_id, Jsonb(payload)),
-            )
-        conn.execute(
-            "INSERT INTO obs.tenant_events(tenant_id,step,status,message) VALUES(%s,%s,'started','Onboarding requested')",
-            (data.tenant_id, STEPS[0]),
-        )
-        audit(
-            conn,
-            actor,
-            "onboard_tenant",
-            data.tenant_id,
-            {
-                "sources": [
-                    s for s, on in [("mysql", data.has_mysql), ("mongo", data.has_mongo)] if on
-                ],
-                "simulated": not live,
-            },
-        )
-        notify(
-            conn,
-            "onboarding.step",
-            {"tenant_id": data.tenant_id, "step": STEPS[0], "status": "started"},
-        )
-    return {"tenant_id": data.tenant_id, "status": "onboarding", "events": []}
-
-
-def start_live(data: OnboardInput, actor: str) -> dict:
-    from obs.actions.live import enabled, execute
-
-    enabled()
-    if not settings().registry_dags_enabled:
         fail(
-            409,
-            "registry_not_enabled",
-            "Deploy and enable the registry-driven DAGs before onboarding.",
+            503,
+            "onboarding_validation_required",
+            "Live onboarding is unavailable until tenant isolation and DAG recovery are validated in staging.",
         )
-    result = preflight(data)
-    if not result["passed"]:
+        from obs.actions.live import enabled
+
+        enabled()
+        if not settings().registry_dags_enabled:
+            fail(
+                409,
+                "registry_not_enabled",
+                "Deploy and enable the reviewed onboarding DAGs before onboarding.",
+            )
+    if not preflight(data)["passed"]:
         fail(422, "preflight_failed", "Preflight checks must pass before onboarding.")
     with connection() as conn:
         conn.execute(
             "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", ("onboard:" + data.tenant_id,)
         )
         existing = conn.execute(
-            "SELECT * FROM obs.tenants WHERE tenant_id=%s", (data.tenant_id,)
+            "SELECT status FROM obs.tenants WHERE tenant_id=%s", (data.tenant_id,)
         ).fetchone()
-        request = conn.execute(
+        old = conn.execute(
             "SELECT payload FROM obs.onboarding_requests WHERE tenant_id=%s", (data.tenant_id,)
         ).fetchone()
         if existing:
-            if (
-                existing["status"] != "onboarding"
-                or not request
-                or request["payload"] != data.model_dump()
-            ):
+            if not old or old["payload"] != data.model_dump():
                 fail(
                     409,
                     "tenant_exists",
-                    "Tenant already exists with a different configuration or completed onboarding.",
+                    "This tenant slug is already registered with a different configuration.",
                 )
+            workflow_id = None
         else:
             conn.execute(
                 """INSERT INTO obs.tenants(tenant_id,display_name,status,has_mysql,has_mongo,warehouse_schema,freshness_sla_min,owner_email)
@@ -170,11 +119,32 @@ def start_live(data: OnboardInput, actor: str) -> dict:
                 "INSERT INTO obs.onboarding_requests(tenant_id,payload) VALUES(%s,%s)",
                 (data.tenant_id, Jsonb(data.model_dump())),
             )
-            audit(conn, actor, "onboard_tenant", data.tenant_id, {"simulated": False})
+            workflow_id = workflow.initialize(conn, data)
+            if not live:
+                conn.execute(
+                    "INSERT INTO obs.demo_jobs(job_key,kind,tenant_id,payload) VALUES(%s,'onboarding',%s,%s)",
+                    (f"onboard:{data.tenant_id}", data.tenant_id, Jsonb(data.model_dump())),
+                )
+            conn.execute(
+                "INSERT INTO obs.tenant_events(tenant_id,step,status,message) VALUES(%s,'Coordinator','started','Seven-DAG onboarding requested')",
+                (data.tenant_id,),
+            )
+            audit(
+                conn,
+                actor,
+                "onboard_tenant",
+                data.tenant_id,
+                {"simulated": not live, "workflow_id": workflow_id},
+            )
             notify(
                 conn,
                 "onboarding.step",
-                {"tenant_id": data.tenant_id, "step": "Requested", "status": "started"},
+                {"tenant_id": data.tenant_id, "step": "coordinator", "status": "queued"},
             )
-    execute("onboard", data.tenant_id, actor, data.model_dump(), f"onboard:{data.tenant_id}")
-    return {"tenant_id": data.tenant_id, "status": "onboarding", "events": []}
+    if live and workflow_id:
+        workflow.trigger_node(workflow_id, "coordinator")
+    return workflow.progress(data.tenant_id)
+
+
+def start_live(data: OnboardInput, actor: str) -> dict:
+    return start(data, actor)

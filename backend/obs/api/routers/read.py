@@ -345,14 +345,18 @@ def alerts(
 
 
 @router.get(
-    "/alert-rules", response_model=s.Page[s.Rule], dependencies=[Depends(require_role("admin"))]
+    "/alert-rules",
+    response_model=s.Page[s.Rule],
+    dependencies=[Depends(require_role("admin", "manage_alerts"))],
 )
 def rules(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     return a.page(rows("SELECT * FROM obs.alert_rules ORDER BY rule_id"), page, page_size)
 
 
 @router.get(
-    "/channels", response_model=s.Page[s.Channel], dependencies=[Depends(require_role("admin"))]
+    "/channels",
+    response_model=s.Page[s.Channel],
+    dependencies=[Depends(require_role("admin", "manage_alerts"))],
 )
 def channels(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     return a.page(
@@ -363,20 +367,11 @@ def channels(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
 @router.get(
     "/onboarding/{tenant_id}",
     response_model=s.OnboardProgress,
-    dependencies=[Depends(require_role("operator"))],
 )
 def onboarding(tenant_id: str) -> dict:
-    tenant = one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant_id,))
-    if not tenant:
-        fail(404, "tenant_not_found", "Tenant not found.")
-    return {
-        "tenant_id": tenant_id,
-        "status": tenant["status"],
-        "events": rows(
-            "SELECT * FROM obs.tenant_events WHERE tenant_id=%s ORDER BY at,id LIMIT 100",
-            (tenant_id,),
-        ),
-    }
+    from obs.onboarding.workflow import progress
+
+    return progress(tenant_id)
 
 
 @router.get("/platform/health", response_model=s.Platform)
@@ -402,7 +397,9 @@ def search(
 
 
 @router.get(
-    "/audit", response_model=s.Page[s.AuditEntry], dependencies=[Depends(require_role("admin"))]
+    "/audit",
+    response_model=s.Page[s.AuditEntry],
+    dependencies=[Depends(require_role("admin", "manage_users"))],
 )
 def audit(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     total = one("SELECT count(*) AS n FROM obs.audit_log")["n"]
@@ -419,7 +416,11 @@ def audit(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     }
 
 
-@router.get("/users", response_model=s.Page[s.User], dependencies=[Depends(require_role("admin"))])
+@router.get(
+    "/users",
+    response_model=s.Page[s.User],
+    dependencies=[Depends(require_role("admin", "manage_users"))],
+)
 def users(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     return a.page(
         rows("SELECT user_id,email,display_name,role,role_name FROM obs.users ORDER BY user_id"),
@@ -429,7 +430,9 @@ def users(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
 
 
 @router.get(
-    "/operations", response_model=s.Page[s.Operation], dependencies=[Depends(require_role("admin"))]
+    "/operations",
+    response_model=s.Page[s.Operation],
+    dependencies=[Depends(require_role("admin", "manage_platform"))],
 )
 def operations() -> dict:
     items = rows(
@@ -442,7 +445,9 @@ def operations() -> dict:
 
 
 @router.get(
-    "/deliveries", response_model=s.Page[s.Delivery], dependencies=[Depends(require_role("admin"))]
+    "/deliveries",
+    response_model=s.Page[s.Delivery],
+    dependencies=[Depends(require_role("admin", "manage_platform"))],
 )
 def deliveries() -> dict:
     items = rows(
@@ -454,9 +459,7 @@ def deliveries() -> dict:
 
 
 @router.get("/warehouse", response_model=s.WarehouseView)
-def warehouse(
-    tenant: str, user: dict = Depends(current_user)
-) -> dict:
+def warehouse(tenant: str, user: dict = Depends(current_user)) -> dict:
     if not one("SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (tenant,)):
         fail(404, "tenant_not_found", "Tenant not found.")
     tables = rows(
@@ -472,9 +475,7 @@ def warehouse(
             {
                 "table_name": t["table_name"],
                 "row_count": t["row_count"],
-                "last_loaded_at": t["last_loaded_at"].isoformat()
-                if t["last_loaded_at"]
-                else None,
+                "last_loaded_at": t["last_loaded_at"].isoformat() if t["last_loaded_at"] else None,
             }
             for t in tables
         ],

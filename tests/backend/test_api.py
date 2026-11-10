@@ -249,51 +249,74 @@ def test_pause_resume_and_audit(clients: dict) -> None:
             conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant,))
 
 
-def test_change_password_flow(clients: dict) -> None:
-    import os
+@pytest.fixture
+def temporary_local_user():
+    from obs.auth import hasher
 
-    from fastapi.testclient import TestClient
+    created = []
 
-    from obs.api.main import app
+    def create(role):
+        email = f"test-{uuid4().hex}@example.test"
+        with connection() as conn:
+            user = conn.execute(
+                "INSERT INTO obs.users(email,display_name,role,password_hash) VALUES(%s,'Password Test',%s,%s) RETURNING user_id",
+                (email, role, hasher.hash("original password")),
+            ).fetchone()
+        created.append(user["user_id"])
+        return {"email": email, "user_id": user["user_id"]}
 
-    client = TestClient(app, base_url="https://localhost")
-    password = os.getenv("DEMO_PASSWORD", "demo")
-    login = client.post(
-        "/api/auth/login",
-        json={"email": "viewer@demo.local", "password": password},
-    )
-    assert login.status_code == 200, login.text
-    client.headers["X-CSRF-Token"] = login.json()["csrf_token"]
-    wrong = client.post(
-        "/api/auth/change-password",
-        json={"current_password": "not-the-password", "new_password": "new-secret-42"},
-    )
-    assert wrong.status_code == 401
-    weak = client.post(
-        "/api/auth/change-password",
-        json={"current_password": password, "new_password": "short"},
-    )
-    assert weak.status_code == 422
-    changed = client.post(
-        "/api/auth/change-password",
-        json={"current_password": password, "new_password": "new-secret-42"},
-    )
-    assert changed.status_code == 200, changed.text
-    relogin = TestClient(app, base_url="https://localhost")
-    ok = relogin.post(
-        "/api/auth/login",
-        json={"email": "viewer@demo.local", "password": "new-secret-42"},
-    )
-    assert ok.status_code == 200, ok.text
-    # Restore the shared demo password so other tests keep working.
-    relogin.headers["X-CSRF-Token"] = ok.json()["csrf_token"]
-    restored = relogin.post(
-        "/api/auth/change-password",
-        json={"current_password": "new-secret-42", "new_password": password},
-    )
-    assert restored.status_code == 200, restored.text
-    client.close()
-    relogin.close()
+    yield create
+    with connection() as conn:
+        for uid in created:
+            conn.execute("DELETE FROM obs.sessions WHERE user_id=%s", (uid,))
+            conn.execute("DELETE FROM obs.users WHERE user_id=%s", (uid,))
+
+
+def test_change_password_flow(temporary_local_user) -> None:
+    account = temporary_local_user("viewer")
+    with TestClient(app, base_url="https://localhost") as client:
+        login = client.post(
+            "/api/auth/login",
+            json={"email": account["email"], "password": "original password"},
+        )
+        assert login.status_code == 200, login.text
+        client.headers["X-CSRF-Token"] = login.json()["csrf_token"]
+        wrong = client.post(
+            "/api/auth/change-password",
+            json={
+                "current_password": "not-the-password",
+                "new_password": "new-secret-42",
+            },
+        )
+        assert wrong.status_code == 403
+        weak = client.post(
+            "/api/auth/change-password",
+            json={"current_password": "original password", "new_password": "short"},
+        )
+        assert weak.status_code == 422
+        reused = client.post(
+            "/api/auth/change-password",
+            json={
+                "current_password": "original password",
+                "new_password": "original password",
+            },
+        )
+        assert reused.status_code == 422
+        assert reused.json()["error"]["code"] == "password_reused"
+        changed = client.post(
+            "/api/auth/change-password",
+            json={
+                "current_password": "original password",
+                "new_password": "new-secret-42",
+            },
+        )
+        assert changed.status_code == 200, changed.text
+        with TestClient(app, base_url="https://localhost") as relogin:
+            ok = relogin.post(
+                "/api/auth/login",
+                json={"email": account["email"], "password": "new-secret-42"},
+            )
+            assert ok.status_code == 200, ok.text
 
 
 def test_roles_reset_and_trigger(clients: dict) -> None:
@@ -331,36 +354,27 @@ def test_roles_reset_and_trigger(clients: dict) -> None:
     assert deleted.status_code == 200, deleted.text
 
 
-def test_admin_password_reset(clients: dict) -> None:
-    import os
-
-    from fastapi.testclient import TestClient
-
-    from obs.api.main import app
-
-    admin = clients["admin"]
-    users = admin.get("/api/users").json()["items"]
-    operator = next(u for u in users if u["email"] == "operator@demo.local")
-    reset = admin.post(f"/api/users/{operator['user_id']}/reset-password")
+def test_admin_password_reset(clients: dict, temporary_local_user) -> None:
+    account = temporary_local_user("operator")
+    reset = clients["admin"].post(f"/api/users/{account['user_id']}/reset-password")
     assert reset.status_code == 200, reset.text
     temporary = reset.json()["temporary_password"]
     assert temporary
-    fresh = TestClient(app, base_url="https://localhost")
-    login = fresh.post(
-        "/api/auth/login",
-        json={"email": "operator@demo.local", "password": temporary},
-    )
-    assert login.status_code == 200, login.text
-    fresh.headers["X-CSRF-Token"] = login.json()["csrf_token"]
-    back = fresh.post(
-        "/api/auth/change-password",
-        json={
-            "current_password": temporary,
-            "new_password": os.getenv("DEMO_PASSWORD", "demo"),
-        },
-    )
-    assert back.status_code == 200, back.text
-    fresh.close()
+    with TestClient(app, base_url="https://localhost") as fresh:
+        login = fresh.post(
+            "/api/auth/login",
+            json={"email": account["email"], "password": temporary},
+        )
+        assert login.status_code == 200, login.text
+        fresh.headers["X-CSRF-Token"] = login.json()["csrf_token"]
+        changed = fresh.post(
+            "/api/auth/change-password",
+            json={
+                "current_password": temporary,
+                "new_password": "a secure replacement password",
+            },
+        )
+        assert changed.status_code == 200, changed.text
 
 
 def test_workflow_trigger_and_warehouse(clients: dict) -> None:
@@ -370,14 +384,59 @@ def test_workflow_trigger_and_warehouse(clients: dict) -> None:
     body = workflow.json()
     assert body["tenant_id"] == "acme_retail"
     assert {s["source"] for s in body["sources"]} == {"mysql", "mongo"}
-    triggered = operator.post(
-        "/api/tenants/acme_retail/trigger", json={"dag": "mysql_initial"}
-    )
-    assert triggered.status_code == 200, triggered.text
-    unknown = operator.post("/api/tenants/acme_retail/trigger", json={"dag": "nope"})
-    assert unknown.status_code == 404
+    tenant_id = f"trigger_test_{uuid4().hex[:12]}"
+    with connection() as conn:
+        conn.execute(
+            "INSERT INTO obs.tenants(tenant_id,display_name,status) VALUES(%s,%s,'active')",
+            (tenant_id, "Trigger test"),
+        )
+    try:
+        triggered = operator.post(
+            f"/api/tenants/{tenant_id}/trigger", json={"dag": "mysql_initial"}
+        )
+        assert triggered.status_code == 403, triggered.text
+        locked = operator.post(
+            f"/api/tenants/{tenant_id}/trigger", json={"dag": "analytics_marts"}
+        )
+        assert locked.status_code == 422, locked.text
+        eligible = operator.post(
+            "/api/tenants/acme_retail/trigger", json={"dag": "analytics_marts"}
+        )
+        assert eligible.status_code == 200, eligible.text
+        unknown = operator.post(
+            f"/api/tenants/{tenant_id}/trigger", json={"dag": "nope"}
+        )
+        assert unknown.status_code == 404
+    finally:
+        with connection() as conn:
+            conn.execute("DELETE FROM obs.demo_jobs WHERE tenant_id=%s", (tenant_id,))
+            conn.execute(
+                "DELETE FROM obs.tenant_events WHERE tenant_id=%s", (tenant_id,)
+            )
+            conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant_id,))
     warehouse = operator.get("/api/warehouse", params={"tenant": "acme_retail"})
     assert warehouse.status_code == 200, warehouse.text
     view = warehouse.json()
     assert view["table_count"] >= 1
     assert view["total_rows"] > 0
+
+
+def test_pipeline_catalog_includes_demo_analytics(clients: dict) -> None:
+    response = clients["viewer"].get("/api/pipelines/catalog")
+    assert response.status_code == 200, response.text
+    dags = {dag["node_id"]: dag for dag in response.json()["dags"]}
+    assert {
+        "coordinator",
+        "mysql_provision",
+        "mysql_initial",
+        "mysql_cdc",
+        "mongo_provision",
+        "mongo_initial",
+        "mongo_cdc",
+        "analytics_marts",
+        "analytics_rollup",
+        "analytics_quality",
+    } <= dags.keys()
+    for node in ("analytics_marts", "analytics_rollup", "analytics_quality"):
+        assert dags[node]["depends_on"] == ["mysql_initial"]
+        assert dags[node]["run_policy"] == "Demo only"

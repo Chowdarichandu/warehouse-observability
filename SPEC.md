@@ -1201,3 +1201,10 @@ Deployment, IAM, ECR and monitoring artifacts are under deploy/ and .github/work
 
 22. Authorized enhancements (2026-11-09)
 The user authorized recommendations 4–7: dependency visualization, bounded built-in data-quality checks, operator investigation tools, and release safeguards, with parallel subagents. Dependencies derive configured routing and observed execution/catalog relationships; they do not claim verified SQL lineage. Quality rules are typed built-ins (null rate, duplicate keys, accepted values, schema contract), never free-form SQL. Samples are bounded, read-only, tenant-schema-scoped and return aggregate evidence only. QUALITY_ENABLED=false gates live evaluation; QUALITY_INTERVAL_SEC=60 polls per-check due schedules. Private saved run views, comparison, log navigation, and unified event timelines use existing authentication/auditing/redaction. CI adds dependency/image vulnerability checks, a synthetic restore drill, and bounded local load smoke; deployment signatures are verified by image digest. No production calls or changes to existing team DAGs are part of this work.
+
+
+23. Demo review: System Engines uses one onboarding coordinator, separate MySQL and MongoDB provisioning DAGs, and initial-load and CDC DAGs for each source. MongoDB uses a shared cluster with tenant identity in `tenant_id`; MySQL uses tenant-specific databases. Live onboarding remains disabled pending validated tenant filtering, DAG IDs and recovery. SERVICE_KIND=console is required for the API; Airflow workers use SERVICE_KIND=airflow_worker. ONBOARDING_DAG_IDS optionally overrides DAG identifiers.
+
+
+24. Demo access and workflow controls (2026-11-10)
+Manual workflow triggering is limited to the listed demo analytics DAGs and requires a successful MySQL initial load for that tenant. Source provisioning, initial-load, and CDC DAGs are managed by onboarding and schedules, not this manual control. Live manual analytics execution remains unavailable. DEMO_UNSAFE_SELF_SERVICE_PASSWORD_RESET defaults to false; enabling it permits unauthenticated password resets and is only suitable for an isolated disposable demo.

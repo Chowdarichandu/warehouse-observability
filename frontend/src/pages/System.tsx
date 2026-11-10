@@ -329,7 +329,10 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
 
 export function Admin() {
   const { isAdmin, notify, runtime } = useApp();
-  const { page, set } = useFilters();
+  const { page, set, params } = useFilters();
+  const section = ['users', 'roles', 'operations', 'audit'].includes(params.get('section') || '')
+    ? params.get('section')!
+    : 'users';
   const client = useQueryClient();
   const users = useQuery({
     queryKey: ['users'],
@@ -379,89 +382,132 @@ export function Admin() {
         title="Administration"
         description="Manage workspace access and review a complete history of actions."
       />
-      <Panel
-        title="Users & roles"
-        subtitle="Viewers inspect. Operators act. Administrators manage access and settings."
-      >
-        {users.isPending ? (
-          <Loading />
-        ) : users.error ? (
-          <ErrorState error={users.error} />
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Authentication</th>
-                  <th>Password</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.data.items.map((user) => (
-                  <tr key={user.user_id}>
-                    <td>
-                      <strong>{user.display_name}</strong>
-                    </td>
-                    <td>{user.email}</td>
-                    <td>
-                      <select
-                        aria-label={`Role for ${user.email}`}
-                        value={user.role_name || user.role}
-                        disabled={update.isPending || runtime.auth_provider === 'oidc'}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          update.mutate({
-                            id: user.user_id,
-                            body: ['viewer', 'operator', 'admin'].includes(value)
-                              ? { role: value }
-                              : { role_name: value },
-                          });
-                        }}
-                      >
-                        <optgroup label="Built-in roles">
-                          {['viewer', 'operator', 'admin'].map((role) => (
-                            <option key={role} value={role}>
-                              {role}
-                            </option>
-                          ))}
-                        </optgroup>
-                        {customRoles.length > 0 && (
-                          <optgroup label="Custom roles">
-                            {customRoles.map((role) => (
-                              <option key={role.name} value={role.name}>
-                                {role.name} ({role.base_level})
+      <div className="admin-intro">
+        <div>
+          <strong>Workspace controls</strong>
+          <span>Manage identities, permissions, operational outcomes, and audit records.</span>
+        </div>
+        <Link to="/access" className="button">
+          View access policy
+        </Link>
+      </div>
+      <nav className="admin-tabs" aria-label="Administration sections">
+        {[
+          ['users', 'Users'],
+          ['roles', 'Roles'],
+          ['operations', 'Operations'],
+          ['audit', 'Audit trail'],
+        ].map(([id, label]) => (
+          <button
+            type="button"
+            key={id}
+            aria-current={section === id ? 'page' : undefined}
+            onClick={() => set('section', id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      {section === 'users' && (
+        <Panel
+          title="Users & roles"
+          subtitle="Viewers inspect. Operators act. Administrators manage access and settings."
+        >
+          {users.isPending ? (
+            <Loading />
+          ) : users.error ? (
+            <ErrorState error={users.error} />
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Authentication</th>
+                    <th>Password</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.data.items.map((user) => (
+                    <tr key={user.user_id}>
+                      <td>
+                        <strong>{user.display_name}</strong>
+                      </td>
+                      <td>{user.email}</td>
+                      <td>
+                        <select
+                          aria-label={`Role for ${user.email}`}
+                          value={user.role_name || user.role}
+                          disabled={update.isPending || runtime.auth_provider === 'oidc'}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (!window.confirm(`Change ${user.email}'s role to ${value}?`)) return;
+                            update.mutate({
+                              id: user.user_id,
+                              body: ['viewer', 'operator', 'admin'].includes(value)
+                                ? { role: value }
+                                : { role_name: value },
+                            });
+                          }}
+                        >
+                          <optgroup label="Built-in roles">
+                            {['viewer', 'operator', 'admin'].map((role) => (
+                              <option key={role} value={role}>
+                                {role}
                               </option>
                             ))}
                           </optgroup>
-                        )}
-                      </select>
-                    </td>
-                    <td>
-                      <span className="tag">
-                        {runtime.auth_provider === 'oidc' ? 'ORGANIZATION SSO' : 'LOCAL · ARGON2'}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="button small"
-                        disabled={reset.isPending || runtime.auth_provider === 'oidc'}
-                        onClick={() => reset.mutate(user.user_id)}
-                      >
-                        <KeyRound size={13} /> Reset
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel>
-      {roles.data && <RolesPanel roles={roles.data} />}
-      <Operations />
+                          {customRoles.length > 0 && (
+                            <optgroup label="Custom roles">
+                              {customRoles.map((role) => (
+                                <option key={role.name} value={role.name}>
+                                  {role.name} ({role.base_level})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      </td>
+                      <td>
+                        <span className="tag">
+                          {runtime.auth_provider === 'oidc' ? 'ORGANIZATION SSO' : 'LOCAL · ARGON2'}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="button small"
+                          disabled={reset.isPending || runtime.auth_provider === 'oidc'}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Reset the password for ${user.email}? Existing sessions will be revoked.`,
+                              )
+                            )
+                              reset.mutate(user.user_id);
+                          }}
+                        >
+                          <KeyRound size={13} /> Reset
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      )}
+      {section === 'roles' &&
+        (roles.isPending ? (
+          <Loading />
+        ) : roles.error ? (
+          <ErrorState error={roles.error} />
+        ) : (
+          roles.data && <RolesPanel roles={roles.data} />
+        ))}
+      {section === 'operations' && <Operations />}
       {resetInfo && (
         <div className="modal-scrim" role="presentation" onClick={() => setResetInfo(null)}>
           <div
@@ -490,129 +536,218 @@ export function Admin() {
           </div>
         </div>
       )}
-      <Panel
-        title="Audit trail"
-        subtitle="Every successful mutation records its actor, target, and timestamp."
-      >
-        {audit.isPending ? (
-          <Loading />
-        ) : audit.error ? (
-          <ErrorState error={audit.error} />
-        ) : audit.data.items.length ? (
-          <>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>When</th>
-                    <th>Actor</th>
-                    <th>Action</th>
-                    <th>Target</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {audit.data.items.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>
-                        <Time value={entry.at} />
-                      </td>
-                      <td className="mono">{entry.actor}</td>
-                      <td>
-                        <span className="tag">{entry.action.replaceAll('_', ' ')}</span>
-                      </td>
-                      <td className="mono truncate-cell" title={entry.target || ''}>
-                        {entry.target || '—'}
-                      </td>
-                      <td className="mono truncate-cell">{JSON.stringify(entry.details)}</td>
+      {section === 'audit' && (
+        <Panel
+          title="Audit trail"
+          subtitle="Every successful mutation records its actor, target, and timestamp."
+        >
+          {audit.isPending ? (
+            <Loading />
+          ) : audit.error ? (
+            <ErrorState error={audit.error} />
+          ) : audit.data.items.length ? (
+            <>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Actor</th>
+                      <th>Action</th>
+                      <th>Target</th>
+                      <th>Details</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pagination
-              total={audit.data.total}
-              page={page}
-              onChange={(p) => set('page', String(p))}
-            />
-          </>
-        ) : (
-          <Empty title="No actions recorded yet" />
-        )}
-      </Panel>
+                  </thead>
+                  <tbody>
+                    {audit.data.items.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>
+                          <Time value={entry.at} />
+                        </td>
+                        <td className="mono">{entry.actor}</td>
+                        <td>
+                          <span className="tag">{entry.action.replaceAll('_', ' ')}</span>
+                        </td>
+                        <td className="mono truncate-cell" title={entry.target || ''}>
+                          {entry.target || '—'}
+                        </td>
+                        <td className="mono truncate-cell">{JSON.stringify(entry.details)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                total={audit.data.total}
+                page={page}
+                onChange={(p) => set('page', String(p))}
+              />
+            </>
+          ) : (
+            <Empty title="No actions recorded yet" />
+          )}
+        </Panel>
+      )}
     </>
   );
 }
 
+const SEARCH_PAGES = [
+  { label: 'Overview', path: '/', keywords: 'health dashboard' },
+  { label: 'Tenants', path: '/tenants', keywords: 'customers sources' },
+  { label: 'Pipeline orchestration', path: '/pipelines', keywords: 'dag workflow pipelines' },
+  { label: 'Pipeline runs', path: '/runs', keywords: 'logs jobs execution' },
+  { label: 'Errors', path: '/errors', keywords: 'failures investigation' },
+  { label: 'Alerts', path: '/alerts', keywords: 'notifications incidents' },
+  { label: 'Data quality', path: '/quality', keywords: 'checks validation' },
+  { label: 'Warehouse', path: '/warehouse', keywords: 'database tables' },
+  { label: 'Access & roles', path: '/access', keywords: 'permissions security' },
+  { label: 'Account settings', path: '/account', keywords: 'profile password' },
+  { label: 'Administration', path: '/admin', keywords: 'users roles settings', admin: true },
+];
+
 export function SearchResults() {
   const { params, set, page } = useFilters();
-  const term = params.get('q') || '';
+  const { isAdmin } = useApp();
+  const term = (params.get('q') || '').trim();
+  const enabled = term.length >= 2;
   const query = useQuery({
     queryKey: ['search', term, page],
     queryFn: () =>
       api<Schema<'Page_SearchHit_'>>(`/search?q=${encodeURIComponent(term)}&page=${page}`),
-    enabled: term.length > 1,
+    enabled,
+    placeholderData: () => undefined,
   });
+  const tenants = useQuery({
+    queryKey: ['search-tenants', term],
+    queryFn: () =>
+      api<Schema<'Page_Tenant_'>>(`/tenants?q=${encodeURIComponent(term)}&page_size=10`),
+    enabled,
+    placeholderData: () => undefined,
+  });
+  const pages = enabled
+    ? SEARCH_PAGES.filter(
+        (item) =>
+          (!item.admin || isAdmin) &&
+          `${item.label} ${item.keywords}`.toLowerCase().includes(term.toLowerCase()),
+      )
+    : [];
   return (
     <>
       <PageHeader
-        title="Search your pipelines"
-        description="Full-text search across classified errors and stored, redacted logs."
+        title="Search"
+        description="Find tenants, console pages, and evidence in pipeline logs."
       />
-      <Panel>
+      <Panel className="search-panel">
         <form
-          className="filter-bar"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const data = new FormData(e.currentTarget);
-            set('q', String(data.get('q')));
+          className="filter-bar search-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            set('q', String(data.get('q')).trim());
           }}
         >
           <label className="search-field wide">
-            <Search size={16} />
+            <Search size={17} />
             <input
+              key={term}
               name="q"
               aria-label="Search query"
-              placeholder="Try binlog, replication, or schema…"
+              placeholder="Search tenants, logs, or pages"
               defaultValue={term}
-              minLength={2}
+              maxLength={200}
               required
             />
           </label>
           <button className="button primary">Search</button>
         </form>
-        {term.length < 2 ? (
-          <Empty title="Find a clue, follow the run">
-            Enter at least two characters to search.
+        {!enabled ? (
+          <Empty title="Search your workspace">
+            Enter at least two characters to find tenants, pages, errors, and logs.
           </Empty>
-        ) : query.isPending ? (
-          <Loading />
-        ) : query.error ? (
-          <ErrorState error={query.error} />
-        ) : query.data?.items.length ? (
-          <>
-            <div className="search-results">
-              {query.data.items.map((hit) => (
-                <Link to={runPath(hit.run_key)} key={hit.run_key}>
-                  <div className="inline-flex">
-                    <strong>{hit.tenant_id}</strong>
-                    <span className="tag mono">{hit.error_class}</span>
-                  </div>
-                  <p>{hit.excerpt}</p>
-                  <small>
-                    <Time value={hit.started_at} />
-                  </small>
-                </Link>
-              ))}
-            </div>
-            <Pagination
-              total={query.data.total}
-              page={page}
-              onChange={(p) => set('page', String(p))}
-            />
-          </>
         ) : (
-          <Empty title={`No matches for “${term}”`} />
+          <div className="search-sections">
+            {pages.length > 0 && (
+              <section className="search-section">
+                <h2>
+                  Pages <span>{pages.length}</span>
+                </h2>
+                <div className="search-shortcuts">
+                  {pages.map((item) => (
+                    <Link key={item.path} to={item.path}>
+                      {item.label}
+                      <span aria-hidden="true">↗</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+            <section className="search-section">
+              <h2>Tenants {tenants.data && <span>{tenants.data.total}</span>}</h2>
+              {tenants.isPending ? (
+                <Loading />
+              ) : tenants.error ? (
+                <ErrorState error={tenants.error} />
+              ) : tenants.data?.items.length ? (
+                <div className="tenant-search-results">
+                  {tenants.data.items.map((tenant) => (
+                    <Link
+                      key={tenant.tenant_id}
+                      to={`/tenants/${encodeURIComponent(tenant.tenant_id)}`}
+                    >
+                      <div className="inline-flex">
+                        <strong>{tenant.display_name}</strong>
+                        <StatusPill status={tenant.health} />
+                      </div>
+                      <small>{tenant.tenant_id}</small>
+                    </Link>
+                  ))}
+                  {tenants.data.total > tenants.data.items.length && (
+                    <Link to={`/tenants?q=${encodeURIComponent(term)}`}>
+                      View all {tenants.data.total} matching tenants →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <p className="search-empty">No matching tenants.</p>
+              )}
+            </section>
+            <section className="search-section">
+              <h2>Errors & logs {query.data && <span>{query.data.total}</span>}</h2>
+              <p className="search-hint">
+                Searches words in classified errors and redacted run logs.
+              </p>
+              {query.isPending ? (
+                <Loading />
+              ) : query.error ? (
+                <ErrorState error={query.error} />
+              ) : query.data?.items.length ? (
+                <>
+                  <div className="search-results">
+                    {query.data.items.map((hit) => (
+                      <Link to={runPath(hit.run_key)} key={hit.run_key}>
+                        <div className="inline-flex">
+                          <strong>{hit.tenant_id}</strong>
+                          {hit.error_class && <span className="tag mono">{hit.error_class}</span>}
+                        </div>
+                        <p>{hit.excerpt}</p>
+                        <small>
+                          <Time value={hit.started_at} />
+                        </small>
+                      </Link>
+                    ))}
+                  </div>
+                  <Pagination
+                    total={query.data.total}
+                    page={page}
+                    onChange={(p) => set('page', String(p))}
+                  />
+                </>
+              ) : (
+                <p className="search-empty">No matching errors or logs. Try a different word.</p>
+              )}
+            </section>
+          </div>
         )}
       </Panel>
     </>
