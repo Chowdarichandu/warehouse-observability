@@ -115,9 +115,7 @@ export function Errors() {
                         }
                       >
                         <strong>{g.error_class}</strong>
-                        <span className="has-tip tip-below" data-tip={g.sample_message}>
-                          <span className="sample-text">{g.sample_message}</span>
-                        </span>
+                        <span className="sample-text">{g.sample_message}</span>
                       </button>
                     </td>
                     <td>
