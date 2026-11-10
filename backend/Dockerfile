@@ -8,7 +8,7 @@ COPY --from=postgres_tools /usr/lib/postgresql/16/bin/pg_restore /usr/local/bin/
 COPY backend/ /app/
 COPY sql/ /app/sql/
 COPY deploy/certs/ /app/certs/
-RUN pip install --no-cache-dir -r requirements.lock && pip install --no-cache-dir --no-deps . && useradd --uid 10001 --create-home obs
+RUN pip install --no-cache-dir -r requirements.lock && pip install --no-cache-dir --no-deps . && pip uninstall -y setuptools wheel && useradd --uid 10001 --create-home obs
 USER 10001:10001
 EXPOSE 8000
 ENTRYPOINT ["python", "-m", "obs.entrypoint", "--"]
