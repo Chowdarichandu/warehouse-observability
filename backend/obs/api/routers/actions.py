@@ -168,7 +168,7 @@ def test_channel(id: str, user: dict = Depends(require_role("admin"))) -> dict:
     if not one("SELECT 1 FROM obs.notification_channels WHERE channel_id=%s AND enabled", (id,)):
         fail(404, "channel_not_found", "Enabled channel not found.")
     with connection() as conn:
-        deliver(conn, id, "test", "TenantScope · Test notification")
+        deliver(conn, id, "test", "Pravah · Test notification")
         audit(conn, user["email"], "test_channel", id, {"simulated": settings().mode == "demo"})
     return {
         "message": "Test notification recorded locally. Demo mode sends no external messages."

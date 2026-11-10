@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="TenantScope API",
+    title="Pravah API",
     version="0.2.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
