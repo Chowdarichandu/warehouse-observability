@@ -621,3 +621,83 @@ select:focus-visible,
   cursor: pointer;
   text-align: left;
 }
+
+/* --- Dropdown unification: every select matches the app's controls --- */
+select:not([multiple]) {
+  min-height: 36px;
+  padding: 0 32px 0 12px;
+  font-size: 13px;
+  font-weight: 550;
+  border-radius: 8px;
+}
+select:not([multiple]):hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+/* Time range picker: the label is the single chip, the select inside is
+   chromeless so there is no box-inside-a-box. */
+.range-picker {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  gap: 8px;
+}
+.range-picker:focus-within {
+  border-color: #39a18d;
+  box-shadow: 0 0 0 3px #198b7312;
+}
+.range-picker select:not([multiple]) {
+  appearance: none;
+  border: 0;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23788c97' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  padding: 0 18px 0 0;
+  min-height: 0;
+  height: auto;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text);
+}
+.range-picker select:focus {
+  box-shadow: none;
+}
+
+/* Context overrides that drifted from the shared control style. */
+.activity-controls select:not([multiple]) {
+  font-size: 13px;
+  max-width: 260px;
+}
+.quality-form select:not([multiple]) {
+  background-color: var(--surface);
+}
+.text-size-control select:not([multiple]) {
+  background-color: var(--surface);
+  border-color: var(--line);
+  color: var(--text);
+  min-height: 36px;
+  font-size: 13px;
+}
+
+/* Filter bars: search field and dropdowns share height and text size. */
+.filter-bar .search-field {
+  min-height: 36px;
+  box-sizing: border-box;
+}
+.filter-bar .search-field input {
+  font-size: 13px;
+}
+.filter-bar .compact-input {
+  font-size: 13px;
+  min-height: 36px;
+}
+
+/* Panel-header dropdowns (e.g. Warehouse client picker) stay inside the card. */
+.panel-heading select:not([multiple]) {
+  max-width: 250px;
+  text-overflow: ellipsis;
+}
+.panel-heading > div:first-child {
+  min-width: 0;
+}
