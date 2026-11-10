@@ -3939,19 +3939,21 @@ button.workspace-switch:hover {
 .roles-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 16px;
+  margin-bottom: 28px;
 }
 .role-card {
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 18px;
   animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .role-card-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 28px;
+  flex-wrap: wrap;
 }
 .role-card-head .icon-button {
   margin-left: auto;
@@ -3959,37 +3961,38 @@ button.workspace-switch:hover {
 .role-desc {
   color: var(--muted);
   font-size: 0.86rem;
-  margin: 6px 0;
+  line-height: 1.5;
+  margin: 12px 0 0;
 }
 .role-perms {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 14px;
 }
 .role-form {
-  margin-top: 20px;
-  padding: 20px;
+  margin-top: 0;
+  padding: 28px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--subtle);
 }
 .role-form-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
+  gap: 24px;
+  margin-bottom: 28px;
 }
 .role-form-heading h4 {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 .role-form-heading p {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.5;
@@ -3997,13 +4000,13 @@ button.workspace-switch:hover {
 .role-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 24px;
+  gap: 24px 28px;
 }
 .role-form-grid label,
 .role-form label {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -4011,33 +4014,33 @@ button.workspace-switch:hover {
   grid-column: 1 / -1;
 }
 .role-form input:not([type='checkbox']) {
-  min-height: 44px;
+  min-height: 48px;
 }
 .role-form .ui-select-btn {
-  min-height: 44px;
+  min-height: 48px;
 }
 .role-perms-picker {
   border: 1px solid var(--line);
-  border-radius: 10px;
-  margin: 22px 0 16px;
-  padding: 15px;
+  border-radius: 12px;
+  margin: 30px 0 22px;
+  padding: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 10px 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
 }
 .role-perms-picker legend {
   grid-column: 1 / -1;
-  padding: 0 7px;
-  margin-bottom: 2px;
+  padding: 0 9px;
+  margin-bottom: 6px;
   font-size: 0.85rem;
   font-weight: 650;
 }
 .role-perms-picker .check-row {
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 9px 11px;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -4057,25 +4060,54 @@ button.workspace-switch:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 8px;
+  gap: 20px;
+  margin-top: 18px;
 }
 @media (max-width: 720px) {
-  .role-form {
+  .roles-list {
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .role-card {
     padding: 16px;
+  }
+  .role-form {
+    padding: 20px;
+  }
+  .role-form-heading {
+    gap: 14px;
+    margin-bottom: 22px;
   }
   .role-form-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
   }
   .role-description-field {
     grid-column: auto;
   }
+  .role-perms-picker {
+    margin: 26px 0 18px;
+    padding: 18px;
+    gap: 12px;
+  }
+  .role-perms-picker .check-row {
+    min-height: 50px;
+    padding: 12px;
+  }
   .role-form-actions {
     align-items: stretch;
     flex-direction: column;
+    gap: 12px;
+    margin-top: 14px;
   }
   .role-form-actions .button {
     justify-content: center;
+  }
+}
+@media (max-width: 520px) {
+  .role-form-heading {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 .temp-password {

@@ -194,8 +194,24 @@ test("role creation stays readable and usable on desktop and mobile", async ({
   const descriptionBounds = await page
     .getByPlaceholder("e.g. On-call support engineers")
     .boundingBox();
+  const firstRoleCard = await page.locator(".role-card").nth(0).boundingBox();
+  const secondRoleCard = await page.locator(".role-card").nth(1).boundingBox();
+  const roleList = await page.locator(".roles-list").boundingBox();
+  const roleForm = await page.locator(".role-form").boundingBox();
   expect(nameBounds?.width).toBeGreaterThan(400);
   expect(descriptionBounds?.width).toBeGreaterThan(nameBounds?.width ?? 0);
+  expect(
+    (secondRoleCard?.x ?? 0) -
+      ((firstRoleCard?.x ?? 0) + (firstRoleCard?.width ?? 0)),
+  ).toBeGreaterThanOrEqual(14);
+  expect(
+    (roleForm?.y ?? 0) - ((roleList?.y ?? 0) + (roleList?.height ?? 0)),
+  ).toBeGreaterThanOrEqual(24);
+  await page.screenshot({
+    path: path.resolve("../output/screenshots/admin-roles.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(nameField).toBeVisible();
