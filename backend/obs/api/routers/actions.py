@@ -9,6 +9,7 @@ from obs.alerter.rules import PARAMS
 from obs.api import schemas as s
 from obs.audit import audit
 from obs.auth import (
+    PERMISSION_MIN_ROLE,
     PERMISSIONS,
     SYSTEM_ROLE_PERMISSIONS,
     effective_permissions,
@@ -491,6 +492,108 @@ def reset_password(id: int, user: dict = Depends(require_permission("manage_user
         "temporary_password": temporary,
         "simulated": settings().mode == "demo",
     }
+
+
+def _permissions_view(conn, target: dict) -> dict:
+    base = _target_bundle(conn, target)
+    row = conn.execute(
+        "SELECT grants, revokes FROM obs.user_permission_overrides WHERE user_id=%s",
+        (target["user_id"],),
+    ).fetchone()
+    grants = [p for p in (row["grants"] if row else []) if p in PERMISSIONS]
+    revokes = [p for p in (row["revokes"] if row else []) if p in PERMISSIONS]
+    merged = [p for p in base if p not in revokes]
+    merged += [p for p in grants if p not in merged]
+    return {
+        "user_id": target["user_id"],
+        "email": target["email"],
+        "role": target["role"],
+        "role_name": target.get("role_name"),
+        "bundle": base,
+        "grants": grants,
+        "revokes": revokes,
+        "effective": sorted(effective_permissions(target["role"], merged)),
+        "permissions": [
+            {"name": name, "min_role": PERMISSION_MIN_ROLE[name]} for name in PERMISSIONS
+        ],
+    }
+
+
+@router.get("/users/{id}/permissions", response_model=s.UserPermissionsOut)
+def get_user_permissions(
+    id: int, user: dict = Depends(require_role("admin", "manage_users"))
+) -> dict:
+    with connection() as conn:
+        target = conn.execute(
+            "SELECT user_id, email, role, role_name FROM obs.users WHERE user_id=%s", (id,)
+        ).fetchone()
+        if not target:
+            fail(404, "user_not_found", "User not found.")
+        return _permissions_view(conn, target)
+
+
+@router.put("/users/{id}/permissions", response_model=s.UserPermissionsOut)
+def set_user_permissions(
+    id: int,
+    data: s.UserPermissionsIn,
+    user: dict = Depends(require_role("admin", "manage_users")),
+) -> dict:
+    if settings().auth_provider == "oidc":
+        fail(
+            403,
+            "sso_managed_roles",
+            "Manage permissions through the configured identity provider groups.",
+        )
+    if any(p not in PERMISSIONS for p in data.grants + data.revokes):
+        fail(422, "unknown_permission", "Only known permissions can be set.")
+    grants = sorted(set(data.grants))
+    revokes = sorted(set(data.revokes))
+    if set(grants) & set(revokes):
+        fail(422, "conflicting_overrides", "A permission cannot be both granted and revoked.")
+    if id == user["user_id"]:
+        fail(409, "self_permissions", "You cannot change your own permissions.")
+    with connection() as conn:
+        conn.execute("SELECT pg_advisory_xact_lock(110531)")
+        target = conn.execute(
+            "SELECT * FROM obs.users WHERE user_id=%s FOR UPDATE", (id,)
+        ).fetchone()
+        if not target:
+            fail(404, "user_not_found", "User not found.")
+        base = _target_bundle(conn, target)
+        merged = [p for p in base if p not in revokes]
+        merged += [p for p in grants if p not in merged]
+        _check_grantable(user, target["role"], merged)
+        if target["role"] == "admin" and "manage_users" not in effective_permissions(
+            target["role"], merged
+        ):
+            admins = conn.execute(
+                "SELECT count(*) AS n FROM obs.users WHERE role='admin'"
+            ).fetchone()["n"]
+            if admins <= 1:
+                fail(
+                    409,
+                    "last_admin",
+                    "Keep at least one administrator who can manage users.",
+                )
+        conn.execute(
+            """
+            INSERT INTO obs.user_permission_overrides
+                (user_id, grants, revokes, updated_by, updated_at)
+            VALUES (%s, %s, %s, %s, now())
+            ON CONFLICT (user_id) DO UPDATE
+            SET grants = EXCLUDED.grants, revokes = EXCLUDED.revokes,
+                updated_by = EXCLUDED.updated_by, updated_at = now()
+            """,
+            (id, Jsonb(grants), Jsonb(revokes), user["email"]),
+        )
+        audit(
+            conn,
+            user["email"],
+            "set_user_permissions",
+            str(id),
+            {"grants": grants, "revokes": revokes, "user": redact(target["email"])},
+        )
+        return _permissions_view(conn, target)
 
 
 @router.post("/operations/{id}/reconcile", response_model=s.Message)

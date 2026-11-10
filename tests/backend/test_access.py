@@ -339,3 +339,94 @@ def test_admin_cannot_remove_own_account(clients):
     me = clients["admin"].get("/api/me").json()
     response = clients["admin"].delete(f"/api/users/{me['user_id']}")
     assert response.status_code == 409
+
+
+def _permissions_user_id(email: str) -> int:
+    return one("SELECT user_id FROM obs.users WHERE email=%s", (email,))["user_id"]
+
+
+def test_admin_views_user_permissions(clients):
+    operator = _permissions_user_id("operator@demo.local")
+    response = clients["admin"].get(f"/api/users/{operator}/permissions")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["role"] == "operator"
+    assert "manage_tenants" in body["bundle"]
+    assert body["grants"] == [] and body["revokes"] == []
+    assert body["effective"] == sorted(body["bundle"])
+    assert {item["name"] for item in body["permissions"]} == {
+        "view_console",
+        "trigger_pipelines",
+        "manage_tenants",
+        "manage_alerts",
+        "manage_users",
+        "manage_platform",
+    }
+
+
+def test_revoke_removes_permission_from_live_requests(clients, monkeypatch):
+    operator = _permissions_user_id("operator@demo.local")
+    called = []
+    monkeypatch.setattr(
+        actions, "start", lambda data, actor: called.append(data.tenant_id)
+    )
+    try:
+        response = clients["admin"].put(
+            f"/api/users/{operator}/permissions", json={"revokes": ["manage_tenants"]}
+        )
+        assert response.status_code == 200
+        assert "manage_tenants" not in response.json()["effective"]
+        denied = clients["operator"].post(
+            "/api/onboarding",
+            json={"tenant_id": "access_fixture", "display_name": "Access fixture"},
+        )
+        assert denied.status_code == 403
+        assert called == []
+    finally:
+        clients["admin"].put(
+            f"/api/users/{operator}/permissions", json={"grants": [], "revokes": []}
+        )
+
+
+def test_grant_above_role_rank_is_recorded_but_not_effective(clients):
+    operator = _permissions_user_id("operator@demo.local")
+    try:
+        response = clients["admin"].put(
+            f"/api/users/{operator}/permissions", json={"grants": ["manage_users"]}
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["grants"] == ["manage_users"]
+        assert "manage_users" not in body["effective"]
+    finally:
+        clients["admin"].put(
+            f"/api/users/{operator}/permissions", json={"grants": [], "revokes": []}
+        )
+
+
+def test_user_permissions_guards(clients):
+    admin = _permissions_user_id("admin@demo.local")
+    operator = _permissions_user_id("operator@demo.local")
+    assert (
+        clients["admin"]
+        .put(f"/api/users/{admin}/permissions", json={"revokes": ["manage_alerts"]})
+        .status_code
+        == 409
+    )
+    assert (
+        clients["admin"]
+        .put(f"/api/users/{operator}/permissions", json={"grants": ["fly_to_moon"]})
+        .status_code
+        == 422
+    )
+    assert (
+        clients["admin"]
+        .put(
+            f"/api/users/{operator}/permissions",
+            json={"grants": ["manage_alerts"], "revokes": ["manage_alerts"]},
+        )
+        .status_code
+        == 422
+    )
+    assert clients["operator"].get(f"/api/users/{operator}/permissions").status_code == 403
+    assert clients["admin"].get("/api/users/999999/permissions").status_code == 404

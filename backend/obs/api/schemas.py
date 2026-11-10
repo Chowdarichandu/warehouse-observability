@@ -518,6 +518,28 @@ class PasswordResetResult(BaseModel):
     simulated: bool = True
 
 
+class UserPermissionsIn(BaseModel):
+    grants: list[str] = []
+    revokes: list[str] = []
+
+
+class PermissionMeta(BaseModel):
+    name: str
+    min_role: str
+
+
+class UserPermissionsOut(BaseModel):
+    user_id: int
+    email: str
+    role: str
+    role_name: str | None = None
+    bundle: list[str] = []
+    grants: list[str] = []
+    revokes: list[str] = []
+    effective: list[str] = []
+    permissions: list[PermissionMeta] = []
+
+
 class ForgotPasswordIn(BaseModel):
     email: str = Field(max_length=254)
 

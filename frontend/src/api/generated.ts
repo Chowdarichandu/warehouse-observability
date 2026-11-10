@@ -858,6 +858,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get User Permissions */
+        get: operations["get_user_permissions_api_users__id__permissions_get"];
+        /** Set User Permissions */
+        put: operations["set_user_permissions_api_users__id__permissions_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/operations/{id}/reconcile": {
         parameters: {
             query?: never;
@@ -2335,6 +2353,13 @@ export interface components {
              */
             simulated: boolean;
         };
+        /** PermissionMeta */
+        PermissionMeta: {
+            /** Name */
+            name: string;
+            /** Min Role */
+            min_role: string;
+        };
         /** PipelineCatalog */
         PipelineCatalog: {
             /** Dags */
@@ -2926,6 +2951,55 @@ export interface components {
             role?: ("viewer" | "operator" | "admin") | null;
             /** Role Name */
             role_name?: string | null;
+        };
+        /** UserPermissionsIn */
+        UserPermissionsIn: {
+            /**
+             * Grants
+             * @default []
+             */
+            grants: string[];
+            /**
+             * Revokes
+             * @default []
+             */
+            revokes: string[];
+        };
+        /** UserPermissionsOut */
+        UserPermissionsOut: {
+            /** User Id */
+            user_id: number;
+            /** Email */
+            email: string;
+            /** Role */
+            role: string;
+            /** Role Name */
+            role_name?: string | null;
+            /**
+             * Bundle
+             * @default []
+             */
+            bundle: string[];
+            /**
+             * Grants
+             * @default []
+             */
+            grants: string[];
+            /**
+             * Revokes
+             * @default []
+             */
+            revokes: string[];
+            /**
+             * Effective
+             * @default []
+             */
+            effective: string[];
+            /**
+             * Permissions
+             * @default []
+             */
+            permissions: components["schemas"]["PermissionMeta"][];
         };
         /** WarehouseView */
         WarehouseView: {
@@ -7858,6 +7932,198 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PasswordResetResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_user_permissions_api_users__id__permissions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPermissionsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    set_user_permissions_api_users__id__permissions_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPermissionsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPermissionsOut"];
                 };
             };
             /** @description Bad Request */

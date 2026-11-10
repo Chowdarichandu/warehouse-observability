@@ -914,6 +914,10 @@ the exact change; it does not edit the team's DAGs.
      Roles. Viewer for the wider company, Operator for the data team, Admin for two people. The demo uses local
      users with bcrypt passwords. Later phases use SSO through OIDC (Google, Azure AD or Okta), mapping groups
      to roles.
+     Per-user overrides. An admin can also grant or revoke individual permissions for one user (Administration →
+     Users → Permissions), stored in obs.user_permission_overrides (013). Effective permissions are the role
+     bundle plus grants minus revokes, still capped by the role level each permission requires; a user cannot
+     edit their own overrides, and the last admin cannot lose manage_users this way.
      Service credentials.
          The collector uses read-only accounts: Airflow Viewer, read-only Airbyte, and a warehouse role limited to
          the catalog and tenant schemas.

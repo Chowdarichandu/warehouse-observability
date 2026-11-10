@@ -329,6 +329,125 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
   );
 }
 
+const ROLE_RANK: Record<string, number> = { viewer: 0, operator: 1, admin: 2 };
+
+function PermissionsDialog({
+  target,
+  onClose,
+}: {
+  target: { id: number; email: string };
+  onClose: () => void;
+}) {
+  const { notify } = useApp();
+  const client = useQueryClient();
+  const view = useQuery({
+    queryKey: ['user-permissions', target.id],
+    queryFn: () => api<Schema<'UserPermissionsOut'>>(`/users/${target.id}/permissions`),
+  });
+  const [desired, setDesired] = useState<Set<string> | null>(null);
+  const data = view.data;
+  const current = desired ?? new Set(data?.effective ?? []);
+  const save = useMutation({
+    mutationFn: (body: Schema<'UserPermissionsIn'>) =>
+      api<Schema<'UserPermissionsOut'>>(`/users/${target.id}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      notify('Permissions updated.');
+      void client.invalidateQueries({ queryKey: ['users'] });
+      onClose();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const toggle = (permission: string) =>
+    setDesired((prev) => {
+      const next = new Set(prev ?? data?.effective ?? []);
+      if (next.has(permission)) next.delete(permission);
+      else next.add(permission);
+      return next;
+    });
+  const submit = () => {
+    if (!data) return;
+    const bundle = new Set(data.bundle);
+    save.mutate({
+      grants: [...current].filter((p) => !bundle.has(p)),
+      revokes: data.bundle.filter((p) => !current.has(p)),
+    });
+  };
+  return (
+    <div className="modal-scrim" role="presentation" onClick={onClose}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="User permissions"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <h3>Permissions</h3>
+          <button className="icon-button" aria-label="Close" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+        {view.isPending ? (
+          <Loading />
+        ) : view.error ? (
+          <ErrorState error={view.error} />
+        ) : (
+          data && (
+            <>
+              <p>
+                {target.email} — role: {data.role}
+                {data.role_name ? ` (${data.role_name})` : ''}. Tick what this one user can do;
+                changes apply on top of their role and to nobody else.
+              </p>
+              <div className="role-perms-picker">
+                {data.permissions.map((meta) => {
+                  const locked = (ROLE_RANK[meta.min_role] ?? 0) > (ROLE_RANK[data.role] ?? 0);
+                  const inBundle = data.bundle.includes(meta.name);
+                  const checked = current.has(meta.name);
+                  const tag = locked
+                    ? `Needs ${meta.min_role} role`
+                    : meta.name === 'view_console'
+                      ? 'Always on'
+                      : checked && !inBundle
+                        ? 'Added for this user'
+                        : !checked && inBundle
+                          ? 'Removed for this user'
+                          : inBundle
+                            ? 'From role'
+                            : '';
+                  return (
+                    <label key={meta.name} className="check-row">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={locked || meta.name === 'view_console' || save.isPending || !data}
+                        onChange={() => toggle(meta.name)}
+                      />
+                      <span>{PERMISSION_LABELS[meta.name] || meta.name}</span>
+                      {tag && <span className="tag">{tag}</span>}
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="modal-actions">
+                <button className="button" onClick={onClose}>
+                  Cancel
+                </button>
+                <button className="button primary" disabled={save.isPending} onClick={submit}>
+                  {save.isPending ? 'Saving…' : 'Save permissions'}
+                </button>
+              </div>
+            </>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Admin() {
   const { isAdmin, notify, runtime, user: currentUser } = useApp();
   const { page, set, params } = useFilters();
@@ -349,6 +468,7 @@ export function Admin() {
     enabled: isAdmin,
   });
   const [resetInfo, setResetInfo] = useState<{ temporary: string } | null>(null);
+  const [permTarget, setPermTarget] = useState<{ id: number; email: string } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const createUser = useMutation({
     mutationFn: (body: Schema<'UserCreate'>) =>
@@ -526,6 +646,7 @@ export function Admin() {
                     <th>Role</th>
                     <th>Authentication</th>
                     <th>Password</th>
+                    <th>Permissions</th>
                     <th>Manage</th>
                   </tr>
                 </thead>
@@ -595,6 +716,22 @@ export function Admin() {
                         <button
                           className="button small"
                           disabled={
+                            user.user_id === currentUser.user_id || runtime.auth_provider === 'oidc'
+                          }
+                          title={
+                            user.user_id === currentUser.user_id
+                              ? 'You cannot change your own permissions'
+                              : `Permissions for ${user.email}`
+                          }
+                          onClick={() => setPermTarget({ id: user.user_id, email: user.email })}
+                        >
+                          <ShieldCheck size={13} /> Permissions
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          className="button small"
+                          disabled={
                             removeUser.isPending ||
                             user.user_id === currentUser.user_id ||
                             runtime.auth_provider === 'oidc'
@@ -625,6 +762,7 @@ export function Admin() {
         ) : (
           roles.data && <RolesPanel roles={roles.data} />
         ))}
+      {permTarget && <PermissionsDialog target={permTarget} onClose={() => setPermTarget(null)} />}
       {section === 'operations' && <Operations />}
       {section === 'activity' && <Activity embedded />}
       {removeTarget && (

@@ -61,14 +61,30 @@ def effective_permissions(role: str, bundle: list[str]) -> set[str]:
 
 
 def user_permissions(user: dict) -> list:
-    """Effective permission bundle for a user row (role + optional role_name)."""
+    """Effective permission bundle for a user row: the role (or custom role)
+    bundle, adjusted by the user's individual grants and revokes."""
     role_name = user.get("role_name")
     if role_name and settings().auth_provider != "oidc":
         row = one("SELECT permissions FROM obs.roles WHERE name=%s", (role_name,))
-        if row and isinstance(row.get("permissions"), list):
-            return [p for p in row["permissions"] if p in PERMISSIONS]
-        return []
-    return list(SYSTEM_ROLE_PERMISSIONS.get(user.get("role"), []))
+        bundle = (
+            [p for p in row["permissions"] if p in PERMISSIONS]
+            if row and isinstance(row.get("permissions"), list)
+            else []
+        )
+    else:
+        bundle = list(SYSTEM_ROLE_PERMISSIONS.get(user.get("role"), []))
+    user_id = user.get("user_id")
+    if user_id and settings().auth_provider != "oidc":
+        row = one(
+            "SELECT grants, revokes FROM obs.user_permission_overrides WHERE user_id=%s",
+            (user_id,),
+        )
+        if row:
+            revokes = {p for p in (row.get("revokes") or []) if p in PERMISSIONS}
+            grants = [p for p in (row.get("grants") or []) if p in PERMISSIONS]
+            bundle = [p for p in bundle if p not in revokes]
+            bundle += [p for p in grants if p not in bundle]
+    return bundle
 
 
 def require_permission(permission: str) -> Callable[..., dict]:
