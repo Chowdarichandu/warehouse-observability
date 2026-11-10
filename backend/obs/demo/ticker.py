@@ -9,6 +9,7 @@ from obs.db import connection, notify
 from obs.demo.scenarios import MESSAGES, enrich_failure, upsert_run
 from obs.demo.seed import STREAMS, TENANTS, make_run, seed
 from obs.demo.simulate_actions import process_jobs
+from obs.quality.engine import evaluate_due
 from obs.redact import redact
 from obs.settings import require_demo, settings
 
@@ -174,6 +175,7 @@ def main() -> None:
             process_jobs()
             if time.monotonic() - last_warehouse >= max(1, settings().demo_tick_sec / 4):
                 warehouse_tick()
+                evaluate_due()
                 last_warehouse = time.monotonic()
             if time.monotonic() - last_tick >= settings().demo_tick_sec:
                 tick()

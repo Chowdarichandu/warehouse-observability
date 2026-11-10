@@ -124,6 +124,9 @@ def seed() -> None:
                 (channel, kind, env),
             )
         if conn.execute("SELECT count(*) AS n FROM obs.pipeline_runs").fetchone()["n"]:
+            from obs.quality.demo import seed_quality
+
+            seed_quality(conn)
             print(
                 "Demo history already present; seed is idempotent. Use make reset for a fresh history."
             )
@@ -344,6 +347,9 @@ def seed() -> None:
                 "load_type": "cdc",
             },
         )
+        from obs.quality.demo import seed_quality
+
+        seed_quality(conn)
     from obs.alerter.rules import evaluate
 
     evaluate()

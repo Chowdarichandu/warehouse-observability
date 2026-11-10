@@ -99,3 +99,5 @@ Don't
   with the migration steps instead.
 
 Current authorized scope (2026-11-09): the user explicitly requested the missing live/production pieces, EC2/EKS integration, DAGs/alerts, smoother UI transitions, and a GitHub push. That request supersedes the original M4 review stop. Continue to preserve offline demo mode, avoid production calls, and report staging/deployment checks honestly. The actual team's DAGs remain untouched; templates ship under airflow/dags/templates.
+
+Additional authorized scope (2026-11-09/10): implement recommendations 4–7 with subagents: evidence-based dependencies, bounded built-in data-quality checks, operator investigation tools and release safeguards. Preserve the separately added Vercel/Railway hosting changes. The user also reported a mobile hosted-page error; verify compatibility and API/proxy behavior without calling production data integrations.

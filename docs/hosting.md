@@ -1,0 +1,11 @@
+# Vercel frontend and hosted demo API
+
+The repository's existing `frontend/vercel.json` sends `/api` and `/api/:path*` to the Railway backend **before** the SPA fallback. Keep API rewrites first. The frontend is built from the `frontend` directory with `npm run build` and output `dist`. The API, collectors, PostgreSQL and migrations run separately; a static frontend deployment does not provide them.
+
+Set the backend's `CONSOLE_URL=https://warehouse-observability.vercel.app` (or the exact custom-domain origin). A reverse proxy may send the Railway host to the backend while the browser sends the Vercel origin. Login and authenticated mutations accept the configured console origin, keep CSRF checks and reject unrelated origins. Cookies remain Secure and HttpOnly and are set through the same-origin `/api` proxy; do not expose upstream credentials in frontend environment variables.
+
+The existing `backend/render-start.sh` provides a combined **demo** service: migrations and seed, then collector/alerter beside the API. Supply a persistent PostgreSQL database and ensure the process command uses that script. New feature deployments require the backend migrations and API release as well as the frontend release. Live production uses the EC2/EKS deployment guide and separately supervised workers.
+
+For a read-only reachability check, `/api/config` and `/api/health` should return JSON; an unsigned-in `/api/me` should return JSON with HTTP401. If an API path returns the SPA HTML, repair the rewrite order or destination and redeploy. If the backend is starting or returns a gateway page, inspect its deployment/health logs. The browser now replaces invalid JSON and browser-specific transport errors with an actionable service message; retry after the backend is healthy.
+
+Mobile WebKit verification on 2026-11-10 rendered the hosted sign-in page through the existing proxy. This confirms the unauthenticated page at that time, not a live integration or authenticated hosted workflow. The local browser suite covers sign-in, CSRF, malformed proxy responses, and operation workflows. CI also runs three mobile WebKit startup/response checks, including browsers without AbortSignal.timeout. Deployment through Vercel/Railway is managed by their existing Git integration; no provider credentials or account settings were changed from this workspace.

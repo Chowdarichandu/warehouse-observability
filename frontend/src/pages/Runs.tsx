@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Download, ExternalLink, FileText, LockKeyhole, RefreshCw, Search } from 'lucide-react';
@@ -7,6 +7,7 @@ import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
 import { Chart } from '../components/Chart';
 import { RunsTable } from '../components/RunsTable';
+import { EventTimeline, RunComparison, SavedRunViews } from '../components/Investigation';
 import { StatusPill } from '../components/StatusPill';
 import {
   Back,
@@ -53,6 +54,7 @@ export function Runs() {
           </a>
         }
       />
+      <SavedRunViews />
       <Panel>
         <div className="filter-bar wrapping">
           <label className="search-field">
@@ -329,6 +331,8 @@ export function RunDetail() {
           />
         </Panel>
       )}
+      <RunComparison current={query.data} previous={previous_runs} />
+      <EventTimeline runKey={run.run_key} tenant={run.tenant_id} rangeQuery={runRange(run)} />
       <Panel
         title="Previous runs"
         subtitle="The previous 10 runs of this tenant, source, and load type"
@@ -339,11 +343,35 @@ export function RunDetail() {
   );
 }
 
+function runRange(run: Schema<'Run'>) {
+  const start = new Date(run.queued_at || run.started_at || run.collected_at).getTime() - 3600000;
+  const end = Math.min(
+    new Date(run.ended_at || run.collected_at).getTime() + 3600000,
+    start + 90 * 86400000,
+  );
+  return `from=${encodeURIComponent(new Date(start).toISOString())}&to=${encodeURIComponent(new Date(end).toISOString())}`;
+}
+
 function LogViewer({ content }: { content: string }) {
   const { params, set } = useFilters();
   const [wrap, setWrap] = useState(true);
+  const [matchIndex, setMatchIndex] = useState(0);
+  const logRef = useRef<HTMLDivElement>(null);
+  const onlyMatches = params.get('logfilter') === 'matches';
   const term = params.get('logq') || '';
   const lines = content.split('\n');
+  const matches = lines.flatMap((line, index) =>
+    term && line.toLowerCase().includes(term.toLowerCase()) ? [index] : [],
+  );
+  const matchingLines = new Set(matches);
+  function nextMatch(direction: number) {
+    if (!matches.length) return;
+    const next = (matchIndex + direction + matches.length) % matches.length;
+    setMatchIndex(next);
+    logRef.current
+      ?.querySelector(`[data-line="${matches[next]}"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+  }
   function download() {
     const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
     const a = document.createElement('a');
@@ -365,8 +393,35 @@ function LogViewer({ content }: { content: string }) {
             aria-label="Search within log"
             placeholder="Find in log…"
             value={term}
-            onChange={(e) => set('logq', e.target.value)}
+            onChange={(e) => {
+              set('logq', e.target.value);
+              setMatchIndex(0);
+            }}
           />
+        </label>
+        <button
+          className="button small"
+          disabled={!matches.length}
+          aria-label="Previous log match"
+          onClick={() => nextMatch(-1)}
+        >
+          Previous
+        </button>
+        <button
+          className="button small"
+          disabled={!matches.length}
+          aria-label="Next log match"
+          onClick={() => nextMatch(1)}
+        >
+          Next
+        </button>
+        <label className="inline-flex">
+          <input
+            type="checkbox"
+            checked={onlyMatches}
+            onChange={(e) => set('logfilter', e.target.checked ? 'matches' : '')}
+          />
+          Matching lines only
         </label>
         <button className="text-button" onClick={() => setWrap(!wrap)}>
           {wrap ? 'Disable wrap' : 'Wrap lines'}
@@ -377,26 +432,33 @@ function LogViewer({ content }: { content: string }) {
         </button>
       </div>
       <div
+        ref={logRef}
         className={`log-viewer ${wrap ? 'wrap-lines' : ''}`}
         role="region"
         aria-label="Redacted run log"
       >
         <ol>
-          {lines.map((line, index) => (
-            <li
-              key={index}
-              className={`${/error/i.test(line) ? 'error-line' : ''} ${term && line.toLowerCase().includes(term.toLowerCase()) ? 'log-match' : ''}`}
-            >
-              <span>{index + 1}</span>
-              <code>{line || ' '}</code>
-            </li>
-          ))}
+          {lines.map(
+            (line, index) =>
+              (!onlyMatches || !term || matchingLines.has(index)) && (
+                <li
+                  key={index}
+                  data-line={index}
+                  className={`${/error/i.test(line) ? 'error-line' : ''} ${term && line.toLowerCase().includes(term.toLowerCase()) ? 'log-match' : ''}`}
+                >
+                  <span>{index + 1}</span>
+                  <code>{line || ' '}</code>
+                </li>
+              ),
+          )}
         </ol>
       </div>
       {term && (
         <div className="panel-footer">
-          {lines.filter((line) => line.toLowerCase().includes(term.toLowerCase())).length} matching
-          lines <ExternalLink size={12} />
+          {matches.length
+            ? `${Math.min(matchIndex + 1, matches.length)} of ${matches.length} matching lines`
+            : 'No matching lines'}{' '}
+          <ExternalLink size={12} />
         </div>
       )}
     </>

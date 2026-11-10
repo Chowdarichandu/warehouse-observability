@@ -73,7 +73,8 @@ def current_user(request: Request) -> dict:
         if not sent or not secrets.compare_digest(sent, claims.get("csrf", "")):
             fail(403, "csrf", "Invalid CSRF token. Refresh the page and try again.")
         origin = request.headers.get("origin")
-        if origin and urlsplit(origin).netloc != request.headers.get("host"):
+        allowed_hosts = {request.headers.get("host"), urlsplit(settings().console_url).netloc}
+        if origin and urlsplit(origin).netloc not in allowed_hosts:
             fail(403, "csrf_origin", "Cross-origin action blocked.")
     return {**user, "csrf_token": claims["csrf"], "session_id": claims["jti"]}
 

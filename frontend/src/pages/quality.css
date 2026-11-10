@@ -1,0 +1,126 @@
+.quality-table td {
+  vertical-align: top;
+}
+.quality-table td > small,
+.quality-table td > code,
+.quality-table td > a {
+  display: block;
+  margin-top: 7px;
+}
+.quality-table small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.quality-title {
+  display: block;
+  margin-bottom: 7px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+}
+.quality-title:hover {
+  text-decoration: underline;
+}
+.quality-selected {
+  background: var(--subtle);
+}
+.quality-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.quality-evidence {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+.quality-evidence article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+.quality-evidence-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+.quality-evidence-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 14px;
+  font-size: 12px;
+}
+.quality-evidence-details span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.quality-evidence-details strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.quality-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px;
+}
+.quality-form label {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.quality-form input,
+.quality-form select,
+.quality-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  padding: 10px 12px;
+  color: var(--text);
+  font: inherit;
+}
+.quality-form textarea {
+  font-family: var(--font-mono, monospace);
+  resize: vertical;
+}
+.quality-form small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.quality-wide {
+  grid-column: 1 / -1;
+}
+.quality-form label.quality-checkbox {
+  display: flex;
+  align-items: center;
+}
+.quality-checkbox input {
+  width: auto;
+}
+.quality-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+@media (max-width: 650px) {
+  .quality-form {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .quality-form-footer {
+    align-items: start;
+    flex-direction: column;
+  }
+}

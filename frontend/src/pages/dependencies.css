@@ -1,0 +1,210 @@
+.dependency-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+.dependency-controls label {
+  color: var(--title);
+  font-weight: 600;
+}
+.dependency-controls select {
+  min-width: 190px;
+}
+.dependency-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.dependency-legend i {
+  width: 26px;
+  border-top: 2px dashed var(--muted);
+}
+.dependency-legend i.observed {
+  border-top-style: solid;
+  border-color: var(--green);
+}
+.dependency-scroll {
+  overflow-x: auto;
+  border-top: 1px solid var(--line);
+  background: var(--subtle);
+  border-radius: 0 0 8px 8px;
+}
+.dependency-canvas {
+  position: relative;
+  width: 1236px;
+  min-height: 220px;
+}
+.dependency-stage {
+  position: absolute;
+  top: 23px;
+  width: 172px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.dependency-lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  color: var(--muted);
+  pointer-events: none;
+}
+.dependency-lines path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.dependency-lines path.configured {
+  stroke-dasharray: 5 4;
+}
+.dependency-lines path.observed {
+  stroke: var(--muted);
+  opacity: 0.55;
+}
+.dependency-lines path.active {
+  stroke: var(--green);
+  opacity: 1;
+  stroke-width: 2;
+}
+.dependency-lines marker path {
+  fill: var(--muted);
+  stroke: none;
+}
+.dependency-node {
+  position: absolute;
+  width: 172px;
+  height: 58px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+.dependency-node > svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.dependency-node > span {
+  min-width: 0;
+}
+.dependency-node strong {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 600;
+}
+.dependency-node small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 4px;
+  text-transform: capitalize;
+}
+.dependency-node.selected {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 18%, transparent);
+}
+.dependency-node.impacted {
+  border-color: color-mix(in srgb, var(--green) 55%, var(--line));
+}
+.dependency-node:hover {
+  background: var(--subtle);
+}
+.dependency-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 12px 0 20px;
+}
+.dependency-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.dependency-facts {
+  display: flex;
+  gap: 28px;
+  margin: 0 20px 20px;
+}
+.dependency-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.dependency-facts dd {
+  font-size: 12px;
+  margin: 0;
+}
+.dependency-details .button {
+  margin: 0 20px;
+}
+.dependency-subheading {
+  margin: 20px;
+  font-size: 12px;
+  color: var(--title);
+}
+.dependency-evidence,
+.dependency-impact {
+  padding: 0 20px 20px;
+  margin: 0;
+  list-style: none;
+}
+.dependency-evidence li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
+  font-size: 11px;
+}
+.dependency-evidence-kind {
+  color: var(--muted);
+  padding: 3px 6px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+}
+.dependency-evidence-kind.observed {
+  color: var(--green);
+  border-style: solid;
+}
+.dependency-impact button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 11px 0;
+  font-size: 12px;
+}
+.dependency-impact button span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.dependency-impact small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.dependency-details .dependency-note {
+  margin: 0 20px 20px;
+}
+@media (max-width: 900px) {
+  .dependency-details {
+    grid-template-columns: 1fr;
+  }
+}

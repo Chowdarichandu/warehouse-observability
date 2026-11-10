@@ -45,6 +45,9 @@ import { Freshness } from './pages/Freshness';
 import { Alerts } from './pages/Alerts';
 import { Onboarding } from './pages/Onboarding';
 import { Admin, Platform, SearchResults } from './pages/System';
+import { Quality } from './pages/Quality';
+import { Dependencies } from './pages/Dependencies';
+import { Activity as ActivityPage } from './components/Investigation';
 
 function localInputTime(iso: string | null) {
   if (!iso) return undefined;
@@ -59,6 +62,7 @@ const NAV = [
       { path: '/', label: 'Overview', icon: LayoutDashboard },
       { path: '/tenants', label: 'Tenants', icon: Users },
       { path: '/runs', label: 'Pipeline runs', icon: Activity },
+      { path: '/activity', label: 'Activity', icon: CalendarDays },
     ],
   },
   {
@@ -66,6 +70,8 @@ const NAV = [
     items: [
       { path: '/errors', label: 'Errors', icon: ShieldCheck },
       { path: '/freshness', label: 'Freshness & volume', icon: Database },
+      { path: '/dependencies', label: 'Dependencies', icon: Workflow },
+      { path: '/quality', label: 'Data quality', icon: ShieldCheck },
       { path: '/alerts', label: 'Alerts', icon: Bell },
     ],
   },
@@ -386,6 +392,9 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/tenants/:id" element={<TenantDetail />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/runs/:key" element={<RunDetail />} />
+                <Route path="/activity" element={<ActivityPage />} />
+                <Route path="/dependencies" element={<Dependencies />} />
+                <Route path="/quality" element={<Quality />} />
                 <Route path="/errors" element={<Errors />} />
                 <Route path="/freshness" element={<Freshness />} />
                 <Route path="/alerts" element={<Alerts />} />

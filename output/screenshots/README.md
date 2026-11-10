@@ -44,6 +44,30 @@ Source SLAs, Orbit's volume drop, and schema drift.
 
 [![Freshness & volume](freshness.png)](freshness.png)
 
+## Pipeline dependencies
+
+Configured routes, observed execution links, and potential downstream impact.
+
+[![Pipeline dependencies](dependencies.png)](dependencies.png)
+
+## Data quality
+
+Sample-based checks, aggregate evidence, and result history.
+
+[![Data quality](quality.png)](quality.png)
+
+## Activity
+
+A chronological view of run, alert, onboarding, action, and quality events.
+
+[![Activity](activity.png)](activity.png)
+
+## Run comparison
+
+Side-by-side run metrics and per-stream record differences.
+
+[![Run comparison](comparison.png)](comparison.png)
+
 ## Alerts
 
 Alert lifecycle, notification channels, and built-in rules.

@@ -21,6 +21,7 @@ export function useLiveEvents() {
     };
     const events = [
       'run.updated',
+      'quality.updated',
       'alert.fired',
       'alert.resolved',
       'onboarding.step',

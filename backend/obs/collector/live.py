@@ -270,12 +270,14 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     from obs.maintenance import retain
+    from obs.quality.engine import evaluate_due
 
     jobs = [
         (poll, settings().poll_interval_sec),
         (platform, settings().platform_check_sec),
         (snapshots, settings().warehouse_check_sec),
         (retain, 86400),
+        (evaluate_due, settings().quality_interval_sec),
     ]
     due = {fn.__name__: 0.0 for fn, _ in jobs}
     while not stopping:

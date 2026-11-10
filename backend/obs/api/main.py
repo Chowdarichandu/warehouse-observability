@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, Response
 from psycopg.types.json import Jsonb
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from obs.api.routers import actions, auth, read, stream
+from obs.api.routers import actions, auth, dependencies, investigation, quality, read, stream
 from obs.api.schemas import ErrorEnvelope, RuntimeConfig
 from obs.auth import hasher
 from obs.db import connection, one
@@ -153,7 +153,15 @@ def runtime_config() -> dict:
     }
 
 
-for router in (auth.router, read.router, actions.router, stream.router):
+for router in (
+    auth.router,
+    read.router,
+    actions.router,
+    stream.router,
+    dependencies.router,
+    investigation.router,
+    quality.router,
+):
     app.include_router(
         router,
         prefix="/api",

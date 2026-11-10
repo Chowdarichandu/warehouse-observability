@@ -67,3 +67,9 @@ Every application setting is listed below. Live integrations never run in demo m
 `OBS_CONFIG_SECRET_ID` selects a per-service Secrets Manager JSON for the entrypoint; `AWS_REGION` selects its region. `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, and `SMTP_URL` are channel target environment variables. `OBS_DB_PASSWORD` is only for the local Compose database. `OBS_DATABASE_URL` is the read-only Airflow registry DSN. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` and `OBS_NATIVE` are developer-only settings.
 
 `OBS_WEB_PORT` optionally changes the local demo Compose web port (default 8080); CI uses 18080 to isolate container checks from the native preview.
+
+## Data-quality scheduler
+
+`QUALITY_ENABLED=false` disables warehouse quality execution in live mode until explicitly reviewed. Demo checks use only synthetic local evidence. `QUALITY_INTERVAL_SEC=60` sets the scheduler polling interval (minimum 60 seconds); each check has its own interval, default 900 seconds, minimum 60. Checks read only their tenant's registered warehouse schema, at most 10,000 rows, with a statement timeout capped at 10 seconds. See [quality](quality.md).
+
+Release tools use separate invocation-only variables: `OBS_LOAD_SESSION` is an authenticated staging viewer session (never a CLI argument); `OBS_DRILL_ADMIN_DSN` identifies a dedicated loopback PostgreSQL server permitted to create scratch databases. These are not application service settings. See [release safeguards](release-safeguards.md).

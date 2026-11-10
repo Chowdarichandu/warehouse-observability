@@ -8,3 +8,6 @@ The original M0–M4 offline demo is implemented and remains the default `make d
 - **M7 code:** OIDC authorization-code flow with PKCE/state/nonce/signature/issuer/audience checks, explicit group roles, revocable sessions, durable notification outbox, retention/rollups, encrypted backup/empty-target restore, non-root images, EC2 Compose, EKS Helm, IAM examples, CloudWatch alarms and CI/ECR workflows.
 
 **Release acceptance remains external:** no AWS or production systems were contacted. The SPEC acceptance criteria requiring 20 staging run comparisons, one real staging onboarding/retry, a chosen SSO/alert provider, and a shared environment deployment cannot be claimed from local contract fixtures. See `docs/deployment.md` and `tests/fixtures/README.md` for the exact evidence required. Docker images, actual Airflow DAG imports, EC2/EKS rollouts and account permissions still need an environment run.
+
+
+- **Enhancements 4–7:** evidence-based dependency maps, sampled data-quality checks with persisted history/scheduling, private saved views/run comparison/log navigation/unified activity, and automated release safeguards. Production lineage, full-table quality guarantees, actual workload capacity and AWS rollout acceptance require environment-specific evidence.

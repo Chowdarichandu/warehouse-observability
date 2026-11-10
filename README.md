@@ -4,7 +4,7 @@ An in-house console for MySQL and MongoDB → Airbyte → Airflow → warehouse 
 
 The offline demo works without cloud access. Live integration code, EC2 deployment configuration, and an EKS Helm chart are included. **Production release requires staging validation against your actual service versions and AWS account.** No production systems have been contacted or deployed from this workspace.
 
-[Screen gallery](output/screenshots/README.md) · [Deployment guide](docs/deployment.md) · [Airflow/DAG setup](airflow/dags/README.md) · [Configuration reference](docs/environment.md) · [Implementation status](MILESTONES.md)
+[Screen gallery](output/screenshots/README.md) · [Deployment guide](docs/deployment.md) · [Airflow/DAG setup](airflow/dags/README.md) · [Configuration reference](docs/environment.md) · [Vercel/Railway demo](docs/hosting.md) · [Implementation status](MILESTONES.md)
 
 ## Run the offline demo
 
@@ -45,6 +45,13 @@ The [deployment guide](docs/deployment.md) covers EC2 and EKS, private RDS, ECR 
 - OIDC uses authorization code + PKCE, one-use state, nonce, signature/issuer/audience checks, verified email and explicit group-role mapping. Live mode creates no demo users and disables password login. Sessions are stored server-side and revoked on logout; administrators can revoke a user's sessions.
 - Scheduled retention preserves daily run aggregates; failed logs are kept 90 days, runs 13 months and raw snapshots/platform history 30 days. Encrypted S3 backups use `pg_dump`; restore refuses a database that already contains user tables. Use RDS PITR as the primary recovery mechanism.
 
+## Investigation and release upgrades
+
+- **Dependencies:** explore source, DAG/task, Airbyte connection and warehouse assets, inspect relationship evidence, and identify potentially affected downstream assets. Configured dependencies are distinguished from observed links; this is not verified SQL lineage.
+- **Data quality:** configure null-rate, duplicate-key, accepted-value and schema-contract checks. See aggregate results and history, edit schedules, and run an individual check. Demo evidence is synthetic; live reads require `QUALITY_ENABLED=true`, reviewed permissions and enabled live actions for operator requests.
+- **Investigation:** save private run filters to your account, compare runs and stream counts, navigate matching log lines, and follow runs/alerts/onboarding/actions/checks in the Activity timeline.
+- **Release safeguards:** scheduled dependency/container audits, isolated PostgreSQL restore drills, a bounded viewer load test, and exact-digest image signing/verification. See [the release guide](docs/release-safeguards.md), [dependency evidence](docs/dependencies.md), and [quality configuration](docs/quality.md).
+
 ## Demo walkthrough
 
 Start at the overview and open Acme Retail's failed MySQL CDC run to inspect its binlog diagnosis and redacted log. A simulated retry completes in roughly 30 seconds; only the demo resync repairs the missing replication position. Bluefin is near its freshness SLA, Northwind has a stuck CDC run, Orbit has a volume drop/schema change, and Cedar has nighttime failures. Explore the alert lifecycle, then onboard `zenith_pay` in about a minute. Platform, Administration, dark theme, TV and mobile views are included.
@@ -55,4 +62,4 @@ Metrics follow SPEC §7: successful runs only for duration percentiles; success/
 
 Contract fixtures are synthetic and sanitized, not staging recordings. Local tests cover offline workflows, session revocation, signed OIDC login, IAM request shapes, client versions, redaction, ingest deduplication, notification retries, durable actions, catalog snapshots and a real local PostgreSQL backup/restore roundtrip. Helm templates are linted/rendered. See `output/verification.json` for the most recent recorded run.
 
-Before release, complete SPEC's 20 staging run comparisons, one staging onboarding/retry, real chosen alert/SSO providers, a container/deployment run, and recovery/rollback acceptance. [The repository's original broader vision](docs/repository-vision.md) is preserved; lineage, data-quality SQL checks and per-tenant cost remain future scope beyond the attached pipeline-console spec.
+Before release, complete SPEC's 20 staging run comparisons, one staging onboarding/retry, real chosen alert/SSO providers, a container/deployment run, and recovery/rollback acceptance. [The repository's original broader vision](docs/repository-vision.md) is preserved. Configured/observed dependency maps and built-in sampled quality checks are now implemented; verified SQL/column/dashboard lineage, arbitrary SQL checks and per-tenant cost remain future scope.

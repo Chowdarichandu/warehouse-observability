@@ -13,6 +13,8 @@ env:
   OIDC_GROUP_ROLES: '{"data-viewers":"viewer","data-operators":"operator","data-admins":"admin"}'
   LIVE_ACTIONS_ENABLED: "false"
   REGISTRY_DAGS_ENABLED: "false"
+  QUALITY_ENABLED: "false"
+  QUALITY_INTERVAL_SEC: "60"
   AIRFLOW_API_VERSION: v1
   AIRFLOW_TRANSPORT: http
   AIRFLOW_URL: https://airflow.internal.example.com

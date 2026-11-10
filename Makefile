@@ -1,4 +1,4 @@
-.PHONY: install up demo live down reset seed types test e2e lint build
+.PHONY: install up demo live down reset seed types test e2e lint build load-test recovery-drill
 PY := .venv/bin/python
 
 install:
@@ -27,3 +27,11 @@ lint:
 
 build:
 	cd frontend && npm run build
+
+# Defaults target localhost. Pass reviewed tool flags through LOAD_ARGS.
+load-test:
+	$(PY) scripts/load_test.py $(LOAD_ARGS)
+
+# Requires an explicit dedicated loopback OBS_DRILL_ADMIN_DSN.
+recovery-drill:
+	$(PY) scripts/recovery_drill.py --confirm-isolated

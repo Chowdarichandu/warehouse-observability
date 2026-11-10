@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     warehouse_url: str = ""
     warehouse_load_column: str = "_airbyte_extracted_at"
     warehouse_statement_timeout_ms: int = Field(default=10000, ge=1000, le=60000)
+    quality_enabled: bool = False
+    quality_interval_sec: int = Field(default=60, ge=60, le=3600)
     source_allowed_cidrs: list[str] = []
     mysql_binlog_retention_sec: int = Field(default=259200, ge=86400)
     source_ca_file: str = ""

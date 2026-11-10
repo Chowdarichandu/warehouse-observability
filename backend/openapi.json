@@ -5809,6 +5809,1474 @@
           }
         }
       }
+    },
+    "/api/dependencies/tenants": {
+      "get": {
+        "tags": [
+          "Dependencies"
+        ],
+        "summary": "Dependency Tenants",
+        "operationId": "dependency_tenants_api_dependencies_tenants_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyTenantPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/dependencies": {
+      "get": {
+        "tags": [
+          "Dependencies"
+        ],
+        "summary": "Dependencies",
+        "operationId": "dependencies_api_dependencies_get",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "default": "",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyGraph"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/saved-views": {
+      "get": {
+        "tags": [
+          "Investigation"
+        ],
+        "summary": "Saved Views",
+        "operationId": "saved_views_api_saved_views_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViews"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Investigation"
+        ],
+        "summary": "Save View",
+        "operationId": "save_view_api_saved_views_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/saved-views/{view_id}": {
+      "delete": {
+        "tags": [
+          "Investigation"
+        ],
+        "summary": "Delete View",
+        "operationId": "delete_view_api_saved_views__view_id__delete",
+        "parameters": [
+          {
+            "name": "view_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "View Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/investigation/timeline": {
+      "get": {
+        "tags": [
+          "Investigation"
+        ],
+        "summary": "Timeline",
+        "operationId": "timeline_api_investigation_timeline_get",
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Tenant"
+            }
+          },
+          {
+            "name": "run_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Run Key"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "title": "Range"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationTimeline"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/quality/checks": {
+      "get": {
+        "tags": [
+          "Data quality"
+        ],
+        "summary": "Checks",
+        "operationId": "checks_api_quality_checks_get",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityCheckPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Data quality"
+        ],
+        "summary": "Create",
+        "operationId": "create_api_quality_checks_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityCheckInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/quality/checks/{id}": {
+      "put": {
+        "tags": [
+          "Data quality"
+        ],
+        "summary": "Update",
+        "operationId": "update_api_quality_checks__id__put",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityCheckInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Data quality"
+        ],
+        "summary": "Toggle",
+        "operationId": "toggle_api_quality_checks__id__patch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityCheckPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/quality/checks/{id}/run": {
+      "post": {
+        "tags": [
+          "Data quality"
+        ],
+        "summary": "Run",
+        "operationId": "run_api_quality_checks__id__run_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/quality/results": {
+      "get": {
+        "tags": [
+          "Data quality"
+        ],
+        "summary": "Results",
+        "operationId": "results_api_quality_results_get",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "check_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Check Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityResultPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6310,6 +7778,231 @@
         ],
         "title": "Delivery"
       },
+      "DependencyEdge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "relationship": {
+            "type": "string",
+            "title": "Relationship"
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "configured",
+              "observed"
+            ],
+            "title": "Evidence"
+          },
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Observed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target",
+          "relationship",
+          "evidence"
+        ],
+        "title": "DependencyEdge"
+      },
+      "DependencyGraph": {
+        "properties": {
+          "tenants": {
+            "items": {
+              "$ref": "#/components/schemas/DependencyTenant"
+            },
+            "type": "array",
+            "title": "Tenants"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/DependencyNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/DependencyEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenants",
+          "nodes",
+          "edges",
+          "generated_at",
+          "truncated",
+          "note"
+        ],
+        "title": "DependencyGraph"
+      },
+      "DependencyNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "source",
+              "dag",
+              "task",
+              "connection",
+              "warehouse",
+              "table"
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Observed At"
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "configured",
+              "observed"
+            ],
+            "title": "Evidence"
+          },
+          "run_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "tenant_id",
+          "evidence"
+        ],
+        "title": "DependencyNode"
+      },
+      "DependencyTenant": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "display_name"
+        ],
+        "title": "DependencyTenant"
+      },
+      "DependencyTenantPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DependencyTenant"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "DependencyTenantPage"
+      },
       "DurationMetric": {
         "properties": {
           "name": {
@@ -6742,6 +8435,95 @@
           "running"
         ],
         "title": "HourMetric"
+      },
+      "InvestigationEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "run",
+              "alert",
+              "onboarding",
+              "action",
+              "quality"
+            ],
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Id"
+          },
+          "run_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "status",
+          "at"
+        ],
+        "title": "InvestigationEvent"
+      },
+      "InvestigationTimeline": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvestigationEvent"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": "Run events and tenant context, ordered by recorded time. Tenant alerts and checks may concern other runs."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "truncated"
+        ],
+        "title": "InvestigationTimeline"
       },
       "Kpis": {
         "properties": {
@@ -7794,6 +9576,285 @@
         ],
         "title": "PreflightCheck"
       },
+      "QualityCheck": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Tenant Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "table_name": {
+            "type": "string",
+            "title": "Table Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "null_rate",
+              "duplicate_keys",
+              "accepted_values",
+              "schema_contract"
+            ],
+            "title": "Kind"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "sample_limit": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Sample Limit",
+            "default": 1000
+          },
+          "interval_sec": {
+            "type": "integer",
+            "maximum": 86400.0,
+            "minimum": 60.0,
+            "title": "Interval Sec",
+            "default": 900
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          },
+          "latest_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QualityResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "name",
+          "table_name",
+          "kind",
+          "params",
+          "id",
+          "created_at",
+          "updated_at",
+          "last_checked_at"
+        ],
+        "title": "QualityCheck"
+      },
+      "QualityCheckInput": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Tenant Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "table_name": {
+            "type": "string",
+            "title": "Table Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "null_rate",
+              "duplicate_keys",
+              "accepted_values",
+              "schema_contract"
+            ],
+            "title": "Kind"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "sample_limit": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Sample Limit",
+            "default": 1000
+          },
+          "interval_sec": {
+            "type": "integer",
+            "maximum": 86400.0,
+            "minimum": 60.0,
+            "title": "Interval Sec",
+            "default": 900
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "name",
+          "table_name",
+          "kind",
+          "params"
+        ],
+        "title": "QualityCheckInput"
+      },
+      "QualityCheckPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QualityCheck"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "QualityCheckPage"
+      },
+      "QualityCheckPatch": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "QualityCheckPatch"
+      },
+      "QualityResult": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "check_id": {
+            "type": "integer",
+            "title": "Check Id"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "sampled_rows": {
+            "type": "integer",
+            "title": "Sampled Rows"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "check_id",
+          "tenant_id",
+          "status",
+          "sampled_rows",
+          "details",
+          "simulated",
+          "checked_at"
+        ],
+        "title": "QualityResult"
+      },
+      "QualityResultPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QualityResult"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "QualityResultPage"
+      },
       "RetryResult": {
         "properties": {
           "run_key": {
@@ -8266,6 +10327,78 @@
           "live_actions_enabled"
         ],
         "title": "RuntimeConfig"
+      },
+      "SavedView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "filters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Filters"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "filters",
+          "created_at"
+        ],
+        "title": "SavedView"
+      },
+      "SavedViewInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "filters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Filters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "filters"
+        ],
+        "title": "SavedViewInput"
+      },
+      "SavedViews": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SavedView"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "SavedViews"
       },
       "SearchHit": {
         "properties": {

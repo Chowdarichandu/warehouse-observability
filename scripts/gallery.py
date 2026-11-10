@@ -39,6 +39,26 @@ SCREENS = [
         "Freshness & volume",
         "Source SLAs, Orbit's volume drop, and schema drift.",
     ),
+    (
+        "dependencies",
+        "Pipeline dependencies",
+        "Configured routes, observed execution links, and potential downstream impact.",
+    ),
+    (
+        "quality",
+        "Data quality",
+        "Sample-based checks, aggregate evidence, and result history.",
+    ),
+    (
+        "activity",
+        "Activity",
+        "A chronological view of run, alert, onboarding, action, and quality events.",
+    ),
+    (
+        "comparison",
+        "Run comparison",
+        "Side-by-side run metrics and per-stream record differences.",
+    ),
     ("alerts", "Alerts", "Alert lifecycle, notification channels, and built-in rules."),
     ("onboarding", "Onboarding", "The guided setup flow and CDC pre-flight checks."),
     (
