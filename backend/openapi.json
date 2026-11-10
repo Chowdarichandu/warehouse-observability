@@ -7056,6 +7056,107 @@
         }
       }
     },
+    "/api/pipelines/catalog": {
+      "get": {
+        "tags": [
+          "Pipeline catalog"
+        ],
+        "summary": "Catalog",
+        "operationId": "catalog_api_pipelines_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCatalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/saved-views": {
       "get": {
         "tags": [
@@ -8542,6 +8643,133 @@
           "count"
         ],
         "title": "Breakdown"
+      },
+      "CatalogDag": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "phase": {
+            "type": "string",
+            "title": "Phase"
+          },
+          "dag_id": {
+            "type": "string",
+            "title": "Dag Id"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Depends On"
+          },
+          "run_policy": {
+            "type": "string",
+            "title": "Run Policy"
+          },
+          "latest_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Status"
+          },
+          "last_recorded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Recorded At"
+          },
+          "runs_24h": {
+            "type": "integer",
+            "title": "Runs 24H"
+          },
+          "failures_24h": {
+            "type": "integer",
+            "title": "Failures 24H"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "label",
+          "source",
+          "phase",
+          "dag_id",
+          "depends_on",
+          "run_policy",
+          "latest_status",
+          "last_recorded_at",
+          "runs_24h",
+          "failures_24h"
+        ],
+        "title": "CatalogDag"
+      },
+      "CatalogLaunch": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "display_name",
+          "state",
+          "updated_at",
+          "completed",
+          "total"
+        ],
+        "title": "CatalogLaunch"
       },
       "Change": {
         "properties": {
@@ -10616,6 +10844,46 @@
           "temporary_password"
         ],
         "title": "PasswordResetResult"
+      },
+      "PipelineCatalog": {
+        "properties": {
+          "dags": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogDag"
+            },
+            "type": "array",
+            "title": "Dags"
+          },
+          "launches": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogLaunch"
+            },
+            "type": "array",
+            "title": "Launches"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dags",
+          "launches",
+          "generated_at",
+          "simulated",
+          "note"
+        ],
+        "title": "PipelineCatalog"
       },
       "Platform": {
         "properties": {

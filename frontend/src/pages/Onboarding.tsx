@@ -7,16 +7,28 @@ import {
   Check,
   CheckCircle2,
   Circle,
+  Database,
   KeyRound,
   LoaderCircle,
   Rocket,
   ShieldCheck,
+  Workflow,
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
 import { StatusPill } from '../components/StatusPill';
 import { ONBOARDING_FINAL_STEP, dagsFor } from '../onboardingPlan';
+
+const DAG_IDS: Record<string, string> = {
+  onboarding: 'tenant_onboarding',
+  'mysql-provisioning': 'mysql_provisioning',
+  'mongo-provisioning': 'mongodb_provisioning',
+  'mysql-initial': 'mysql_initial_load',
+  'mongo-initial': 'mongodb_initial_load',
+  'mysql-cdc': 'mysql_cdc',
+  'mongo-cdc': 'mongodb_cdc',
+};
 import { ErrorState, Loading, PageHeader, Panel, useFilters } from '../components/ui';
 
 const INITIAL: Schema<'OnboardInput'> = {
@@ -155,8 +167,8 @@ export function Onboarding() {
                 Seven DAGs run in sequence — onboarding, provisioning, initial load and CDC for each
                 source. Steps take about 90 seconds in total.
               </p>
-              <div className="onboard-dags">
-                {dagsFor(draft).map((dag, dagIndex) => {
+              <div className="journey">
+                {dagsFor(draft).map((dag, dagIndex, all) => {
                   const states = dag.steps.map((name) => {
                     const event = progress.data.events
                       .slice()
@@ -165,55 +177,90 @@ export function Onboarding() {
                     return { name, event };
                   });
                   const doneCount = states.filter((s) => s.event?.status === 'ok').length;
-                  const dagState =
-                    doneCount === states.length
+                  const failed = states.some((s) => s.event?.status === 'failed');
+                  const dagState = failed
+                    ? 'failed'
+                    : doneCount === states.length
                       ? 'done'
                       : states.some((s) => s.event)
                         ? 'active'
                         : 'pending';
+                  const stateLabel =
+                    dagState === 'done'
+                      ? 'Passed'
+                      : dagState === 'active'
+                        ? 'Running'
+                        : dagState === 'failed'
+                          ? 'Failed'
+                          : 'Queued';
+                  const kind = dag.id.includes('provisioning')
+                    ? 'PROVISION'
+                    : dag.id.includes('initial')
+                      ? 'INITIAL LOAD'
+                      : dag.id.includes('cdc')
+                        ? 'CONTINUOUS SYNC'
+                        : 'COORDINATE';
+                  const dagId = DAG_IDS[dag.id] || dag.id;
                   return (
-                    <div key={dag.id} className={`onboard-dag ${dagState}`}>
-                      <div className="onboard-dag-head">
-                        <span className="onboard-dag-index">
+                    <div key={dag.id} className={`journey-node ${dagState}`}>
+                      <div className="journey-rail">
+                        <span className="journey-icon">
                           {dagState === 'done' ? (
-                            <CheckCircle2 size={18} />
+                            <CheckCircle2 size={19} />
                           ) : dagState === 'active' ? (
-                            <LoaderCircle size={18} className="spin" />
+                            <LoaderCircle size={19} className="spin" />
+                          ) : dag.source ? (
+                            <Database size={17} />
                           ) : (
-                            <Circle size={18} />
+                            <Workflow size={17} />
                           )}
                         </span>
-                        <strong>
-                          {dagIndex + 1}. {dag.name}
-                        </strong>
-                        <small>
-                          {doneCount}/{states.length} steps
-                        </small>
+                        {dagIndex < all.length - 1 && <span className="journey-line" />}
                       </div>
-                      <div className="onboard-steps">
-                        {states.map(({ name, event }) => (
-                          <div key={name} className={event?.status === 'ok' ? 'done' : ''}>
-                            {event?.status === 'ok' ? (
-                              <CheckCircle2 size={17} />
-                            ) : event?.status === 'started' ? (
-                              <LoaderCircle size={17} className="spin" />
-                            ) : (
-                              <Circle size={17} />
-                            )}
-                            <span>{name}</span>
-                            {event && (
-                              <StatusPill
-                                status={
-                                  event.status === 'ok'
-                                    ? 'success'
-                                    : event.status === 'started'
-                                      ? 'running'
-                                      : 'failed'
-                                }
-                              />
-                            )}
+                      <div className="journey-body">
+                        <div className="journey-top">
+                          <span className="journey-kind">{kind}</span>
+                          <span className={`journey-state ${dagState}`}>{stateLabel}</span>
+                        </div>
+                        <h3>
+                          {dagIndex + 1}. {dag.name}
+                        </h3>
+                        <code className="journey-dag-id">{dagId}</code>
+                        {dagState === 'pending' && dagIndex > 0 && (
+                          <p className="journey-note">
+                            Waiting for {all[dagIndex - 1].name} to pass.
+                          </p>
+                        )}
+                        <details className="journey-steps" open={dagState === 'active'}>
+                          <summary>
+                            {doneCount}/{states.length} steps
+                          </summary>
+                          <div className="onboard-steps">
+                            {states.map(({ name, event }) => (
+                              <div key={name} className={event?.status === 'ok' ? 'done' : ''}>
+                                {event?.status === 'ok' ? (
+                                  <CheckCircle2 size={17} />
+                                ) : event?.status === 'started' ? (
+                                  <LoaderCircle size={17} className="spin" />
+                                ) : (
+                                  <Circle size={17} />
+                                )}
+                                <span>{name}</span>
+                                {event && (
+                                  <StatusPill
+                                    status={
+                                      event.status === 'ok'
+                                        ? 'success'
+                                        : event.status === 'started'
+                                          ? 'running'
+                                          : 'failed'
+                                    }
+                                  />
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </details>
                       </div>
                     </div>
                   );
@@ -223,22 +270,31 @@ export function Onboarding() {
                     .slice()
                     .reverse()
                     .find((e) => e.step === ONBOARDING_FINAL_STEP);
+                  const state = event?.status === 'ok' ? 'done' : event ? 'active' : 'pending';
                   return (
-                    <div
-                      className={`onboard-dag ${event?.status === 'ok' ? 'done' : event ? 'active' : 'pending'}`}
-                    >
-                      <div className="onboard-dag-head">
-                        <span className="onboard-dag-index">
-                          {event?.status === 'ok' ? (
-                            <CheckCircle2 size={18} />
-                          ) : event ? (
-                            <LoaderCircle size={18} className="spin" />
+                    <div className={`journey-node ${state}`}>
+                      <div className="journey-rail">
+                        <span className="journey-icon">
+                          {state === 'done' ? (
+                            <CheckCircle2 size={19} />
+                          ) : state === 'active' ? (
+                            <LoaderCircle size={19} className="spin" />
                           ) : (
-                            <Circle size={18} />
+                            <Rocket size={17} />
                           )}
                         </span>
-                        <strong>{ONBOARDING_FINAL_STEP}</strong>
-                        <small>Tenant goes live</small>
+                      </div>
+                      <div className="journey-body">
+                        <div className="journey-top">
+                          <span className="journey-kind">ACTIVATE</span>
+                          <span className={`journey-state ${state}`}>
+                            {state === 'done' ? 'Live' : state === 'active' ? 'Running' : 'Queued'}
+                          </span>
+                        </div>
+                        <h3>{ONBOARDING_FINAL_STEP}</h3>
+                        <p className="journey-note">
+                          The tenant goes live — pipelines, freshness and alerts switch on.
+                        </p>
                       </div>
                     </div>
                   );

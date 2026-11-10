@@ -958,6 +958,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pipelines/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog */
+        get: operations["catalog_api_pipelines_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/saved-views": {
         parameters: {
             query?: never;
@@ -1175,6 +1192,49 @@ export interface components {
             name: string;
             /** Count */
             count: number;
+        };
+        /** CatalogDag */
+        CatalogDag: {
+            /** Node Id */
+            node_id: string;
+            /** Label */
+            label: string;
+            /** Source */
+            source: string | null;
+            /** Phase */
+            phase: string;
+            /** Dag Id */
+            dag_id: string;
+            /** Depends On */
+            depends_on: string[];
+            /** Run Policy */
+            run_policy: string;
+            /** Latest Status */
+            latest_status: string | null;
+            /** Last Recorded At */
+            last_recorded_at: string | null;
+            /** Runs 24H */
+            runs_24h: number;
+            /** Failures 24H */
+            failures_24h: number;
+        };
+        /** CatalogLaunch */
+        CatalogLaunch: {
+            /** Tenant Id */
+            tenant_id: string;
+            /** Display Name */
+            display_name: string;
+            /** State */
+            state: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Completed */
+            completed: number;
+            /** Total */
+            total: number;
         };
         /** Change */
         Change: {
@@ -2047,6 +2107,22 @@ export interface components {
              * @default true
              */
             simulated: boolean;
+        };
+        /** PipelineCatalog */
+        PipelineCatalog: {
+            /** Dags */
+            dags: components["schemas"]["CatalogDag"][];
+            /** Launches */
+            launches: components["schemas"]["CatalogLaunch"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Simulated */
+            simulated: boolean;
+            /** Note */
+            note: string;
         };
         /** Platform */
         Platform: {
@@ -7904,6 +7980,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DependencyGraph"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalog_api_pipelines_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineCatalog"];
                 };
             };
             /** @description Bad Request */

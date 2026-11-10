@@ -1,0 +1,253 @@
+:root {
+  --accent-soft: color-mix(in srgb, var(--green) 13%, transparent);
+}
+.catalog-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 18px;
+  background: var(--accent-soft);
+  color: var(--green);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 22px;
+  font-size: 10px;
+}
+.catalog-intro > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+}
+.coordinator-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 23px;
+  margin-bottom: 28px;
+}
+.dag-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 21px;
+  min-width: 0;
+}
+.dag-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 15px;
+}
+.dag-icon {
+  height: 33px;
+  width: 33px;
+  background: var(--accent-soft);
+  color: var(--green);
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.dag-phase {
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 650;
+}
+.dag-card-head .status-pill,
+.dag-unobserved {
+  margin-left: auto;
+}
+.dag-unobserved {
+  font-size: 9px;
+  color: var(--muted);
+}
+.dag-card h3 {
+  font-size: 15px;
+  letter-spacing: -0.35px;
+  color: var(--title);
+  font-weight: 750;
+  margin-bottom: 6px;
+}
+.dag-card > code {
+  font-size: 10px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.dag-card > p {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 16px 0 21px;
+  min-height: 58px;
+}
+.dag-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 13px;
+  color: var(--text);
+}
+.dag-observed {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 9px;
+}
+.coordinator-explainer {
+  padding: 21px 24px;
+  border-left: 2px solid #72b9a5;
+}
+.coordinator-explainer h2 {
+  font-size: 23px;
+  line-height: 1.4;
+  color: var(--title);
+  letter-spacing: -0.7px;
+  font-weight: 650;
+  margin: 8px 0 13px;
+}
+.coordinator-explainer p {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.85;
+  max-width: 420px;
+  margin-bottom: 15px;
+}
+.source-branch {
+  margin-bottom: 24px;
+}
+.source-branch-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.branch-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--title);
+  font-weight: 750;
+}
+.dag-branch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.dag-mongo .dag-icon {
+  color: #6d7ead;
+  background: #edf1fa;
+}
+:root[data-theme='dark'] .dag-mongo .dag-icon {
+  background: #28364c;
+  color: #a7badd;
+}
+.catalog-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 10px;
+  color: var(--muted);
+  margin: 4px 0 25px;
+  line-height: 1.8;
+}
+.catalog-note svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.launch-list {
+  padding: 0 21px;
+}
+.launch-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 17px 0;
+  border-bottom: 1px solid var(--line);
+}
+.launch-item:last-child {
+  border: 0;
+}
+.launch-item > div {
+  flex: 1;
+  min-width: 0;
+}
+.launch-item strong {
+  display: block;
+  font-size: 12px;
+  color: var(--title);
+}
+.launch-item div > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.launch-item:hover strong {
+  color: var(--green);
+}
+.governance-link {
+  padding: 20px 23px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.governance-link > svg {
+  color: var(--green);
+  flex-shrink: 0;
+}
+.governance-link > div {
+  flex: 1;
+}
+.governance-link strong {
+  font-size: 12px;
+  color: var(--title);
+}
+.governance-link p {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+@media (max-width: 1100px) {
+  .dag-branch-grid {
+    grid-template-columns: 1fr;
+  }
+  .dag-card > p {
+    min-height: 0;
+  }
+  .coordinator-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .coordinator-row {
+    grid-template-columns: 1fr;
+  }
+  .coordinator-explainer h2 br {
+    display: none;
+  }
+  .coordinator-explainer {
+    padding: 14px 20px;
+  }
+  .catalog-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .source-branch-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .launch-item {
+    flex-wrap: wrap;
+  }
+  .governance-link {
+    flex-wrap: wrap;
+  }
+}

@@ -50,6 +50,7 @@ import { Onboarding } from './pages/Onboarding';
 import { Admin, Platform, SearchResults } from './pages/System';
 import { Quality } from './pages/Quality';
 import { Warehouse } from './pages/Warehouse';
+import { Pipelines } from './pages/Pipelines';
 import { Dependencies } from './pages/Dependencies';
 import { Activity as ActivityPage } from './components/Investigation';
 
@@ -66,6 +67,7 @@ const NAV = [
       { path: '/', label: 'Overview', icon: LayoutDashboard },
       { path: '/tenants', label: 'Tenants', icon: Users },
       { path: '/runs', label: 'Pipeline runs', icon: Activity },
+      { path: '/pipelines', label: 'Pipelines', icon: Workflow },
       { path: '/activity', label: 'Activity', icon: CalendarDays },
     ],
   },
@@ -495,6 +497,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/tenants" element={<Tenants />} />
                 <Route path="/tenants/:id" element={<TenantDetail />} />
                 <Route path="/runs" element={<Runs />} />
+                <Route path="/pipelines" element={<Pipelines />} />
                 <Route path="/runs/:key" element={<RunDetail />} />
                 <Route path="/activity" element={<ActivityPage />} />
                 <Route path="/dependencies" element={<Dependencies />} />

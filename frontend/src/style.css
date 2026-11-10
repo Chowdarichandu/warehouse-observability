@@ -4074,3 +4074,121 @@ button.workspace-switch:hover {
 *::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Onboarding journey (ported design) */
+.journey {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  max-width: 720px;
+  margin: 18px auto 6px;
+}
+.journey-node {
+  display: flex;
+  gap: 14px;
+}
+.journey-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.journey-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+.journey-node.done .journey-icon {
+  border-color: var(--green);
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 10%, var(--surface));
+}
+.journey-node.active .journey-icon {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--green) 13%, transparent);
+}
+.journey-node.failed .journey-icon {
+  border-color: var(--red, #d9534f);
+  color: var(--red, #d9534f);
+}
+.journey-line {
+  width: 2px;
+  flex: 1;
+  min-height: 22px;
+  background: var(--line);
+  margin: 4px 0;
+}
+.journey-node.done .journey-line {
+  background: var(--green);
+}
+.journey-body {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 20px;
+}
+.journey-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.journey-kind {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+.journey-state {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--muted);
+}
+.journey-state.done {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+}
+.journey-state.active {
+  color: var(--amber, #b97e0c);
+  background: color-mix(in srgb, var(--amber, #d9930d) 14%, transparent);
+}
+.journey-state.failed {
+  color: var(--red, #d9534f);
+}
+.journey-body h3 {
+  margin: 4px 0 2px;
+  font-size: 1.02rem;
+  color: var(--title);
+}
+.journey-dag-id {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.journey-note {
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin: 5px 0 0;
+}
+.journey-steps {
+  margin-top: 8px;
+}
+.journey-steps summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  width: fit-content;
+}
+.journey-steps .onboard-steps {
+  margin-top: 8px;
+}

@@ -381,3 +381,24 @@ def test_workflow_trigger_and_warehouse(clients: dict) -> None:
     view = warehouse.json()
     assert view["table_count"] >= 1
     assert view["total_rows"] > 0
+
+
+def test_pipeline_catalog(clients: dict) -> None:
+    response = clients["viewer"].get("/api/pipelines/catalog")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    node_ids = {d["node_id"] for d in body["dags"]}
+    assert {
+        "coordinator",
+        "mysql_provision",
+        "mysql_initial",
+        "mysql_cdc",
+        "mongo_provision",
+        "mongo_initial",
+        "mongo_cdc",
+        "analytics_marts",
+    } <= node_ids
+    mysql_cdc = next(d for d in body["dags"] if d["node_id"] == "mysql_cdc")
+    assert mysql_cdc["dag_id"] == "mysql_cdc"
+    assert mysql_cdc["depends_on"] == ["mysql_initial"]
+    assert mysql_cdc["latest_status"] in {"success", "failed", "running", None}
