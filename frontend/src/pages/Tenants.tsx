@@ -349,6 +349,51 @@ export function TenantDetail() {
   const { config, health, tables, alerts, errors, schema_changes, events } = query.data;
   const runs = timeline.data?.items || [];
   const sorted = [...runs].sort((a, b) => (a.started_at || '').localeCompare(b.started_at || ''));
+  const pipelineKeys = (
+    [
+      ['mysql', 'cdc', '#18956f'],
+      ['mongo', 'cdc', '#7297c5'],
+      ['mysql', 'initial', '#a8c7b0'],
+      ['mongo', 'initial', '#b7a5cb'],
+    ] as const
+  ).filter(([source]) => (source === 'mysql' ? config.has_mysql : config.has_mongo));
+  const percentile = (values: number[], q: number) => {
+    if (!values.length) return null;
+    const ordered = [...values].sort((a, b) => a - b);
+    return ordered[Math.min(ordered.length - 1, Math.ceil(q * ordered.length) - 1)];
+  };
+  const average = (values: number[]) =>
+    values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : null;
+  const minutes = (seconds: number | null) => (seconds == null ? null : seconds / 60);
+  const metricRows = pipelineKeys.map(([source, load]) => {
+    const own = runs.filter((r) => r.source_type === source && r.load_type === load);
+    const durations = own
+      .filter((r) => r.status === 'success' && r.duration_s != null)
+      .map((r) => r.duration_s!);
+    const queues = own.filter((r) => r.queue_delay_s != null).map((r) => r.queue_delay_s!);
+    return {
+      name: `${source} ${load}`,
+      count: own.length,
+      avg: minutes(average(durations)),
+      p95: minutes(percentile(durations, 0.95)),
+      queueAvg: minutes(average(queues)),
+      queueP95: minutes(percentile(queues, 0.95)),
+    };
+  });
+  const hourBuckets = new Map<string, Map<string, number[]>>();
+  for (const run of runs) {
+    if (run.status !== 'success' || run.duration_s == null || !run.started_at) continue;
+    const hour = new Date(run.started_at);
+    hour.setMinutes(0, 0, 0);
+    const key = hour.toISOString();
+    if (!hourBuckets.has(key)) hourBuckets.set(key, new Map());
+    const label = `${run.source_type} ${run.load_type}`;
+    const bucket = hourBuckets.get(key)!;
+    bucket.set(label, [...(bucket.get(label) || []), run.duration_s / 60]);
+  }
+  const metricHours = [...hourBuckets.keys()].sort();
+  const formatMinutes = (value: number | null) =>
+    value == null ? '—' : `${Math.round(value * 10) / 10}m`;
   return (
     <>
       <Back to="/tenants">All tenants</Back>
@@ -462,6 +507,72 @@ export function TenantDetail() {
           </Link>
         </div>
       </div>
+      <Panel
+        title="Duration & queue metrics"
+        subtitle="Successful duration in minutes, split by pipeline for this tenant. Queue delay measures Airflow capacity."
+      >
+        {runs.length ? (
+          <>
+            <Chart
+              label={`Average duration trend by pipeline for ${config.display_name}`}
+              option={{
+                legend: { top: 0, textStyle: { color: '#81909f', fontSize: 10 } },
+                xAxis: {
+                  type: 'category',
+                  data: metricHours.map((h) =>
+                    new Date(h).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  ),
+                  axisLabel: {
+                    color: '#81909f',
+                    fontSize: 9,
+                    interval: Math.max(0, Math.floor(metricHours.length / 8)),
+                  },
+                },
+                yAxis: { type: 'value', splitLine: { lineStyle: { color: '#81909f22' } } },
+                series: pipelineKeys.map(([source, load, color]) => ({
+                  name: `${source} ${load}`,
+                  type: 'line',
+                  showSymbol: false,
+                  smooth: true,
+                  connectNulls: true,
+                  itemStyle: { color },
+                  data: metricHours.map((h) => {
+                    const values = hourBuckets.get(h)?.get(`${source} ${load}`);
+                    const avg = average(values || []);
+                    return avg == null ? null : Math.round(avg * 100) / 100;
+                  }),
+                })),
+              }}
+            />
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pipeline</th>
+                    <th>Duration · avg</th>
+                    <th>Duration · p95</th>
+                    <th>Queue delay · avg</th>
+                    <th>Queue delay · p95</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metricRows.map((row) => (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{formatMinutes(row.avg)}</td>
+                      <td>{formatMinutes(row.p95)}</td>
+                      <td>{formatMinutes(row.queueAvg)}</td>
+                      <td>{formatMinutes(row.queueP95)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p className="muted">No runs in the selected range for this tenant yet.</p>
+        )}
+      </Panel>
       <Panel
         title="Pipeline timeline"
         subtitle="Select a run to inspect its metrics and log."
