@@ -30,6 +30,7 @@ def temporary_password() -> str:
 # (obs.roles) assigned via role_name replaces the bundle for its user.
 PERMISSIONS = [
     "view_console",
+    "metrics_only",
     "trigger_pipelines",
     "manage_tenants",
     "manage_alerts",
@@ -37,7 +38,7 @@ PERMISSIONS = [
     "manage_platform",
 ]
 SYSTEM_ROLE_PERMISSIONS = {
-    "admin": list(PERMISSIONS),
+    "admin": [permission for permission in PERMISSIONS if permission != "metrics_only"],
     "operator": ["view_console", "trigger_pipelines", "manage_tenants", "manage_alerts"],
     "viewer": ["view_console"],
 }
@@ -45,6 +46,7 @@ SYSTEM_ROLE_PERMISSIONS = {
 
 PERMISSION_MIN_ROLE = {
     "view_console": "viewer",
+    "metrics_only": "viewer",
     "trigger_pipelines": "operator",
     "manage_tenants": "operator",
     "manage_alerts": "operator",
@@ -106,15 +108,35 @@ def fail(status: int, code: str, message: str) -> None:
     raise HTTPException(status, detail={"code": code, "message": message})
 
 
-def check_login_rate(request: Request) -> None:
-    key = request.client.host if request.client else "unknown"
+def _login_rate_key(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _prune_login_attempts(key: str, now: float) -> deque[float]:
     attempts = login_attempts[key]
-    now = monotonic()
     while attempts and attempts[0] < now - 60:
         attempts.popleft()
+    return attempts
+
+
+def check_login_rate(request: Request, *, record: bool = True) -> None:
+    key = _login_rate_key(request)
+    now = monotonic()
+    attempts = _prune_login_attempts(key, now)
     if len(attempts) >= 10:
         fail(429, "rate_limited", "Too many login attempts. Try again in a minute.")
-    attempts.append(now)
+    if record:
+        attempts.append(now)
+
+
+def record_login_failure(request: Request) -> None:
+    key = _login_rate_key(request)
+    now = monotonic()
+    _prune_login_attempts(key, now).append(now)
+
+
+def clear_login_attempts(request: Request) -> None:
+    login_attempts.pop(_login_rate_key(request), None)
 
 
 def verify_password(password: str, encoded: str) -> bool:
@@ -163,11 +185,40 @@ def current_user(request: Request) -> dict:
     granted = user_permissions(user)
     if "view_console" not in granted:
         fail(403, "forbidden", "Your assigned role cannot access this workspace.")
+    if "metrics_only" in granted and not _metrics_only_request_allowed(request):
+        fail(
+            403,
+            "metrics_only",
+            "This account is limited to workspace metrics and account settings.",
+        )
     return {
         **user,
         "csrf_token": claims["csrf"],
         "session_id": claims["jti"],
         "permissions": granted,
+    }
+
+
+def _metrics_only_request_allowed(request: Request) -> bool:
+    """Allow a metrics-only identity to use the dashboard and manage its own session."""
+    path = request.url.path
+    if request.method in {"GET", "HEAD"}:
+        return path in {
+            "/api/me",
+            "/api/access",
+            "/api/metrics/overview",
+            "/api/metrics/tenants",
+            "/api/stream",
+        } or (
+            len(path.split("/")) == 5
+            and path.split("/")[1:3] == ["api", "tenants"]
+            and bool(path.split("/")[3])
+            and path.split("/")[4] == "metrics"
+        )
+    return request.method == "POST" and path in {
+        "/api/auth/logout",
+        "/api/auth/password",
+        "/api/auth/change-password",
     }
 
 

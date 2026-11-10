@@ -124,7 +124,7 @@ def platform() -> dict:
     }
 
 
-def overview(start: datetime, end: datetime) -> dict:
+def overview(start: datetime, end: datetime, include_detail: bool = True) -> dict:
     aggregate = one(
         """SELECT count(*) AS total_runs,count(*) FILTER(WHERE status='failed') AS failed_runs,
       round(100.0*count(*) FILTER(WHERE status='success')/nullif(count(*) FILTER(WHERE status IN('success','failed')),0),2) AS success_rate,
@@ -152,14 +152,18 @@ def overview(start: datetime, end: datetime) -> dict:
       FROM obs.pipeline_runs WHERE started_at>=%s AND started_at<%s GROUP BY 1 ORDER BY 1""",
         (start, end),
     )
-    recent = rows(
-        """SELECT r.*,e.error_class FROM obs.pipeline_runs r LEFT JOIN obs.run_errors e USING(run_key)
-       WHERE r.status='failed' AND started_at>=%s AND started_at<%s ORDER BY started_at DESC LIMIT 6""",
-        (start, end),
+    recent = (
+        rows(
+            """SELECT r.*,e.error_class FROM obs.pipeline_runs r LEFT JOIN obs.run_errors e USING(run_key)
+           WHERE r.status='failed' AND started_at>=%s AND started_at<%s ORDER BY started_at DESC LIMIT 6""",
+            (start, end),
+        )
+        if include_detail
+        else []
     )
     return {
         "kpis": {**aggregate, **counts},
-        "platform": platform()["components"],
+        "platform": platform()["components"] if include_detail else [],
         "series": series,
         "durations": duration_metrics(start, end),
         "recent_failures": recent,

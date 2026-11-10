@@ -22,7 +22,7 @@ test.beforeAll(async ({ browser }) => {
     .fill(process.env.DEMO_PASSWORD || "demo");
   await page.getByRole("button", { name: "Sign in to workspace" }).click();
   await expect(
-    page.getByRole("heading", { name: "Pipeline overview" }),
+    page.getByRole("heading", { name: "Tenant health" }),
   ).toBeVisible({ timeout: 30_000 });
   adminState = await page.context().storageState();
   await page.close();
@@ -144,7 +144,10 @@ test("errors, heatmap, recovery metrics, freshness, and schema drift", async ({
     page.getByRole("heading", { name: "Data freshness" }),
   ).toBeVisible();
   await expect(
-    page.locator(".anomaly-card").filter({ hasText: /orbit logistics/i }).first(),
+    page
+      .locator(".anomaly-card")
+      .filter({ hasText: /orbit logistics/i })
+      .first(),
   ).toBeVisible();
   await expect(page.locator(".schema-card")).toContainText("delivery_region");
   await page.screenshot({

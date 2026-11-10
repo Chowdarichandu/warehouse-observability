@@ -52,6 +52,7 @@ export function useApp() {
     can,
     canOperate: has('trigger_pipelines'),
     canMutatePipelines: can('pipelines.retry'),
+    isMetricsOnly: has('metrics_only'),
     isAdmin: has('manage_users'),
   };
 }

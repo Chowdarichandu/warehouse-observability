@@ -314,6 +314,32 @@ class Overview(BaseModel):
     as_of: datetime
 
 
+class MetricsOverview(BaseModel):
+    kpis: Kpis
+    series: list[HourMetric]
+    durations: list[DurationMetric]
+    as_of: datetime
+
+
+class MetricsPipelineStatus(BaseModel):
+    source_type: Literal["mysql", "mongo"]
+    load_type: Literal["initial", "cdc"]
+    status: Literal["queued", "running", "success", "failed", "cancelled", "skipped"]
+
+
+class MetricsTenant(BaseModel):
+    tenant_id: str
+    display_name: str
+    health: str
+    freshness_sla_min: int
+    failures_24h: int
+    worst_stale_min: float | None = None
+    sla_compliance: float | None = None
+    avg_duration_min: float | None = None
+    last_success_at: datetime | None = None
+    pipeline_statuses: list[MetricsPipelineStatus] = []
+
+
 class ErrorGroup(BaseModel):
     fingerprint: str
     error_class: str
@@ -528,6 +554,16 @@ class RoleIn(BaseModel):
     base_level: Literal["viewer", "operator", "admin"]
     permissions: list[str] = []
     description: str | None = None
+
+    @model_validator(mode="after")
+    def metrics_only_must_be_read_only(self):
+        if "metrics_only" in self.permissions and (
+            self.base_level != "viewer" or set(self.permissions) - {"view_console", "metrics_only"}
+        ):
+            raise ValueError(
+                "Metrics-only roles must use Viewer access and cannot include other permissions."
+            )
+        return self
 
 
 class RoleOut(BaseModel):

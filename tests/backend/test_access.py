@@ -356,6 +356,7 @@ def test_admin_views_user_permissions(clients):
     assert body["effective"] == sorted(body["bundle"])
     assert {item["name"] for item in body["permissions"]} == {
         "view_console",
+        "metrics_only",
         "trigger_pipelines",
         "manage_tenants",
         "manage_alerts",

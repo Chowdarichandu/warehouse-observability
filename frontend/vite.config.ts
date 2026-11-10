@@ -21,7 +21,7 @@ export default defineConfig({
   },
   preview: { host: '127.0.0.1', port: 8080, proxy: { '/api': 'http://127.0.0.1:8000' } },
   test: {
-    pool: 'threads',
+    pool: 'forks',
     maxWorkers: 1,
     fileParallelism: false,
     environment: 'jsdom',

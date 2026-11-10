@@ -86,6 +86,10 @@ Effective permissions, role guide, and account management.
 
 [![Access & roles](access.png)](access.png)
 
+[Metrics-only dashboard](metrics-only.png)
+
+[Metrics-only dashboard · mobile](metrics-only-mobile.png)
+
 ## Account settings
 
 Sign-in settings and secure password change.

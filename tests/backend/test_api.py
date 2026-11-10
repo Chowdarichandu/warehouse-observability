@@ -13,6 +13,8 @@ from obs.demo.seed import seed
     "path",
     [
         "/overview",
+        "/metrics/overview",
+        "/metrics/tenants",
         "/tenants",
         "/tenants/acme_retail",
         "/tenants/acme_retail/timeline",
@@ -51,6 +53,28 @@ def test_authentication_and_csrf(clients: dict) -> None:
         "/api/channels/slack-data-eng/test", headers={"Origin": "https://evil.example"}
     )
     assert response.status_code == 403
+
+
+def test_login_throttle_counts_failures_without_blocking_successful_sessions(
+    clients: dict,
+) -> None:
+    from obs.auth import login_attempts
+
+    login_attempts.clear()
+    credentials = {"email": "admin@demo.local", "password": "demo"}
+    invalid = {"email": "admin@demo.local", "password": "incorrect"}
+    with TestClient(app, base_url="https://localhost") as login_client:
+        for _ in range(12):
+            assert (
+                login_client.post("/api/auth/login", json=credentials).status_code
+                == 200
+            )
+
+        for _ in range(10):
+            assert login_client.post("/api/auth/login", json=invalid).status_code == 401
+        limited = login_client.post("/api/auth/login", json=invalid)
+        assert limited.status_code == 429
+        assert limited.json()["error"]["code"] == "rate_limited"
 
 
 def test_roles_are_enforced_on_server(clients: dict) -> None:
@@ -352,6 +376,133 @@ def test_roles_reset_and_trigger(clients: dict) -> None:
     assert restored.status_code == 200
     deleted = admin.delete("/api/roles/support_engineer")
     assert deleted.status_code == 200, deleted.text
+
+
+def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
+    admin = clients["admin"]
+    viewer = clients["viewer"]
+    role_name = f"metrics_observer_{uuid4().hex[:8]}"
+    invalid_role = admin.post(
+        "/api/roles",
+        json={
+            "name": f"invalid_metrics_{uuid4().hex[:8]}",
+            "base_level": "operator",
+            "permissions": ["metrics_only", "trigger_pipelines"],
+            "description": "Must not combine metrics-only with other access",
+        },
+    )
+    assert invalid_role.status_code == 422
+    created = admin.post(
+        "/api/roles",
+        json={
+            "name": role_name,
+            "base_level": "viewer",
+            "permissions": ["metrics_only"],
+            "description": "Read workspace metrics only",
+        },
+    )
+    assert created.status_code == 201, created.text
+    assert set(created.json()["permissions"]) == {"view_console", "metrics_only"}
+
+    viewer_id = one(
+        "SELECT user_id FROM obs.users WHERE email=%s", ("viewer@demo.local",)
+    )["user_id"]
+    assigned = admin.patch(f"/api/users/{viewer_id}", json={"role_name": role_name})
+    assert assigned.status_code == 200, assigned.text
+    try:
+        identity = viewer.get("/api/me")
+        assert identity.status_code == 200, identity.text
+        assert identity.json()["role_name"] == role_name
+        assert set(identity.json()["permissions"]) == {"view_console", "metrics_only"}
+
+        overview = viewer.get("/api/metrics/overview")
+        assert overview.status_code == 200, overview.text
+        assert {"kpis", "series", "durations", "as_of"} <= set(overview.json())
+        assert "recent_failures" not in overview.json()
+        tenant_metrics = viewer.get("/api/metrics/tenants?page_size=200")
+        assert tenant_metrics.status_code == 200, tenant_metrics.text
+        assert tenant_metrics.json()["items"]
+        assert set(tenant_metrics.json()["items"][0]) == {
+            "tenant_id",
+            "display_name",
+            "health",
+            "freshness_sla_min",
+            "failures_24h",
+            "worst_stale_min",
+            "sla_compliance",
+            "avg_duration_min",
+            "last_success_at",
+            "pipeline_statuses",
+        }
+        assert "latest_runs" not in tenant_metrics.json()["items"][0]
+        assert "run_key" not in tenant_metrics.json()["items"][0]
+        assert viewer.get("/api/tenants/acme_retail/metrics").status_code == 200
+
+        policy = viewer.get("/api/access")
+        assert policy.status_code == 200
+        capabilities = {item["id"]: item for item in policy.json()["permissions"]}
+        assert capabilities["metrics.dashboard"]["enabled"]
+        assert not capabilities["workspace.read"]["allowed"]
+
+        for path in (
+            "/api/overview",
+            "/api/tenants",
+            "/api/tenants/acme_retail",
+            "/api/tenants/acme_retail/timeline",
+            "/api/tenants/acme_retail/workflow",
+            "/api/runs",
+            "/api/runs/not-a-real-run",
+            "/api/runs/not-a-real-run/log",
+            "/api/errors/groups?range=7d",
+            "/api/metrics/durations",
+            "/api/metrics/mttr",
+            "/api/metrics/failures-heatmap",
+            "/api/metrics/failures-breakdown",
+            "/api/freshness",
+            "/api/volume-anomalies",
+            "/api/schema-changes",
+            "/api/alerts",
+            "/api/alert-rules",
+            "/api/channels",
+            "/api/platform/health",
+            "/api/search?q=binlog",
+            "/api/audit",
+            "/api/users",
+            "/api/roles",
+            "/api/dependencies",
+            "/api/dependencies/tenants",
+            "/api/pipelines/catalog",
+            "/api/quality/checks",
+            "/api/quality/results",
+            "/api/warehouse?tenant=acme_retail",
+            "/api/investigation/timeline",
+            "/api/saved-views",
+        ):
+            denied = viewer.get(path)
+            assert denied.status_code == 403, (path, denied.text)
+            assert denied.json()["error"]["code"] == "metrics_only"
+        retry = viewer.post(
+            "/api/runs/not-a-real-run/retry",
+            headers={"X-CSRF-Token": identity.json()["csrf_token"]},
+        )
+        assert retry.status_code == 403
+        assert retry.json()["error"]["code"] == "metrics_only"
+        for path in (
+            "/api/tenants/acme_retail/resync",
+            "/api/alerts/1/ack",
+            "/api/quality/checks/1/run",
+            f"/api/users/{viewer_id}/revoke-sessions",
+        ):
+            denied_action = viewer.post(
+                path, headers={"X-CSRF-Token": identity.json()["csrf_token"]}
+            )
+            assert denied_action.status_code == 403, (path, denied_action.text)
+            assert denied_action.json()["error"]["code"] == "metrics_only"
+    finally:
+        restored = admin.patch(f"/api/users/{viewer_id}", json={"role": "viewer"})
+        assert restored.status_code == 200, restored.text
+        deleted = admin.delete(f"/api/roles/{role_name}")
+        assert deleted.status_code == 200, deleted.text
 
 
 def test_admin_password_reset(clients: dict, temporary_local_user) -> None:

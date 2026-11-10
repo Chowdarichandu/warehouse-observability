@@ -4665,6 +4665,19 @@ tbody tr:hover {
   font-size: 9px;
   margin-top: 7px;
 }
+.metrics-only-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.metrics-only-kpis .kpi-card {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.metrics-only-kpis .kpi-card:nth-child(3n) {
+  border-right: 0;
+}
+.metrics-only-kpis .kpi-card:nth-last-child(-n + 3) {
+  border-bottom: 0;
+}
 .platform-strip {
   border-radius: 9px;
   padding: 13px 17px;
@@ -4769,6 +4782,18 @@ tbody tr:hover {
   }
   .executive-metrics .kpi-card:nth-child(-n + 2) {
     border-bottom: 1px solid var(--line);
+  }
+  .metrics-only-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metrics-only-kpis .kpi-card:nth-child(2n) {
+    border-right: 0;
+  }
+  .metrics-only-kpis .kpi-card:nth-child(2n + 1) {
+    border-right: 1px solid var(--line);
+  }
+  .metrics-only-kpis .kpi-card:nth-last-child(-n + 2) {
+    border-bottom: 0;
   }
   .page-content {
     padding: 22px 20px 30px;
@@ -5740,4 +5765,23 @@ tr.row-selected td {
 .is-fetching {
   opacity: 0.5;
   transition: opacity 0.18s ease;
+}
+
+@media (max-width: 600px) {
+  .range-bar {
+    height: auto;
+    min-height: 0;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 10px 14px;
+  }
+
+  .range-bar > .demo-tag {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .range-bar > .inline-flex {
+    margin-left: auto;
+  }
 }

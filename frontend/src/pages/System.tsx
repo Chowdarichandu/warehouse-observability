@@ -198,6 +198,7 @@ export function Platform() {
 
 const PERMISSION_LABELS: Record<string, string> = {
   view_console: 'View console',
+  metrics_only: 'Metrics dashboard only',
   trigger_pipelines: 'Trigger & retry pipelines',
   manage_tenants: 'Onboard & edit tenants',
   manage_alerts: 'Acknowledge & resolve alerts',
@@ -212,6 +213,7 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
   const [baseLevel, setBaseLevel] = useState('operator');
   const [description, setDescription] = useState('');
   const [picked, setPicked] = useState<string[]>(['trigger_pipelines']);
+  const metricsOnly = picked.includes('metrics_only');
   const create = useMutation({
     mutationFn: () =>
       api<Schema<'RoleOut'>>('/roles', {
@@ -228,6 +230,7 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
       setName('');
       setDescription('');
       setPicked(['trigger_pipelines']);
+      setBaseLevel('operator');
       void client.invalidateQueries({ queryKey: ['roles'] });
     },
     onError: (e) => notify(e.message),
@@ -241,10 +244,19 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
     },
     onError: (e) => notify(e.message),
   });
-  const toggle = (permission: string) =>
+  const toggle = (permission: string) => {
+    if (permission === 'metrics_only') {
+      if (metricsOnly) setPicked([]);
+      else {
+        setBaseLevel('viewer');
+        setPicked(['metrics_only']);
+      }
+      return;
+    }
     setPicked((prev) =>
       prev.includes(permission) ? prev.filter((x) => x !== permission) : [...prev, permission],
     );
+  };
   return (
     <Panel
       title="Roles & permissions"
@@ -309,7 +321,11 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
           </label>
           <label>
             Access level
-            <Select value={baseLevel} onChange={(e) => setBaseLevel(e.target.value)}>
+            <Select
+              value={baseLevel}
+              disabled={metricsOnly}
+              onChange={(e) => setBaseLevel(e.target.value)}
+            >
               <option value="viewer">Viewer — look, don’t touch</option>
               <option value="operator">Operator — run day-to-day work</option>
               <option value="admin">Admin — full control</option>
@@ -331,11 +347,14 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
               <input
                 type="checkbox"
                 checked={permission === 'view_console' || picked.includes(permission)}
-                disabled={permission === 'view_console'}
+                disabled={
+                  permission === 'view_console' || (metricsOnly && permission !== 'metrics_only')
+                }
                 onChange={() => toggle(permission)}
               />
               {label}
               {permission === 'view_console' && <small> (always on)</small>}
+              {permission === 'metrics_only' && <small> (dashboard and account only)</small>}
             </label>
           ))}
         </fieldset>
@@ -426,11 +445,23 @@ function PermissionsDialog({
               </p>
               <div className="role-perms-picker">
                 {data.permissions.map((meta) => {
-                  const locked = (ROLE_RANK[meta.min_role] ?? 0) > (ROLE_RANK[data.role] ?? 0);
                   const inBundle = data.bundle.includes(meta.name);
                   const checked = current.has(meta.name);
+                  const metricsConflict =
+                    meta.name === 'metrics_only' &&
+                    (data.role !== 'viewer' ||
+                      data.bundle.some(
+                        (permission) => !['view_console', 'metrics_only'].includes(permission),
+                      ));
+                  const metricsRestricted = current.has('metrics_only');
+                  const locked =
+                    (ROLE_RANK[meta.min_role] ?? 0) > (ROLE_RANK[data.role] ?? 0) ||
+                    metricsConflict ||
+                    (metricsRestricted && !['view_console', 'metrics_only'].includes(meta.name));
                   const tag = locked
-                    ? `Needs ${meta.min_role} role`
+                    ? metricsConflict || metricsRestricted
+                      ? 'Viewer metrics-only scope'
+                      : `Needs ${meta.min_role} role`
                     : meta.name === 'view_console'
                       ? 'Always on'
                       : checked && !inBundle

@@ -30,6 +30,8 @@ router = APIRouter(tags=["Audited actions"])
 
 def _check_grantable(actor: dict, role: str, bundle: list[str]) -> None:
     actor_rights = effective_permissions(actor.get("role", ""), actor.get("permissions", []))
+    if "manage_users" in actor_rights:
+        actor_rights.add("metrics_only")
     if not effective_permissions(role, bundle).issubset(actor_rights):
         fail(403, "permission_escalation", "You cannot grant permissions beyond your own.")
 
@@ -283,6 +285,7 @@ def update_user(
             str(id),
             {"role": new_role, "role_name": new_role_name, "user": redact(target["email"])},
         )
+        notify(conn, "access.changed", {})
     return {"message": "User role updated.", "simulated": False}
 
 
@@ -557,6 +560,14 @@ def set_user_permissions(
         base = _target_bundle(conn, target)
         merged = [p for p in base if p not in revokes]
         merged += [p for p in grants if p not in merged]
+        if "metrics_only" in merged and (
+            target["role"] != "viewer" or set(merged) - {"view_console", "metrics_only"}
+        ):
+            fail(
+                422,
+                "metrics_only_conflict",
+                "Metrics-only access requires a Viewer role with no other permissions.",
+            )
         _check_grantable(user, target["role"], merged)
         if target["role"] == "admin" and "manage_users" not in effective_permissions(
             target["role"], merged
@@ -588,6 +599,7 @@ def set_user_permissions(
             str(id),
             {"grants": grants, "revokes": revokes, "user": redact(target["email"])},
         )
+        notify(conn, "access.changed", {})
         return _permissions_view(conn, target)
 
 

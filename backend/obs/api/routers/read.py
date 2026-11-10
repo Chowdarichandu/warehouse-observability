@@ -27,6 +27,51 @@ def overview(
     return a.overview(*a.bounds(range, from_, to))
 
 
+@router.get("/metrics/overview", response_model=s.MetricsOverview)
+def metrics_overview(
+    range: str = "24h",
+    from_: datetime | None = Query(None, alias="from"),
+    to: datetime | None = None,
+) -> dict:
+    """Return aggregate dashboard metrics without run-level or platform detail."""
+    data = a.overview(*a.bounds(range, from_, to), include_detail=False)
+    return {
+        "kpis": data["kpis"],
+        "series": data["series"],
+        "durations": data["durations"],
+        "as_of": data["as_of"],
+    }
+
+
+@router.get("/metrics/tenants", response_model=s.Page[s.MetricsTenant])
+def metrics_tenants(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
+    """Expose tenant labels and metric summaries, excluding run identifiers and logs."""
+    items = []
+    for tenant in a.tenants():
+        items.append(
+            {
+                "tenant_id": tenant["tenant_id"],
+                "display_name": tenant["display_name"],
+                "health": tenant["health"],
+                "freshness_sla_min": tenant["freshness_sla_min"],
+                "failures_24h": tenant["failures_24h"],
+                "worst_stale_min": tenant["worst_stale_min"],
+                "sla_compliance": tenant["sla_compliance"],
+                "avg_duration_min": tenant["avg_duration_min"],
+                "last_success_at": tenant["last_success_at"],
+                "pipeline_statuses": [
+                    {
+                        "source_type": run["source_type"],
+                        "load_type": run["load_type"],
+                        "status": run["status"],
+                    }
+                    for run in tenant["latest_runs"]
+                ],
+            }
+        )
+    return a.page(items, page, page_size)
+
+
 @router.get("/tenants", response_model=s.Page[s.Tenant])
 def tenants(q: str = "", health: str = "", page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     items = [

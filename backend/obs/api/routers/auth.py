@@ -15,9 +15,11 @@ from obs.api.schemas import (
 from obs.audit import audit
 from obs.auth import (
     check_login_rate,
+    clear_login_attempts,
     current_user,
     fail,
     hasher,
+    record_login_failure,
     temporary_password,
     token,
     user_permissions,
@@ -70,7 +72,7 @@ def change_password(
 def login(data: Login, request: Request, response: Response) -> dict:
     if settings().auth_provider != "local" or settings().mode != "demo":
         fail(403, "sso_required", "Use your organization account to sign in.")
-    check_login_rate(request)
+    check_login_rate(request, record=False)
     origin = request.headers.get("origin")
     allowed_hosts = {request.headers.get("host"), urlsplit(settings().console_url).netloc}
     if origin and urlsplit(origin).netloc not in allowed_hosts:
@@ -78,7 +80,9 @@ def login(data: Login, request: Request, response: Response) -> dict:
     user = one("SELECT * FROM obs.users WHERE email=%s", (data.email.lower().strip(),))
     valid = verify_password(data.password, (user or {}).get("password_hash") or DUMMY_HASH)
     if not user or not valid:
+        record_login_failure(request)
         fail(401, "invalid_credentials", "Email or password is incorrect.")
+    clear_login_attempts(request)
     csrf = secrets.token_urlsafe(32)
     response.set_cookie(
         "obs_session",

@@ -26,8 +26,21 @@ export function useLiveEvents() {
       'alert.resolved',
       'onboarding.step',
       'platform.changed',
+      'access.changed',
+      'metrics.refresh',
     ];
     const handle = (event: MessageEvent<string>) => {
+      if (event.type === 'access.changed') {
+        void client.invalidateQueries({ queryKey: ['me'] });
+        void client.invalidateQueries({ queryKey: ['access'] });
+        return;
+      }
+      if (event.type === 'metrics.refresh') {
+        void client.invalidateQueries({
+          predicate: (query) => !['me', 'config'].includes(String(query.queryKey[0])),
+        });
+        return;
+      }
       const data = JSON.parse(event.data) as { tenant_id?: string; status?: string };
       setActivity((previous) =>
         [

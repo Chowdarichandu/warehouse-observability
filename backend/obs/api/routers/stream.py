@@ -32,6 +32,12 @@ async def stream(request: Request, user: dict = Depends(current_user)) -> EventS
                     break
                 async for event in conn.notifies(timeout=10, stop_after=1):
                     payload = json.loads(event.payload)
+                    if "metrics_only" in user["permissions"]:
+                        if payload["event"] == "access.changed":
+                            yield {"event": "access.changed", "data": "{}"}
+                            continue
+                        yield {"event": "metrics.refresh", "data": "{}"}
+                        continue
                     yield {"event": payload["event"], "data": json.dumps(payload["data"])}
 
     return EventSourceResponse(

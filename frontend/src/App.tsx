@@ -152,6 +152,7 @@ export function App() {
 }
 
 function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'RuntimeConfig'> }) {
+  const metricsOnly = user.permissions.includes('metrics_only');
   const searchRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const fetching = useIsFetching({
@@ -180,10 +181,10 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     queryKey: ['suggest-tenants', searchTerm],
     queryFn: () =>
       api<Schema<'Page_Tenant_'>>(`/tenants?q=${encodeURIComponent(searchTerm)}&page_size=5`),
-    enabled: searchOpen && searchTerm.length >= 2,
+    enabled: !metricsOnly && searchOpen && searchTerm.length >= 2,
   });
   const suggestPages =
-    searchTerm.length >= 2
+    !metricsOnly && searchTerm.length >= 2
       ? NAV.flatMap((g) => g.items).filter((item) =>
           item.label.toLowerCase().includes(searchTerm.toLowerCase()),
         )
@@ -215,6 +216,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
   const firing = useQuery({
     queryKey: ['alerts', 'firing', 1],
     queryFn: () => api<Schema<'Page_Alert_'>>('/alerts?state=firing&page=1'),
+    enabled: !metricsOnly,
     refetchInterval: 60_000,
   });
   useEffect(() => {
@@ -341,23 +343,25 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               </div>
             )}
             <nav>
-              {NAV.map((group) => (
-                <div className="nav-group" key={group.group}>
-                  <span className="nav-label">{group.group}</span>
-                  {group.items
-                    .filter(
-                      (item) =>
-                        item.path !== '/admin' || user.permissions?.includes('manage_users'),
-                    )
-                    .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer')
-                    .map((item) => (
+              {NAV.map((group) => {
+                const items = group.items
+                  .filter((item) => !metricsOnly || item.path === '/')
+                  .filter(
+                    (item) => item.path !== '/admin' || user.permissions.includes('manage_users'),
+                  )
+                  .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer');
+                return items.length ? (
+                  <div className="nav-group" key={group.group}>
+                    <span className="nav-label">{metricsOnly ? 'METRICS' : group.group}</span>
+                    {items.map((item) => (
                       <NavLink key={item.path} to={rangeLink(item.path)} end={item.path === '/'}>
                         <item.icon size={17} />
                         <span>{item.label}</span>
                       </NavLink>
                     ))}
-                </div>
-              ))}
+                  </div>
+                ) : null;
+              })}
             </nav>
             <div className="sidebar-bottom">
               <button
@@ -421,161 +425,165 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               <strong>{section}</strong>
             </div>
             <div className="topbar-actions">
-              <div
-                className="search-wrap"
-                onBlur={(event) => {
-                  if (!event.currentTarget.contains(event.relatedTarget as Node))
-                    setSearchOpen(false);
-                }}
-              >
-                <form
-                  className="global-search"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    if (search.trim()) {
+              {!metricsOnly && (
+                <div
+                  className="search-wrap"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node))
                       setSearchOpen(false);
-                      navigate(`/search?q=${encodeURIComponent(search.trim())}`);
-                    }
                   }}
                 >
-                  <Search size={15} />
-                  <input
-                    ref={searchRef}
-                    aria-label="Search tenants, logs, pages"
-                    placeholder="Search tenants, logs, pages…"
-                    maxLength={200}
-                    value={search}
-                    onFocus={() => setSearchOpen(true)}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                      setSearchOpen(true);
-                    }}
-                  />
-                  {search.trim() ? (
-                    <button
-                      type="submit"
-                      aria-label="Submit global search"
-                      className="global-search-submit"
-                    >
-                      Search
-                    </button>
-                  ) : (
-                    <Command size={12} aria-hidden="true" />
-                  )}
-                </form>
-                {searchOpen && searchTerm.length >= 2 && (
-                  <div
-                    className={`search-suggest${suggestTenants.isPlaceholderData ? ' is-fetching' : ''}`}
-                    role="listbox"
-                    aria-label="Search suggestions"
-                  >
-                    {suggestTenants.data && suggestTenants.data.items.length > 0 && (
-                      <>
-                        <span className="search-suggest-label">Tenants</span>
-                        {suggestTenants.data.items.map((tenant) => (
-                          <button
-                            type="button"
-                            key={tenant.tenant_id}
-                            className="search-suggest-item"
-                            onClick={() => {
-                              setSearchOpen(false);
-                              setSearch('');
-                              navigate(`/tenants/${tenant.tenant_id}`);
-                            }}
-                          >
-                            <strong>{tenant.display_name}</strong>
-                            <small>{tenant.tenant_id}</small>
-                          </button>
-                        ))}
-                      </>
-                    )}
-                    {suggestPages.length > 0 && (
-                      <>
-                        <span className="search-suggest-label">Pages</span>
-                        {suggestPages.map((item) => (
-                          <button
-                            type="button"
-                            key={item.path}
-                            className="search-suggest-item"
-                            onClick={() => {
-                              setSearchOpen(false);
-                              setSearch('');
-                              navigate(item.path);
-                            }}
-                          >
-                            <strong>{item.label}</strong>
-                          </button>
-                        ))}
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      className="search-suggest-all"
-                      onClick={() => {
+                  <form
+                    className="global-search"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (search.trim()) {
                         setSearchOpen(false);
-                        navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+                        navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+                      }
+                    }}
+                  >
+                    <Search size={15} />
+                    <input
+                      ref={searchRef}
+                      aria-label="Search tenants, logs, pages"
+                      placeholder="Search tenants, logs, pages…"
+                      maxLength={200}
+                      value={search}
+                      onFocus={() => setSearchOpen(true)}
+                      onChange={(event) => {
+                        setSearch(event.target.value);
+                        setSearchOpen(true);
                       }}
+                    />
+                    {search.trim() ? (
+                      <button
+                        type="submit"
+                        aria-label="Submit global search"
+                        className="global-search-submit"
+                      >
+                        Search
+                      </button>
+                    ) : (
+                      <Command size={12} aria-hidden="true" />
+                    )}
+                  </form>
+                  {searchOpen && searchTerm.length >= 2 && (
+                    <div
+                      className={`search-suggest${suggestTenants.isPlaceholderData ? ' is-fetching' : ''}`}
+                      role="listbox"
+                      aria-label="Search suggestions"
                     >
-                      See all results for “{searchTerm}” <ArrowRight size={13} />
-                    </button>
-                  </div>
-                )}
-              </div>
+                      {suggestTenants.data && suggestTenants.data.items.length > 0 && (
+                        <>
+                          <span className="search-suggest-label">Tenants</span>
+                          {suggestTenants.data.items.map((tenant) => (
+                            <button
+                              type="button"
+                              key={tenant.tenant_id}
+                              className="search-suggest-item"
+                              onClick={() => {
+                                setSearchOpen(false);
+                                setSearch('');
+                                navigate(`/tenants/${tenant.tenant_id}`);
+                              }}
+                            >
+                              <strong>{tenant.display_name}</strong>
+                              <small>{tenant.tenant_id}</small>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {suggestPages.length > 0 && (
+                        <>
+                          <span className="search-suggest-label">Pages</span>
+                          {suggestPages.map((item) => (
+                            <button
+                              type="button"
+                              key={item.path}
+                              className="search-suggest-item"
+                              onClick={() => {
+                                setSearchOpen(false);
+                                setSearch('');
+                                navigate(item.path);
+                              }}
+                            >
+                              <strong>{item.label}</strong>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className="search-suggest-all"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+                        }}
+                      >
+                        See all results for “{searchTerm}” <ArrowRight size={13} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
                 <span />
                 {live.connected ? 'Live' : 'Polling · 30s'}
               </span>
-              <div className="bell-wrap">
-                <button
-                  className="theme-toggle"
-                  title="Notifications"
-                  aria-label="Notifications"
-                  aria-expanded={panel === 'bell'}
-                  onClick={() => setPanel(panel === 'bell' ? 'none' : 'bell')}
-                >
-                  <Bell size={17} />
-                  {firing.data && firing.data.total > 0 && (
-                    <span className="bell-badge">{firing.data.total}</span>
-                  )}
-                </button>
-                {panel === 'bell' && (
-                  <div className="popover bell-pop">
-                    <div className="bell-head">
-                      <strong>Firing now</strong>
-                      <NavLink to="/alerts">View all alerts</NavLink>
-                    </div>
-                    {firing.isPending ? (
-                      <p className="muted bell-empty">Loading…</p>
-                    ) : firing.data?.items.length ? (
-                      <>
-                        {firing.data.items.slice(0, 5).map((alert) => (
-                          <NavLink key={alert.id} to="/alerts" className="bell-item">
-                            <StatusPill status={alert.severity} />
-                            <span className="bell-text">
-                              <strong>
-                                {alert.tenant_id && alert.title.endsWith(` · ${alert.tenant_id}`)
-                                  ? alert.title.slice(0, -(alert.tenant_id.length + 3))
-                                  : alert.title}
-                              </strong>
-                              <small>
-                                {alert.tenant_id || 'Platform'} ·{' '}
-                                <Time value={alert.first_fired_at} relative />
-                              </small>
-                            </span>
-                          </NavLink>
-                        ))}
-                        {firing.data.total > 5 && (
-                          <p className="muted bell-empty">
-                            and {firing.data.total - 5} more firing — View all alerts
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="muted bell-empty">Nothing firing. All quiet.</p>
+              {!metricsOnly && (
+                <div className="bell-wrap">
+                  <button
+                    className="theme-toggle"
+                    title="Notifications"
+                    aria-label="Notifications"
+                    aria-expanded={panel === 'bell'}
+                    onClick={() => setPanel(panel === 'bell' ? 'none' : 'bell')}
+                  >
+                    <Bell size={17} />
+                    {firing.data && firing.data.total > 0 && (
+                      <span className="bell-badge">{firing.data.total}</span>
                     )}
-                  </div>
-                )}
-              </div>
+                  </button>
+                  {panel === 'bell' && (
+                    <div className="popover bell-pop">
+                      <div className="bell-head">
+                        <strong>Firing now</strong>
+                        <NavLink to="/alerts">View all alerts</NavLink>
+                      </div>
+                      {firing.isPending ? (
+                        <p className="muted bell-empty">Loading…</p>
+                      ) : firing.data?.items.length ? (
+                        <>
+                          {firing.data.items.slice(0, 5).map((alert) => (
+                            <NavLink key={alert.id} to="/alerts" className="bell-item">
+                              <StatusPill status={alert.severity} />
+                              <span className="bell-text">
+                                <strong>
+                                  {alert.tenant_id && alert.title.endsWith(` · ${alert.tenant_id}`)
+                                    ? alert.title.slice(0, -(alert.tenant_id.length + 3))
+                                    : alert.title}
+                                </strong>
+                                <small>
+                                  {alert.tenant_id || 'Platform'} ·{' '}
+                                  <Time value={alert.first_fired_at} relative />
+                                </small>
+                              </span>
+                            </NavLink>
+                          ))}
+                          {firing.data.total > 5 && (
+                            <p className="muted bell-empty">
+                              and {firing.data.total - 5} more firing — View all alerts
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="muted bell-empty">Nothing firing. All quiet.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 className="theme-toggle"
                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
@@ -590,6 +598,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
             <div className="demo-tag">
               <span />
               {runtime.environment.toUpperCase()}
+              {metricsOnly && <strong>METRICS ONLY · READ ONLY</strong>}
               <span className="muted">All times shown in your local timezone</span>
             </div>
             <div className="inline-flex">
@@ -669,38 +678,54 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
           <div className={`refresh-progress ${fetching ? 'is-active' : ''}`} aria-hidden="true" />
           <main className="page-content" id="main-content" tabIndex={-1} ref={mainRef}>
             <div key={location.pathname} className="route-enter">
-              <Routes>
-                <Route path="/" element={<Overview />} />
-                <Route path="/tenants" element={<Tenants />} />
-                <Route path="/tenants/:id" element={<TenantDetail />} />
-                <Route path="/runs" element={<Runs />} />
-                <Route path="/runs/:key" element={<RunDetail />} />
-                <Route path="/activity" element={<ActivityRedirect />} />
-                <Route path="/pipelines" element={<Pipelines />} />
-                <Route path="/workspace" element={<Navigate to="/" replace />} />
-                <Route path="/workspace/pipelines" element={<Navigate to="/pipelines" replace />} />
-                <Route path="/access" element={<Access />} />
-                <Route path="/account" element={<Account />} />
-                <Route path="/dependencies" element={<Dependencies />} />
-                <Route path="/quality" element={<Quality />} />
-                <Route path="/errors" element={<Errors />} />
-                <Route path="/freshness" element={<Freshness />} />
-                <Route path="/warehouse" element={<Warehouse />} />
-                <Route path="/alerts" element={<Alerts />} />
-                <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/platform" element={<Platform />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/search" element={<SearchResults />} />
-                <Route
-                  path="*"
-                  element={
-                    <div className="empty">
-                      <h1>Page not found</h1>
-                      <NavLink to="/">Back to overview</NavLink>
-                    </div>
-                  }
-                />
-              </Routes>
+              {metricsOnly && location.pathname !== '/' && location.pathname !== '/account' ? (
+                <div className="notice info" role="status">
+                  <ShieldCheck size={21} />
+                  <div>
+                    <strong>Metrics-only access</strong>
+                    <p>This role can view workspace metrics and account settings only.</p>
+                  </div>
+                  <NavLink className="button small" to="/">
+                    Return to metrics
+                  </NavLink>
+                </div>
+              ) : (
+                <Routes>
+                  <Route path="/" element={<Overview />} />
+                  <Route path="/tenants" element={<Tenants />} />
+                  <Route path="/tenants/:id" element={<TenantDetail />} />
+                  <Route path="/runs" element={<Runs />} />
+                  <Route path="/runs/:key" element={<RunDetail />} />
+                  <Route path="/activity" element={<ActivityRedirect />} />
+                  <Route path="/pipelines" element={<Pipelines />} />
+                  <Route path="/workspace" element={<Navigate to="/" replace />} />
+                  <Route
+                    path="/workspace/pipelines"
+                    element={<Navigate to="/pipelines" replace />}
+                  />
+                  <Route path="/access" element={<Access />} />
+                  <Route path="/account" element={<Account />} />
+                  <Route path="/dependencies" element={<Dependencies />} />
+                  <Route path="/quality" element={<Quality />} />
+                  <Route path="/errors" element={<Errors />} />
+                  <Route path="/freshness" element={<Freshness />} />
+                  <Route path="/warehouse" element={<Warehouse />} />
+                  <Route path="/alerts" element={<Alerts />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
+                  <Route path="/platform" element={<Platform />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/search" element={<SearchResults />} />
+                  <Route
+                    path="*"
+                    element={
+                      <div className="empty">
+                        <h1>Page not found</h1>
+                        <NavLink to="/">Back to overview</NavLink>
+                      </div>
+                    }
+                  />
+                </Routes>
+              )}
             </div>
           </main>
           <footer className="app-footer">

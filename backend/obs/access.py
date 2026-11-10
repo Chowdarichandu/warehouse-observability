@@ -48,6 +48,12 @@ class Capability:
 
 CAPABILITIES = (
     Capability(
+        "metrics.dashboard",
+        "View workspace metrics",
+        "Read the aggregate metrics dashboard without access to run logs, tenant details or workspace actions.",
+        "viewer",
+    ),
+    Capability(
         "workspace.read",
         "View and investigate",
         "Read tenant health, runs, logs, dependencies, quality results and onboarding progress.",
@@ -155,6 +161,7 @@ def disabled_reason(capability: Capability, config: Settings) -> str:
 
 
 CAPABILITY_PERMISSIONS = {
+    "metrics.dashboard": "view_console",
     "workspace.read": "view_console",
     "investigations.save": "view_console",
     "pipelines.retry": "trigger_pipelines",
@@ -175,15 +182,20 @@ def permissions(
     role: str, config: Settings, granted_permissions: list[str] | None = None
 ) -> list[dict]:
     result = []
+    metrics_only = granted_permissions is not None and "metrics_only" in granted_permissions
     for capability in CAPABILITIES:
         role_allowed = role_at_least(role, capability.minimum_role)
         bundle_allowed = (
             granted_permissions is None
             or CAPABILITY_PERMISSIONS[capability.id] in granted_permissions
         )
+        if metrics_only and capability.id != "metrics.dashboard":
+            bundle_allowed = False
         allowed = role_allowed and bundle_allowed
         reason = (
-            disabled_reason(capability, config)
+            "Your role is limited to workspace metrics."
+            if metrics_only and capability.id != "metrics.dashboard"
+            else disabled_reason(capability, config)
             if allowed
             else f"Requires the {capability.minimum_role.title()} role."
             if not role_allowed

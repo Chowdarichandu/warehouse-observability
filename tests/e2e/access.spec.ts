@@ -238,3 +238,187 @@ test("role creation stays readable and usable on desktop and mobile", async ({
     .click();
   await expect(roleCard).toHaveCount(0);
 });
+
+test("metrics-only role assignment limits the UI and API to aggregate metrics", async ({
+  page,
+}) => {
+  await login(page, "admin");
+  const roleName = `metrics_view_${Date.now()}`;
+  const viewerEmail = "viewer@demo.local";
+  let roleCreated = false;
+  let viewerId: number | undefined;
+  let viewerContext: import("@playwright/test").BrowserContext | undefined;
+  const adminIdentity = await (await page.request.get("/api/me")).json();
+
+  try {
+    await page.goto("/admin?section=roles");
+    await page.getByLabel("Role name", { exact: true }).fill(roleName);
+    await chooseSelectOption(
+      page.locator(".role-form .ui-select-btn"),
+      "Viewer",
+    );
+    await page.getByLabel(/Metrics dashboard only/).check();
+    await expect(
+      page.getByRole("checkbox", { name: /Trigger & retry pipelines/ }),
+    ).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Create role", exact: true })
+      .click();
+    roleCreated = true;
+    const roleCard = page.locator(".role-card").filter({ hasText: roleName });
+    await expect(roleCard).toBeVisible();
+    await expect(roleCard).toContainText("Metrics dashboard only");
+
+    const users = await (
+      await page.request.get("/api/users?page_size=200")
+    ).json();
+    viewerId = users.items.find(
+      (user: { email: string }) => user.email === viewerEmail,
+    )?.user_id;
+    expect(viewerId).toBeTruthy();
+
+    const browser = page.context().browser();
+    if (!browser) throw new Error("Browser context is unavailable.");
+    viewerContext = await browser.newContext();
+    const viewerPage = await viewerContext.newPage();
+    await viewerPage.goto("/");
+    await viewerPage.getByLabel("Email address").fill(viewerEmail);
+    await viewerPage.getByLabel("Password", { exact: true }).fill("demo");
+    await viewerPage
+      .getByRole("button", { name: "Sign in to workspace" })
+      .click();
+    await expect(
+      viewerPage.getByRole("heading", { name: "Tenant health" }),
+    ).toBeVisible();
+    await expect(
+      viewerPage.getByRole("link", { name: "Tenants", exact: true }),
+    ).toBeVisible();
+
+    await page.goto("/admin?section=users");
+    const roleSelect = page.getByLabel(`Role for ${viewerEmail}`);
+    await chooseSelectOption(
+      roleSelect,
+      new RegExp(`${roleName} \\(viewer\\)`),
+    );
+    const confirmation = page.getByRole("dialog", { name: "Change role" });
+    await expect(confirmation).toContainText(roleName);
+    await confirmation.getByRole("button", { name: "Change role" }).click();
+    await expect(roleSelect).toContainText(roleName);
+
+    await expect(
+      viewerPage.getByRole("heading", {
+        name: "Metrics overview",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      viewerPage.getByRole("heading", { name: "Tenant health metrics" }),
+    ).toBeVisible();
+    await expect(
+      viewerPage.getByText("Success rate", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      viewerPage.getByRole("link", { name: "Tenants", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      viewerPage.getByRole("textbox", { name: "Search tenants, logs, pages" }),
+    ).toHaveCount(0);
+    await expect(
+      viewerPage.getByRole("button", { name: "Notifications" }),
+    ).toHaveCount(0);
+    const metricsTenant = viewerPage.getByLabel("Metrics tenant");
+    await chooseSelectOption(metricsTenant, "Acme Retail");
+    await expect(viewerPage).toHaveURL(/activity_tenant=acme_retail/);
+    await expect(
+      viewerPage.getByText(
+        "Aggregate passed, failed and active runs for Acme Retail",
+      ),
+    ).toBeVisible();
+    await chooseSelectOption(metricsTenant, "All tenants");
+    await expect(viewerPage).not.toHaveURL(/activity_tenant=/);
+    await viewerPage.screenshot({
+      path: path.resolve("../output/screenshots/metrics-only.png"),
+      fullPage: true,
+      animations: "disabled",
+    });
+
+    const metrics = await viewerPage.request.get("/api/metrics/overview");
+    expect(metrics.status()).toBe(200);
+    expect(await metrics.json()).not.toHaveProperty("recent_failures");
+    expect(
+      (
+        await viewerPage.request.get("/api/metrics/tenants?page_size=200")
+      ).status(),
+    ).toBe(200);
+    expect(
+      (
+        await viewerPage.request.get("/api/tenants/acme_retail/metrics")
+      ).status(),
+    ).toBe(200);
+    for (const endpoint of [
+      "/api/overview",
+      "/api/tenants",
+      "/api/runs",
+      "/api/users",
+    ]) {
+      const denied = await viewerPage.request.get(endpoint);
+      expect(denied.status(), endpoint).toBe(403);
+      expect((await denied.json()).error.code).toBe("metrics_only");
+    }
+    const viewerIdentity = await (
+      await viewerPage.request.get("/api/me")
+    ).json();
+    const deniedAction = await viewerPage.request.post(
+      "/api/runs/not-a-real-run/retry",
+      {
+        headers: { "X-CSRF-Token": viewerIdentity.csrf_token },
+      },
+    );
+    expect(deniedAction.status()).toBe(403);
+    expect((await deniedAction.json()).error.code).toBe("metrics_only");
+
+    await viewerPage.goto("/runs");
+    await expect(
+      viewerPage.getByText("Metrics-only access", { exact: true }),
+    ).toBeVisible();
+
+    await viewerPage.goto("/");
+    await viewerPage.setViewportSize({ width: 390, height: 844 });
+    await expect(
+      viewerPage.getByRole("heading", {
+        name: "Metrics overview",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const mobileWidth = await viewerPage.evaluate(
+      () => document.documentElement.scrollWidth,
+    );
+    expect(mobileWidth).toBeLessThanOrEqual(390);
+    await viewerPage.screenshot({
+      path: path.resolve("../output/screenshots/metrics-only-mobile.png"),
+      fullPage: true,
+      animations: "disabled",
+    });
+
+    await page.request.patch(`/api/users/${viewerId}`, {
+      headers: { "X-CSRF-Token": adminIdentity.csrf_token },
+      data: { role: "viewer" },
+    });
+    await expect(
+      viewerPage.getByRole("link", { name: "Tenants", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await viewerContext?.close();
+    if (viewerId) {
+      await page.request.patch(`/api/users/${viewerId}`, {
+        headers: { "X-CSRF-Token": adminIdentity.csrf_token },
+        data: { role: "viewer" },
+      });
+    }
+    if (roleCreated) {
+      await page.request.delete(`/api/roles/${roleName}`, {
+        headers: { "X-CSRF-Token": adminIdentity.csrf_token },
+      });
+    }
+  }
+});
