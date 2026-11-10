@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import path from "node:path";
 import { chooseSelectOption } from "./select";
 
 async function login(page: import("@playwright/test").Page, role: string) {
@@ -177,4 +178,47 @@ test("admin can onboard and remove a user with one-time credentials", async ({
   await expect(removeDialog).toContainText(email);
   await removeDialog.getByRole("button", { name: "Remove user" }).click();
   await expect(createdUser).toHaveCount(0);
+});
+
+test("role creation stays readable and usable on desktop and mobile", async ({
+  page,
+}) => {
+  await login(page, "admin");
+  await page.goto("/admin?section=roles");
+  await expect(
+    page.getByRole("heading", { name: "Roles & permissions", exact: true }),
+  ).toBeVisible();
+
+  const nameField = page.getByLabel("Role name", { exact: true });
+  const nameBounds = await nameField.boundingBox();
+  const descriptionBounds = await page
+    .getByPlaceholder("e.g. On-call support engineers")
+    .boundingBox();
+  expect(nameBounds?.width).toBeGreaterThan(400);
+  expect(descriptionBounds?.width).toBeGreaterThan(nameBounds?.width ?? 0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(nameField).toBeVisible();
+  const mobileBounds = await nameField.boundingBox();
+  expect(mobileBounds?.width).toBeGreaterThan(250);
+  expect(
+    (mobileBounds?.x ?? 0) + (mobileBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(390);
+  await page.screenshot({
+    path: path.resolve("../output/screenshots/admin-roles-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const roleName = `support_e2e_${Date.now()}`;
+  await nameField.fill(roleName);
+  await page.getByRole("button", { name: "Create role", exact: true }).click();
+  const roleCard = page.locator(".role-card").filter({ hasText: roleName });
+  await expect(roleCard).toBeVisible();
+  await expect(roleCard).toContainText("Trigger & retry pipelines");
+  await roleCard
+    .getByRole("button", { name: `Delete role ${roleName}` })
+    .click();
+  await expect(roleCard).toHaveCount(0);
 });

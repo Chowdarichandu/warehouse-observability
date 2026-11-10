@@ -118,6 +118,8 @@ Users, roles, operation outcomes, notification deliveries, and audit history.
 
 [Roles](admin-roles.png) · [Operations](admin-operations.png) · [Activity](admin-activity.png) · [Audit trail](admin-audit.png)
 
+[Role form · mobile](admin-roles-mobile.png)
+
 ## Global search
 
 Full-text search over classified errors and redacted logs.

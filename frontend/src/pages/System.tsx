@@ -287,9 +287,15 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
           create.mutate();
         }}
       >
-        <h4>
-          <Plus size={15} /> Create a role
-        </h4>
+        <div className="role-form-heading">
+          <div>
+            <h4>
+              <Plus size={15} /> Create a role
+            </h4>
+            <p>Give the role a clear name, access level, and the permissions it needs.</p>
+          </div>
+          <span className="tag">CUSTOM ROLE</span>
+        </div>
         <div className="role-form-grid">
           <label>
             Role name
@@ -309,7 +315,7 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
               <option value="admin">Admin — full control</option>
             </Select>
           </label>
-          <label>
+          <label className="role-description-field">
             What is this role for? (optional)
             <input
               value={description}
@@ -333,9 +339,12 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
             </label>
           ))}
         </fieldset>
-        <button className="button primary" disabled={create.isPending || name.trim().length < 2}>
-          <Plus size={14} /> Create role
-        </button>
+        <div className="role-form-actions">
+          <span className="muted">You can assign this role from the Users tab.</span>
+          <button className="button primary" disabled={create.isPending || name.trim().length < 2}>
+            <Plus size={14} /> Create role
+          </button>
+        </div>
       </form>
     </Panel>
   );

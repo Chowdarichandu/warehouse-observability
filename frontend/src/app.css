@@ -3968,40 +3968,67 @@ button.workspace-switch:hover {
   margin-top: 8px;
 }
 .role-form {
-  border-top: 1px dashed var(--line);
-  padding-top: 14px;
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--subtle);
 }
-.role-form h4 {
+.role-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.role-form-heading h4 {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 12px;
+  gap: 7px;
+  margin: 0;
+  font-size: 1rem;
+}
+.role-form-heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 .role-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
 }
 .role-form-grid label,
 .role-form label {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 0.85rem;
+  gap: 8px;
+  font-size: 0.9rem;
   font-weight: 600;
+}
+.role-description-field {
+  grid-column: 1 / -1;
+}
+.role-form input:not([type='checkbox']) {
+  min-height: 44px;
+}
+.role-form .ui-select-btn {
+  min-height: 44px;
 }
 .role-perms-picker {
   border: 1px solid var(--line);
   border-radius: 10px;
-  margin: 14px 0;
-  padding: 12px 14px 14px;
+  margin: 22px 0 16px;
+  padding: 15px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px 18px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 10px 12px;
 }
 .role-perms-picker legend {
   grid-column: 1 / -1;
-  padding: 0 5px;
+  padding: 0 7px;
+  margin-bottom: 2px;
   font-size: 0.85rem;
   font-weight: 650;
 }
@@ -4009,6 +4036,11 @@ button.workspace-switch:hover {
   flex-direction: row;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
   font-weight: 500;
   line-height: 1.4;
 }
@@ -4020,6 +4052,31 @@ button.workspace-switch:hover {
 }
 .role-perms-picker .check-row small {
   color: var(--muted);
+}
+.role-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+}
+@media (max-width: 720px) {
+  .role-form {
+    padding: 16px;
+  }
+  .role-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .role-description-field {
+    grid-column: auto;
+  }
+  .role-form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .role-form-actions .button {
+    justify-content: center;
+  }
 }
 .temp-password {
   font-size: 1.05rem;
