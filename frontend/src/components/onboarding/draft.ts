@@ -51,6 +51,21 @@ export function initialDraft(mode: 'demo' | 'live'): OnboardDraft {
     return { ...base };
   }
 }
+export function blankDraft(): OnboardDraft {
+  return {
+    ...DEMO_DRAFT,
+    tenant_id: '',
+    display_name: '',
+    mysql_host: '',
+    mysql_database: '',
+    mongo_database: '',
+    mysql_secret_ref: 'aws://observability/',
+    mongo_secret_ref: 'aws://observability/',
+    warehouse_schema: '',
+    owner_email: '',
+  };
+}
+
 export function slugify(name: string): string {
   return name
     .toLowerCase()

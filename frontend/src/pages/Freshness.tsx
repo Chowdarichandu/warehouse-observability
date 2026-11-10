@@ -15,6 +15,7 @@ import {
   Source,
   TenantLink,
   Time,
+  formatDuration,
   useFilters,
 } from '../components/ui';
 
@@ -36,12 +37,13 @@ export function Freshness() {
     <>
       <PageHeader
         title="Freshness & volume"
-        description="Data freshness, volume anomalies, and schema changes for every source."
+        description="Current data freshness for every source, plus every recorded volume anomaly and schema change. Freshness is a live snapshot — it does not follow the global time range."
       />
       <Panel
         title="Data freshness"
         subtitle="Time since the last successful sync, measured against each source’s SLA."
         action={<span className="tag">5-MINUTE SLA BUCKETS</span>}
+        className={query.isPlaceholderData ? 'is-fetching' : ''}
       >
         {query.isPending ? (
           <Loading />
@@ -78,9 +80,16 @@ export function Freshness() {
                           <Source source={row.source_type} />
                         </td>
                         <td>
-                          <div className="freshness-meter">
+                          <div
+                            className="freshness-meter has-tip"
+                            data-tip={`${row.minutes_stale ?? '—'} min since the last successful sync, of a ${row.freshness_sla_min} min SLA`}
+                          >
                             <span style={{ color: STATUS_COLORS[status] }}>
-                              <NumberValue value={row.minutes_stale} suffix="m" />{' '}
+                              {row.minutes_stale == null
+                                ? '—'
+                                : row.minutes_stale < 60
+                                  ? `${row.minutes_stale}m`
+                                  : formatDuration(row.minutes_stale * 60)}{' '}
                               <small>/ {row.freshness_sla_min}m</small>
                             </span>
                             <div className="mini-track">
@@ -126,6 +135,7 @@ export function Freshness() {
           title="Volume anomalies"
           subtitle="Drops greater than 30%, or growth above 5× the previous seven-day average delta."
           action={<Table2 size={17} />}
+          className={volume.isPlaceholderData ? 'is-fetching' : ''}
         >
           {volume.isPending ? (
             <Loading />
@@ -161,6 +171,7 @@ export function Freshness() {
           title="Schema drift"
           subtitle="Column changes detected between consecutive catalog snapshots."
           action={<GitBranch size={17} />}
+          className={schema.isPlaceholderData ? 'is-fetching' : ''}
         >
           {schema.isPending ? (
             <Loading />

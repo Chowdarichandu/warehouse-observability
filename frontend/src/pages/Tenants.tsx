@@ -575,7 +575,7 @@ export function TenantDetail() {
         <div>
           <span>Open alerts</span>
           <strong>
-            <Link to={`/alerts?tenant=${id}`}>
+            <Link to={`/alerts?tenant=${id}&state=firing`}>
               {alerts.length} <ArrowRight size={13} />
             </Link>
           </strong>
@@ -852,7 +852,14 @@ export function TenantDetail() {
           )}
           {Object.entries(config.airbyte_connections).map(([key, value]) => (
             <div key={key}>
-              <span>{key.replaceAll('_', ' ')}</span>
+              <span>
+                {{
+                  mysql_cdc: 'MySQL CDC',
+                  mongo_cdc: 'MongoDB CDC',
+                  mysql_initial: 'MySQL initial load',
+                  mongo_initial: 'MongoDB initial load',
+                }[key] ?? key.replaceAll('_', ' ')}
+              </span>
               <code>{value}</code>
             </div>
           ))}

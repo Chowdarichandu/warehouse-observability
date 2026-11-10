@@ -466,3 +466,16 @@ def test_alerts_can_filter_by_tenant(clients):
     empty = clients["admin"].get("/api/alerts?tenant=acme_retail&state=firing")
     assert empty.status_code == 200
     assert all(item["tenant_id"] == "acme_retail" for item in empty.json()["items"])
+
+
+def test_failures_heatmap_accepts_viewer_timezone(clients):
+    utc = clients["admin"].get("/api/metrics/failures-heatmap?range=7d&tz=UTC")
+    assert utc.status_code == 200
+    ist = clients["admin"].get("/api/metrics/failures-heatmap?range=7d&tz=Asia/Kolkata")
+    assert ist.status_code == 200
+    # Same failures, different local buckets: the two grids must not be identical
+    # for a dataset spanning many hours (Acme fails around the clock).
+    assert utc.json()["items"] != ist.json()["items"]
+    bogus = clients["admin"].get("/api/metrics/failures-heatmap?range=7d&tz=Not/AZone")
+    assert bogus.status_code == 200
+    assert bogus.json()["items"] == utc.json()["items"]

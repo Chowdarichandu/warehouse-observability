@@ -24,7 +24,7 @@ import { StatusPill } from '../components/StatusPill';
 import { Loading } from '../components/ui';
 import { Field } from '../components/onboarding/Field';
 import { OnboardingProgress } from '../components/onboarding/Progress';
-import { initialDraft, slugify, validateDraft } from '../components/onboarding/draft';
+import { blankDraft, initialDraft, slugify, validateDraft } from '../components/onboarding/draft';
 import type { DraftErrors, OnboardDraft } from '../components/onboarding/draft';
 import './onboarding.css';
 
@@ -695,9 +695,22 @@ export function Onboarding() {
                 <ArrowLeft size={14} />
                 Back
               </button>
+              {step === 1 && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    sessionStorage.removeItem(`obs-onboard-draft-v2-${runtime.mode}`);
+                    setDraft(blankDraft());
+                    setErrors({});
+                  }}
+                >
+                  Clear form
+                </button>
+              )}
               <span>
                 {step === 1
-                  ? 'Your draft is saved in this browser'
+                  ? 'Drafts save automatically in this browser'
                   : step === 2
                     ? `${selectedSources.length} source${selectedSources.length === 1 ? '' : 's'} selected`
                     : step === 3

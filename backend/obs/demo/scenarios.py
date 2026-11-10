@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import psycopg
 
@@ -57,18 +57,33 @@ def enrich_failure(
             at,
         ),
     )
-    log = redact(f"""{at.isoformat()} INFO  Starting {run["source_type"]} {run["load_type"]} sync
-{at.isoformat()} INFO  Tenant {run["tenant_id"]} · connection {run.get("airbyte_connection_id", "demo")}
-{at.isoformat()} INFO  Secret resolved: mysql://reader:demo-password@source.internal/app
-{at.isoformat()} INFO  Contact data-team@example.org · Authorization: Bearer demo-sensitive-token
-{at.isoformat()} INFO  Discovering streams: {", ".join(streams[:5]) if streams else "customers, orders, products, payments, events"}
-{at.isoformat()} INFO  Opening source replication cursor
-{at.isoformat()} WARN  Attempt {run.get("airbyte_attempts", 1)} could not complete
-{at.isoformat()} ERROR {message}
-{at.isoformat()} ERROR {info["error_class"]}: sync terminated
-{at.isoformat()} INFO  Next action: {info["hint"]}
-{at.isoformat()} INFO  Checkpoint retained. No credentials written to the log.
-""")
+    started = run.get("started_at") or at
+    span = max(11, int((at - started).total_seconds()))
+    stream_list = (
+        ", ".join(streams[:5]) + (f" … (+{len(streams) - 5} more)" if len(streams) > 5 else "")
+        if streams
+        else "customers, orders, products, payments, events"
+    )
+    lines = [
+        f"INFO  Starting {run['source_type']} {run['load_type']} sync",
+        f"INFO  Tenant {run['tenant_id']} · connection {run.get('airbyte_connection_id', 'demo')}",
+        "INFO  Secret resolved: mysql://reader:demo-password@source.internal/app",
+        "INFO  Contact data-team@example.org · Authorization: Bearer demo-sensitive-token",
+        f"INFO  Discovering streams: {stream_list}",
+        "INFO  Opening source replication cursor",
+        f"WARN  Attempt {run.get('airbyte_attempts', 1)} could not complete",
+        f"ERROR {message}",
+        f"ERROR {info['error_class']}: sync terminated",
+        f"INFO  Next action: {info['hint']}",
+        "INFO  Checkpoint retained. No credentials written to the log.",
+    ]
+    log = redact(
+        "\n".join(
+            f"{(started + timedelta(seconds=round(span * i / (len(lines) - 1)))).isoformat()} {line}"
+            for i, line in enumerate(lines)
+        )
+        + "\n"
+    )
     conn.execute(
         """INSERT INTO obs.run_logs(run_key,source,content) VALUES(%s,%s,%s)
         ON CONFLICT(run_key) DO UPDATE SET content=excluded.content""",

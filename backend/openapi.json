@@ -3024,6 +3024,16 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "UTC",
+              "title": "Tz"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -14243,6 +14253,24 @@
         ],
         "title": "UserPermissionsOut"
       },
+      "WarehouseColumn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "WarehouseColumn"
+      },
       "WarehouseView": {
         "properties": {
           "tenant_id": {
@@ -14427,6 +14455,14 @@
               }
             ],
             "title": "Last Loaded At"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseColumn"
+            },
+            "type": "array",
+            "title": "Columns",
+            "default": []
           }
         },
         "type": "object",

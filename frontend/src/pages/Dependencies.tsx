@@ -6,16 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api, runPath } from '../api/client';
 import type { Schema } from '../api/client';
 import { StatusPill } from '../components/StatusPill';
-import {
-  Empty,
-  ErrorState,
-  Loading,
-  PageHeader,
-  Pagination,
-  Panel,
-  Time,
-  useFilters,
-} from '../components/ui';
+import { Empty, ErrorState, Loading, PageHeader, Panel, Time, useFilters } from '../components/ui';
 import './dependencies.css';
 
 const stages = [
@@ -30,17 +21,9 @@ const stages = [
 export function Dependencies() {
   const { params, set } = useFilters();
   const [, setParams] = useSearchParams();
-  const tenantSearch = params.get('tenant_search') || '';
-  const tenantPage = Math.max(
-    1,
-    Math.min(1000000, Math.trunc(Number(params.get('tenant_page'))) || 1),
-  );
   const tenants = useQuery({
-    queryKey: ['dependency-tenants', tenantSearch, tenantPage],
-    queryFn: () =>
-      api<Schema<'DependencyTenantPage'>>(
-        `/dependencies/tenants?q=${encodeURIComponent(tenantSearch)}&page=${tenantPage}`,
-      ),
+    queryKey: ['tenants', 1],
+    queryFn: () => api<Schema<'Page_Tenant_'>>('/tenants?page=1&page_size=100'),
   });
   const tenant = params.get('tenant') || tenants.data?.items[0]?.tenant_id || '';
   const graph = useQuery({
@@ -89,6 +72,21 @@ export function Dependencies() {
     graph.data?.edges.filter((edge) => edge.source === selectedId || edge.target === selectedId) ||
     [];
   const affected = graph.data?.nodes.filter((node) => impact.has(node.id)) || [];
+  const dagByTask = new Map<string, string>();
+  if (graph.data) {
+    const byId = new Map(graph.data.nodes.map((n) => [n.id, n]));
+    for (const edge of graph.data.edges) {
+      const source = byId.get(edge.source);
+      const target = byId.get(edge.target);
+      if (source?.kind === 'dag' && target?.kind === 'task') dagByTask.set(target.id, source.label);
+    }
+  }
+  const DAG_LABELS: Record<string, string> = {
+    mysql_cdc: 'MySQL CDC',
+    mongo_cdc: 'MongoDB CDC',
+    mysql_initial_load: 'MySQL initial load',
+    mongo_initial_load: 'MongoDB initial load',
+  };
 
   return (
     <>
@@ -102,33 +100,18 @@ export function Dependencies() {
         }
       />
       <div className="dependency-controls">
-        <label htmlFor="dependency-search">Find tenant</label>
-        <input
-          id="dependency-search"
-          value={tenantSearch}
-          placeholder="Name or slug"
-          maxLength={200}
-          onChange={(event) => {
-            const next = new URLSearchParams(params);
-            if (event.target.value) next.set('tenant_search', event.target.value);
-            else next.delete('tenant_search');
-            next.delete('tenant_page');
-            setParams(next, { replace: true });
-          }}
-        />
         <label htmlFor="dependency-tenant">Tenant</label>
         <Select
           id="dependency-tenant"
           value={tenant}
-          onChange={(event) => set('tenant', event.target.value)}
+          onChange={(event) => {
+            const next = new URLSearchParams(params);
+            next.set('tenant', event.target.value);
+            next.delete('node');
+            setParams(next);
+          }}
         >
           {!tenants.data?.items.length && <option value="">Select a tenant</option>}
-          {tenant && !tenants.data?.items.some((item) => item.tenant_id === tenant) && (
-            <option value={tenant}>
-              {graph.data?.tenants.find((item) => item.tenant_id === tenant)?.display_name ||
-                tenant}
-            </option>
-          )}
           {tenants.data?.items.map((item) => (
             <option key={item.tenant_id} value={item.tenant_id}>
               {item.display_name}
@@ -142,23 +125,13 @@ export function Dependencies() {
           <i /> Configured relationship
         </span>
       </div>
-      {tenants.data && (tenants.data.total > 50 || tenantPage > 1) && (
-        <Pagination
-          total={tenants.data.total}
-          page={tenantPage}
-          size={50}
-          onChange={(page) => set('tenant_page', String(page))}
-        />
-      )}
       {tenants.error ? (
         <ErrorState error={tenants.error} />
       ) : tenants.isPending ? (
         <Loading />
       ) : !tenant ? (
-        <Empty title={tenantSearch ? 'No matching tenants' : 'No tenants configured'}>
-          {tenantSearch
-            ? 'Try a different name or slug, or clear the search.'
-            : 'Add a tenant to start mapping its pipeline dependencies.'}
+        <Empty title="No tenants configured">
+          Add a tenant to start mapping its pipeline dependencies.
         </Empty>
       ) : graph.error ? (
         <ErrorState error={graph.error} />
@@ -169,6 +142,7 @@ export function Dependencies() {
           <Panel
             title="Dependency map"
             subtitle="Select any node to inspect its evidence and potential downstream impact."
+            className={graph.isPlaceholderData ? 'is-fetching' : ''}
           >
             {graph.data.truncated && (
               <div className="notice warning" role="status">
@@ -239,11 +213,11 @@ export function Dependencies() {
                     return (
                       <button
                         key={node.id}
-                        className={`dependency-node ${selectedId === node.id ? 'selected' : ''} ${impact.has(node.id) ? 'impacted' : ''}`}
+                        className={`dependency-node has-tip ${selectedId === node.id ? 'selected' : ''} ${impact.has(node.id) ? 'impacted' : ''}`}
                         style={{ left: position.x, top: position.y }}
                         aria-pressed={selectedId === node.id}
                         aria-label={`${node.kind}: ${node.label}`}
-                        title={node.label}
+                        data-tip={`${node.kind} · ${node.label}`}
                         onClick={() => set('node', node.id)}
                       >
                         {node.kind === 'dag' || node.kind === 'task' ? (
@@ -257,7 +231,12 @@ export function Dependencies() {
                         )}
                         <span>
                           <strong>{node.label}</strong>
-                          <small>{node.status || node.evidence}</small>
+                          <small>
+                            {node.kind === 'task' && dagByTask.get(node.id)
+                              ? `${DAG_LABELS[dagByTask.get(node.id) ?? ''] ?? dagByTask.get(node.id)} · `
+                              : ''}
+                            {node.status || node.evidence}
+                          </small>
                         </span>
                       </button>
                     );

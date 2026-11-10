@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Select } from './Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Bookmark, GitCompareArrows, Trash2 } from 'lucide-react';
+import { Bookmark, GitCompareArrows, Trash2, X } from 'lucide-react';
 import { api, runPath } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
@@ -38,6 +38,7 @@ export function SavedRunViews() {
   const [params, setParams] = useSearchParams();
   const [name, setName] = useState('');
   const [selected, setSelected] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { notify } = useApp();
   const client = useQueryClient();
   const views = useQuery({
@@ -66,11 +67,13 @@ export function SavedRunViews() {
     mutationFn: () => api<Schema<'Message'>>(`/saved-views/${selected}`, { method: 'DELETE' }),
     onSuccess: () => {
       setSelected('');
+      setConfirmDelete(false);
       notify('Saved view removed.');
       void client.invalidateQueries({ queryKey: ['saved-views'] });
     },
     onError: (error) => notify(error.message),
   });
+  const selectedView = views.data?.items.find((v) => String(v.id) === selected);
   return (
     <div className="saved-views">
       <div className="inline-flex">
@@ -97,7 +100,7 @@ export function SavedRunViews() {
           className="icon-button"
           aria-label="Delete selected view"
           disabled={!selected || remove.isPending}
-          onClick={() => remove.mutate()}
+          onClick={() => setConfirmDelete(true)}
         >
           <Trash2 size={14} />
         </button>
@@ -130,6 +133,44 @@ export function SavedRunViews() {
           ? views.error.message
           : 'Save your current filters and time range to reopen this investigation later. Private to your account.'}
       </span>
+      {confirmDelete && (
+        <div className="modal-scrim" role="presentation" onClick={() => setConfirmDelete(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete saved view"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Delete saved view</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setConfirmDelete(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Delete the saved view <strong>{selectedView?.name}</strong>? Your current filters stay
+              as they are.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setConfirmDelete(false)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={remove.isPending}
+                onClick={() => remove.mutate()}
+              >
+                {remove.isPending ? 'Deleting…' : 'Delete view'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -315,7 +356,11 @@ export function EventTimeline({
   return (
     <Panel
       title="Event timeline"
-      subtitle="Pipeline activity and tenant context in one chronological view."
+      subtitle={
+        runKey
+          ? "This run's events plus its tenant's context — alerts and checks may concern other runs."
+          : 'Pipeline activity and tenant context in one chronological view.'
+      }
     >
       {query.isPending ? (
         <Loading />
@@ -362,6 +407,7 @@ export function EventTimeline({
 
 export function Activity({ embedded = false }: { embedded?: boolean }) {
   const { params, set, rangeQuery } = useFilters();
+  const [tenantInput, setTenantInput] = useState(params.get('tenant') || '');
   return (
     <>
       {!embedded && (
@@ -370,14 +416,35 @@ export function Activity({ embedded = false }: { embedded?: boolean }) {
           description="Follow runs, alerts, onboarding, and operator actions across your workspace."
         />
       )}
-      <div className="filter-bar">
+      <form
+        className="filter-bar"
+        onSubmit={(e) => {
+          e.preventDefault();
+          set('tenant', tenantInput.trim());
+        }}
+      >
         <input
           aria-label="Activity tenant filter"
-          placeholder="Filter by tenant slug"
-          value={params.get('tenant') || ''}
-          onChange={(e) => set('tenant', e.target.value)}
+          placeholder="Filter by tenant slug — press Enter to apply"
+          value={tenantInput}
+          onChange={(e) => setTenantInput(e.target.value)}
         />
-      </div>
+        <button className="button small" type="submit">
+          Apply
+        </button>
+        {params.get('tenant') && (
+          <button
+            className="button small"
+            type="button"
+            onClick={() => {
+              setTenantInput('');
+              set('tenant', '');
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </form>
       <EventTimeline tenant={params.get('tenant') || ''} rangeQuery={rangeQuery} />
     </>
   );

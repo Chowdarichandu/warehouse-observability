@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, CheckCheck, ChevronDown, Mail, Send, Settings2 } from 'lucide-react';
@@ -15,13 +16,22 @@ import {
   Panel,
   TenantLink,
   Time,
+  displayTenantName,
   useFilters,
 } from '../components/ui';
+
+function alertTitle(alert: Schema<'Alert'>) {
+  const suffix = alert.tenant_id ? ` · ${alert.tenant_id}` : '';
+  return suffix && alert.title.endsWith(suffix)
+    ? alert.title.slice(0, -suffix.length)
+    : alert.title;
+}
 
 export function Alerts() {
   const { params, set, page } = useFilters();
   const state = params.get('state') || '';
   const tenant = params.get('tenant') || '';
+  const [expanded, setExpanded] = useState<number | null>(null);
   const { canOperate, isAdmin, notify } = useApp();
   const client = useQueryClient();
   const query = useQuery({
@@ -65,11 +75,11 @@ export function Alerts() {
           </span>
         }
       />
-      <Panel>
+      <Panel className={query.isPlaceholderData ? 'is-fetching' : ''}>
         {tenant && (
           <div className="filter-bar">
             <span className="tag">
-              Tenant: {tenant}
+              Tenant: {displayTenantName(tenant)}
               <button
                 className="tag-clear"
                 aria-label="Clear tenant filter"
@@ -93,7 +103,9 @@ export function Alerts() {
               onClick={() => set('state', value)}
             >
               {label}
-              {value === state && query.data && <span>{query.data.total}</span>}
+              {value === state && query.data && !query.isPlaceholderData && (
+                <span>{query.data.total}</span>
+              )}
             </button>
           ))}
         </div>
@@ -115,7 +127,17 @@ export function Alerts() {
                       <StatusPill status={alert.state} />
                       <span className="muted mono">#{alert.id}</span>
                     </div>
-                    <h3>{alert.title}</h3>
+                    <button
+                      className="alert-title-button"
+                      aria-expanded={expanded === alert.id}
+                      onClick={() => setExpanded(expanded === alert.id ? null : alert.id)}
+                    >
+                      <h3>{alertTitle(alert)}</h3>
+                      <ChevronDown
+                        size={15}
+                        className={expanded === alert.id ? 'chevron-open' : ''}
+                      />
+                    </button>
                     <p>
                       {String(
                         alert.details?.reason ||
@@ -123,6 +145,29 @@ export function Alerts() {
                           alert.rule_id.replaceAll('_', ' '),
                       )}
                     </p>
+                    {expanded === alert.id && (
+                      <div className="alert-details">
+                        <dl>
+                          <div>
+                            <dt>Rule</dt>
+                            <dd>{alert.rule_id.replaceAll('_', ' ')}</dd>
+                          </div>
+                          {Object.entries(alert.details || {})
+                            .filter(([key]) => !['reason', 'hint', 'tenant_id'].includes(key))
+                            .map(([key, value]) => (
+                              <div key={key}>
+                                <dt>{key.replaceAll('_', ' ')}</dt>
+                                <dd>{String(value)}</dd>
+                              </div>
+                            ))}
+                        </dl>
+                        {alert.tenant_id && (
+                          <Link className="text-link" to={`/runs?tenant=${alert.tenant_id}`}>
+                            View this tenant's runs
+                          </Link>
+                        )}
+                      </div>
+                    )}
                     <div className="alert-meta">
                       {alert.tenant_id && <TenantLink id={alert.tenant_id} />}
                       <span>
@@ -283,13 +328,20 @@ function RuleEditor({ rule, channels }: { rule: Schema<'Rule'>; channels: Schema
             Severity
             <Select name="severity" defaultValue={rule.severity}>
               {['critical', 'high', 'medium', 'low'].map((s) => (
-                <option key={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s[0].toUpperCase() + s.slice(1)}
+                </option>
               ))}
             </Select>
           </label>
           {Object.entries(rule.params || {}).map(([key, value]) => (
             <label key={key}>
-              {key.replaceAll('_', ' ')}
+              {{
+                pct: 'Threshold (%)',
+                consecutive_failures: 'Consecutive failures',
+                minutes: 'Window (minutes)',
+                count: 'Count',
+              }[key] ?? key.replaceAll('_', ' ').replace(/^\w/, (c) => c.toUpperCase())}
               <input name={key} type="number" min="1" max="10080" defaultValue={value} required />
             </label>
           ))}

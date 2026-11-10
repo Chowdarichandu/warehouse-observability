@@ -18,7 +18,7 @@ export function StatusPill({
       }}
     >
       {dot && <span className="status-dot" style={{ background: 'currentColor' }} />}
-      {status.replaceAll('_', ' ')}
+      {status === 'acked' ? 'acknowledged' : status.replaceAll('_', ' ')}
     </span>
   );
 }

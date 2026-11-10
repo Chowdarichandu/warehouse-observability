@@ -309,7 +309,12 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   ['F', 'Finance', 'Billing, payments and payouts'],
                   ['S', 'Support', 'Customer tickets and SLAs'],
                 ].map(([mark, name, blurb]) => (
-                  <div className="product-planned" key={name} aria-disabled="true">
+                  <div
+                    className="product-planned"
+                    key={name}
+                    aria-disabled="true"
+                    onClick={() => setToast(`${name} is planned — it isn't available yet.`)}
+                  >
                     <span className="workspace-avatar planned">{mark}</span>
                     <span>
                       <strong>{name}</strong>
@@ -448,7 +453,11 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   )}
                 </form>
                 {searchOpen && searchTerm.length >= 2 && (
-                  <div className="search-suggest" role="listbox" aria-label="Search suggestions">
+                  <div
+                    className={`search-suggest${suggestTenants.isPlaceholderData ? ' is-fetching' : ''}`}
+                    role="listbox"
+                    aria-label="Search suggestions"
+                  >
                     {suggestTenants.data && suggestTenants.data.items.length > 0 && (
                       <>
                         <span className="search-suggest-label">Tenants</span>
@@ -582,6 +591,11 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                     const next = new URLSearchParams(params);
                     next.set('range', event.target.value);
                     next.delete('page');
+                    if (event.target.value === 'custom' && !next.get('from')) {
+                      const now = new Date();
+                      next.set('to', now.toISOString());
+                      next.set('from', new Date(now.getTime() - 86400000).toISOString());
+                    }
                     setParams(next);
                   }}
                 >
@@ -601,7 +615,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   const next = new URLSearchParams(params);
                   if (tv) next.delete('tv');
                   else next.set('tv', '1');
-                  navigate(`/?${next}`);
+                  navigate(`${location.pathname}?${next}`);
                 }}
               >
                 {tv ? <X size={16} /> : <Maximize2 size={16} />}

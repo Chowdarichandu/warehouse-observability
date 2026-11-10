@@ -18,6 +18,12 @@ import {
   useFilters,
 } from '../components/ui';
 
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function displayTenant(id: string) {
+  return id.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function Errors() {
   const { params, set, rangeQuery, page } = useFilters();
   const fingerprint = params.get('group') || '';
@@ -37,7 +43,7 @@ export function Errors() {
     queryKey: ['heatmap', rangeQuery, params.get('heat_tenant')],
     queryFn: () =>
       api<Schema<'Page_HeatCell_'>>(
-        `/metrics/failures-heatmap?${rangeQuery}&tenant=${params.get('heat_tenant') || ''}`,
+        `/metrics/failures-heatmap?${rangeQuery}&tenant=${params.get('heat_tenant') || ''}&tz=${encodeURIComponent(LOCAL_TZ)}`,
       ),
   });
   const mttr = useQuery({
@@ -77,7 +83,11 @@ export function Errors() {
         </div>
         <span className="tag">AUTOMATIC CLASSIFICATION</span>
       </div>
-      <Panel title="Error groups" subtitle="Recurring failures with a shared root cause">
+      <Panel
+        title="Error groups"
+        subtitle="Recurring failures with a shared root cause"
+        className={query.isPlaceholderData ? 'is-fetching' : ''}
+      >
         {groups.length ? (
           <div className="table-scroll">
             <table>
@@ -105,14 +115,18 @@ export function Errors() {
                         }
                       >
                         <strong>{g.error_class}</strong>
-                        <span>{g.sample_message}</span>
+                        <span className="has-tip" data-tip={g.sample_message}>
+                          {g.sample_message}
+                        </span>
                       </button>
                     </td>
                     <td>
                       <span className="count-pill">{g.occurrences}</span>
                     </td>
                     <td>
-                      <span className="mono">{g.tenants.length} tenants</span>
+                      <span className="mono">
+                        {g.tenants.length} tenant{g.tenants.length === 1 ? '' : 's'}
+                      </span>
                     </td>
                     <td>
                       <Time value={g.first_seen} />
@@ -191,7 +205,7 @@ export function Errors() {
       <div className="two-column">
         <Panel
           title="Failure patterns"
-          subtitle="Failures by hour and weekday · UTC"
+          subtitle="Failures by hour and weekday, in your timezone"
           action={
             <Select
               aria-label="Heatmap tenant"
@@ -199,8 +213,11 @@ export function Errors() {
               onChange={(e) => set('heat_tenant', e.target.value)}
             >
               <option value="">All tenants</option>
-              <option value="cedar_foods">Cedar Foods</option>
-              <option value="acme_retail">Acme Retail</option>
+              {[...new Set(groups.flatMap((g) => g.tenants))].sort().map((id) => (
+                <option key={id} value={id}>
+                  {displayTenant(id)}
+                </option>
+              ))}
             </Select>
           }
         >
@@ -216,7 +233,16 @@ export function Errors() {
                 tooltip: {
                   formatter: (value: unknown) => {
                     const v = value as { value: number[] };
-                    return `${v.value[0]}:00 UTC · ${v.value[2]} failures`;
+                    const days = [
+                      'Monday',
+                      'Tuesday',
+                      'Wednesday',
+                      'Thursday',
+                      'Friday',
+                      'Saturday',
+                      'Sunday',
+                    ];
+                    return `${days[v.value[1]]} ${v.value[0]}:00 · ${v.value[2]} failure${v.value[2] === 1 ? '' : 's'}`;
                   },
                 },
                 grid: { left: 52, top: 15, right: 20, bottom: 55 },
@@ -299,9 +325,9 @@ export function Errors() {
       </div>
       <div className="two-column">
         {[
-          { title: 'Failures by stage', query: stages },
-          { title: 'Failures by tenant', query: byTenant },
-        ].map(({ title, query: breakdown }) => (
+          { title: 'Failures by stage', query: stages, tenantNames: false },
+          { title: 'Failures by tenant', query: byTenant, tenantNames: true },
+        ].map(({ title, query: breakdown, tenantNames }) => (
           <Panel key={title} title={title}>
             {breakdown.isPending ? (
               <Loading />
@@ -316,7 +342,9 @@ export function Errors() {
                   xAxis: { type: 'value', splitLine: { lineStyle: { color: '#81909f22' } } },
                   yAxis: {
                     type: 'category',
-                    data: breakdown.data.items.map((row) => row.name),
+                    data: breakdown.data.items.map((row) =>
+                      tenantNames ? displayTenant(row.name) : row.name,
+                    ),
                     axisLabel: { color: '#81909f', fontSize: 9 },
                   },
                   series: [

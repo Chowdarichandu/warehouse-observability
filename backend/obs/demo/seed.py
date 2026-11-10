@@ -203,6 +203,13 @@ def make_run(
     triggered_by: str = "schedule",
 ) -> dict:
     dag = f"{source}_{'initial_load' if load == 'initial' else 'cdc'}"
+    # Deterministic per-run variation: identical durations must not produce
+    # identical queue delays and row counts across tenants (a visible demo tell).
+    jitter = int(
+        hashlib.sha256(f"{tenant}|{source}|{load}|{job_id}".encode()).hexdigest()[:6], 16
+    )
+    queue_delay = 8 + jitter % 40
+    rows_per_s = 380 + jitter % 120
     return {
         "run_key": f"{dag}|scheduled__{at.isoformat()}|sync_{tenant}|-1",
         "tenant_id": tenant,
@@ -211,16 +218,16 @@ def make_run(
         "status": status,
         "failed_stage": "airbyte" if status == "failed" else None,
         "triggered_by": triggered_by,
-        "scheduled_for": at - timedelta(seconds=20),
-        "queued_at": at - timedelta(seconds=20),
+        "scheduled_for": at - timedelta(seconds=queue_delay),
+        "queued_at": at - timedelta(seconds=queue_delay),
         "started_at": at,
         "ended_at": at + timedelta(seconds=duration)
         if status not in {"running", "queued"}
         else None,
         "duration_s": duration if status not in {"running", "queued"} else None,
-        "queue_delay_s": 20,
-        "rows_synced": duration * 420 if status == "success" else 0,
-        "bytes_synced": duration * 420 * 160 if status == "success" else 0,
+        "queue_delay_s": queue_delay,
+        "rows_synced": duration * rows_per_s if status == "success" else 0,
+        "bytes_synced": duration * rows_per_s * 160 if status == "success" else 0,
         "dag_id": dag,
         "dag_run_id": f"scheduled__{at.isoformat()}",
         "task_id": f"sync_{tenant}",

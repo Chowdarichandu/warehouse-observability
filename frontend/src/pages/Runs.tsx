@@ -21,6 +21,7 @@ import {
   Source,
   TenantLink,
   Time,
+  formatDateTime,
   formatDuration,
   useFilters,
 } from '../components/ui';
@@ -37,12 +38,46 @@ export function Runs() {
     {
       key: 'status',
       label: 'All statuses',
-      values: ['success', 'failed', 'running', 'queued', 'cancelled', 'skipped'],
+      values: [
+        ['success', 'Success'],
+        ['failed', 'Failed'],
+        ['running', 'Running'],
+        ['queued', 'Queued'],
+        ['cancelled', 'Cancelled'],
+        ['skipped', 'Skipped'],
+      ],
     },
-    { key: 'source', label: 'All sources', values: ['mysql', 'mongo'] },
-    { key: 'load', label: 'All load types', values: ['initial', 'cdc'] },
-    { key: 'stage', label: 'All stages', values: ['airflow', 'airbyte', 'warehouse'] },
+    {
+      key: 'source',
+      label: 'All sources',
+      values: [
+        ['mysql', 'MySQL'],
+        ['mongo', 'MongoDB'],
+      ],
+    },
+    {
+      key: 'load',
+      label: 'All load types',
+      values: [
+        ['initial', 'Initial load'],
+        ['cdc', 'CDC'],
+      ],
+    },
+    {
+      key: 'stage',
+      label: 'All stages',
+      values: [
+        ['airflow', 'Airflow'],
+        ['airbyte', 'Airbyte'],
+        ['warehouse', 'Warehouse'],
+      ],
+    },
   ];
+  const errorGroups = useQuery({
+    queryKey: ['run-filter-error-classes', rangeQuery],
+    queryFn: () => api<Schema<'Page_ErrorGroup_'>>(`/errors/groups?${rangeQuery}`),
+  });
+  const errorClasses = [...new Set((errorGroups.data?.items ?? []).map((g) => g.error_class))];
   return (
     <>
       <PageHeader
@@ -56,7 +91,7 @@ export function Runs() {
         }
       />
       <SavedRunViews />
-      <Panel>
+      <Panel className={query.isPlaceholderData ? 'is-fetching' : ''}>
         <div className="filter-bar wrapping">
           <label className="search-field">
             <Search size={15} />
@@ -75,8 +110,10 @@ export function Runs() {
               onChange={(e) => set(option.key, e.target.value)}
             >
               <option value="">{option.label}</option>
-              {option.values.map((v) => (
-                <option key={v}>{v}</option>
+              {option.values.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </Select>
           ))}
@@ -87,13 +124,18 @@ export function Runs() {
             value={params.get('tenant') || ''}
             onChange={(e) => set('tenant', e.target.value)}
           />
-          <input
-            className="compact-input"
+          <Select
             aria-label="Error class filter"
-            placeholder="Error class"
             value={params.get('error_class') || ''}
             onChange={(e) => set('error_class', e.target.value)}
-          />
+          >
+            <option value="">All error classes</option>
+            {errorClasses.map((errorClass) => (
+              <option key={errorClass} value={errorClass}>
+                {errorClass}
+              </option>
+            ))}
+          </Select>
           {filters.some((key) => params.has(key)) && (
             <Link className="text-link" to={`/runs?${rangeQuery}`}>
               Clear filters
@@ -167,8 +209,13 @@ export function RunDetail() {
         actions={
           <>
             <StatusPill status={run.status} />
+            {error?.error_class === 'MYSQL_BINLOG_PURGED' && (
+              <Link className="button primary" to={`/tenants/${run.tenant_id}`}>
+                Open tenant to resync
+              </Link>
+            )}
             <button
-              className="button primary"
+              className={error?.error_class === 'MYSQL_BINLOG_PURGED' ? 'button' : 'button primary'}
               disabled={
                 !canOperate || !['failed', 'cancelled'].includes(run.status) || retry.isPending
               }
@@ -227,10 +274,7 @@ export function RunDetail() {
         </div>
         <div>
           <span>Attempts</span>
-          <strong>
-            {run.airbyte_attempts || 1}
-            <small> Airbyte</small>
-          </strong>
+          <strong>{run.airbyte_attempts || 1}</strong>
         </div>
       </div>
       {error && (
@@ -261,19 +305,20 @@ export function RunDetail() {
             <dd className="mono break-all">{run.dag_run_id || '—'}</dd>
             <dt>Map index / try</dt>
             <dd>
-              {run.map_index} / {run.try_number}
+              {run.map_index != null && run.map_index >= 0 ? run.map_index : 'Unmapped'} · try{' '}
+              {run.try_number}
             </dd>
             <dt>Queued</dt>
             <dd>
-              <Time value={run.queued_at} />
+              <Time value={run.queued_at} seconds />
             </dd>
             <dt>Started</dt>
             <dd>
-              <Time value={run.started_at} />
+              <Time value={run.started_at} seconds />
             </dd>
             <dt>Ended</dt>
             <dd>
-              <Time value={run.ended_at} />
+              <Time value={run.ended_at} seconds />
             </dd>
           </dl>
         </Panel>
@@ -316,7 +361,8 @@ export function RunDetail() {
                 {[run, ...previous_runs].map((r) => (
                   <option key={r.run_key} value={r.run_key}>
                     {r.run_key === run.run_key ? 'This run' : 'Run'} ·{' '}
-                    {r.started_at ? new Date(r.started_at).toLocaleString() : 'queued'} · {r.status}
+                    {r.started_at ? formatDateTime(r.started_at) : 'queued'} ·{' '}
+                    {r.status[0].toUpperCase() + r.status.slice(1)}
                   </option>
                 ))}
               </Select>
@@ -389,6 +435,7 @@ function LogViewer({ content }: { content: string }) {
   const onlyMatches = params.get('logfilter') === 'matches';
   const term = params.get('logq') || '';
   const lines = content.split('\n');
+  while (lines.length && lines[lines.length - 1] === '') lines.pop();
   const matches = lines.flatMap((line, index) =>
     term && line.toLowerCase().includes(term.toLowerCase()) ? [index] : [],
   );

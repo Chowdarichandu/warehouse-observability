@@ -13,7 +13,7 @@ import { api } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
 import { StatusPill } from '../components/StatusPill';
-import { Empty, ErrorState, Loading, PageHeader, Panel, Time } from '../components/ui';
+import { Empty, ErrorState, Loading, PageHeader, Panel, Time, plural } from '../components/ui';
 import './pipelines.css';
 
 export function Pipelines() {
@@ -35,11 +35,11 @@ export function Pipelines() {
         {dag.latest_status ? (
           <StatusPill
             status={dag.latest_status}
-            tip={`${dag.label} (${dag.dag_id}) — last recorded ${
+            tip={`${dag.label} (${dag.dag_id}) — latest run ${dag.latest_status} · last recorded ${
               dag.last_recorded_at
                 ? new Date(dag.last_recorded_at).toLocaleString()
                 : 'not recorded'
-            } · ${dag.runs_24h} runs in 24h · ${dag.failures_24h} failures in 24h`}
+            } · ${plural(dag.runs_24h, 'run')} in 24h · ${plural(dag.failures_24h, 'failure')} in 24h`}
           />
         ) : (
           <span
@@ -65,7 +65,7 @@ export function Pipelines() {
       </p>
       <div className="dag-card-foot">
         <span>{dag.run_policy}</span>
-        <span>{dag.runs_24h} runs · 24h</span>
+        <span>{plural(dag.runs_24h, 'run')} · 24h</span>
       </div>
       <div className="dag-observed">
         {dag.last_recorded_at ? (
@@ -75,7 +75,9 @@ export function Pipelines() {
         ) : (
           'Waiting for execution evidence'
         )}
-        {dag.failures_24h > 0 && <span className="danger-text">{dag.failures_24h} failed</span>}
+        {dag.failures_24h > 0 && (
+          <span className="danger-text">24h: {plural(dag.failures_24h, 'failure')}</span>
+        )}
       </div>
     </article>
   );
@@ -84,7 +86,7 @@ export function Pipelines() {
       <PageHeader
         title="Pipeline orchestration"
         eyebrow="WORKSPACE"
-        description="Seven onboarding DAGs across two sources, followed by tenant-level analytics."
+        description="Every DAG in the platform: the onboarding coordinator, per-source provisioning, initial load and CDC, and tenant analytics."
         actions={
           can('onboarding.start') && (
             <Link to="/onboarding" className="button primary">
@@ -191,9 +193,8 @@ export function Pipelines() {
             ))}
           </div>
         ) : (
-          <Empty title="Your next tenant starts here">
-            Launch System Engines from onboarding to follow provisioning, initial load, and CDC in
-            one place.
+          <Empty title="No launches recorded yet">
+            Launches appear here as soon as a tenant's onboarding workflow runs.
           </Empty>
         )}
       </Panel>

@@ -400,7 +400,8 @@ function PermissionsDialog({
               <p>
                 {target.email} — role: {data.role}
                 {data.role_name ? ` (${data.role_name})` : ''}. Tick what this one user can do;
-                changes apply on top of their role and to nobody else.
+                changes apply on top of their role and to nobody else. Permissions from a higher
+                tier can't be added here — change the user's role for those.
               </p>
               <div className="role-perms-picker">
                 {data.permissions.map((meta) => {

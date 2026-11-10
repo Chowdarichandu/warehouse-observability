@@ -601,10 +601,16 @@ class WorkflowState(BaseModel):
     analytics: list[AnalyticsDag]
 
 
+class WarehouseColumn(BaseModel):
+    name: str
+    type: str
+
+
 class WarehouseTable(BaseModel):
     table_name: str
     row_count: int | None = None
     last_loaded_at: str | None = None
+    columns: list[WarehouseColumn] = []
 
 
 class WarehouseView(BaseModel):

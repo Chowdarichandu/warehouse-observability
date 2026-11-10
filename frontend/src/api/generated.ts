@@ -3088,6 +3088,13 @@ export interface components {
              */
             permissions: components["schemas"]["PermissionMeta"][];
         };
+        /** WarehouseColumn */
+        WarehouseColumn: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+        };
         /** WarehouseView */
         WarehouseView: {
             /** Tenant Id */
@@ -3147,6 +3154,11 @@ export interface components {
             row_count?: number | null;
             /** Last Loaded At */
             last_loaded_at?: string | null;
+            /**
+             * Columns
+             * @default []
+             */
+            columns: components["schemas"]["WarehouseColumn"][];
         };
     };
     responses: never;
@@ -5255,6 +5267,7 @@ export interface operations {
             query?: {
                 range?: string;
                 tenant?: string;
+                tz?: string;
                 page?: number;
                 page_size?: number;
                 from?: string | null;

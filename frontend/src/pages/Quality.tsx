@@ -15,6 +15,7 @@ import {
   Panel,
   TenantLink,
   Time,
+  plural,
   useFilters,
 } from '../components/ui';
 import './quality.css';
@@ -137,6 +138,7 @@ export function Quality() {
       <Panel
         title="Quality checks"
         subtitle="Scheduled checks use each tenant’s registered warehouse schema."
+        className={checks.isPlaceholderData ? 'is-fetching' : ''}
       >
         <div className="filter-bar">
           <Select
@@ -153,7 +155,16 @@ export function Quality() {
               </option>
             ))}
           </Select>
-          <span className="filter-count">{checks.data?.total ?? '…'} checks</span>
+          <span className="filter-count">
+            {checks.data ? plural(checks.data.total, 'check') : '…'}
+            {checks.data &&
+              (() => {
+                const failing = checks.data.items.filter(
+                  (c) => c.latest_result && outcome(c.latest_result.status) === 'failed',
+                ).length;
+                return failing ? ` · ${plural(failing, 'failing check')}` : ' · none failing';
+              })()}
+          </span>
         </div>
         {checks.isPending ? (
           <Loading />
@@ -265,7 +276,8 @@ export function Quality() {
       </Panel>
       <Panel
         title={selected ? 'Check evidence' : 'Recent evidence'}
-        subtitle="Only counts, rates, and schema differences are stored. Warehouse row values stay in the warehouse."
+        subtitle="Only counts, rates, and schema differences are stored. Warehouse row values stay in the warehouse. Select an entry to filter to its check."
+        className={history.isPlaceholderData ? 'is-fetching' : ''}
         action={
           selected && (
             <button className="button small" onClick={() => set('check_id', '')}>
@@ -285,7 +297,11 @@ export function Quality() {
         ) : (
           <div className="quality-evidence">
             {history.data.items.map((result) => (
-              <article key={result.id}>
+              <article
+                key={result.id}
+                className="row-clickable"
+                onClick={() => set('check_id', String(result.check_id))}
+              >
                 <div className="quality-evidence-header">
                   <StatusPill status={outcome(result.status)} />
                   <TenantLink id={result.tenant_id} />

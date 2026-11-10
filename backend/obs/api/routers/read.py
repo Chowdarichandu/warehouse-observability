@@ -325,16 +325,23 @@ def mttr(
 def heatmap(
     range: str = "7d",
     tenant: str = "",
+    tz: str = "UTC",
     page: PageNumber = 1,
     page_size: PageSize = 200,
     from_: datetime | None = Query(None, alias="from"),
     to: datetime | None = None,
 ) -> dict:
     start, end = a.bounds(range, from_, to)
+    # Buckets are computed in the viewer's timezone so the grid matches the
+    # local times shown everywhere else; unknown zones fall back to UTC.
+    if not rows("SELECT 1 FROM pg_timezone_names WHERE name=%s", (tz,)):
+        tz = "UTC"
     items = rows(
-        """SELECT extract(isodow FROM started_at)::integer-1 AS weekday,extract(hour FROM started_at)::integer AS hour,count(*) AS failures
+        """SELECT extract(isodow FROM (started_at AT TIME ZONE %s))::integer-1 AS weekday,
+                  extract(hour FROM (started_at AT TIME ZONE %s))::integer AS hour,
+                  count(*) AS failures
         FROM obs.pipeline_runs WHERE status='failed' AND started_at>=%s AND started_at<%s AND (%s='' OR tenant_id=%s) GROUP BY 1,2 ORDER BY 1,2""",
-        (start, end, tenant, tenant),
+        (tz, tz, start, end, tenant, tenant),
     )
     return a.page(items, page, page_size)
 
@@ -528,11 +535,14 @@ def warehouse(tenant: str, user: dict = Depends(current_user)) -> dict:
     if not one("SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (tenant,)):
         fail(404, "tenant_not_found", "Tenant not found.")
     tables = rows(
-        """SELECT DISTINCT ON (table_name) table_name, row_count, last_loaded_at
-           FROM obs.warehouse_snapshots
-           WHERE tenant_id=%s
-           ORDER BY table_name, checked_at DESC""",
-        (tenant,),
+        """SELECT DISTINCT ON (w.table_name) w.table_name, w.row_count, w.last_loaded_at,
+                  (SELECT s.columns FROM obs.schema_snapshots s
+                    WHERE s.tenant_id=%s AND s.table_name=w.table_name
+                    ORDER BY s.checked_at DESC LIMIT 1) AS columns
+           FROM obs.warehouse_snapshots w
+           WHERE w.tenant_id=%s
+           ORDER BY w.table_name, w.checked_at DESC""",
+        (tenant, tenant),
     )
     return {
         "tenant_id": tenant,
@@ -541,6 +551,7 @@ def warehouse(tenant: str, user: dict = Depends(current_user)) -> dict:
                 "table_name": t["table_name"],
                 "row_count": t["row_count"],
                 "last_loaded_at": t["last_loaded_at"].isoformat() if t["last_loaded_at"] else None,
+                "columns": t["columns"] or [],
             }
             for t in tables
         ],

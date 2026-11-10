@@ -384,6 +384,9 @@ export function Overview() {
               ? 'Passed, failed and active runs for this tenant'
               : 'Passed, failed and active pipeline runs'
           }
+          className={
+            overview.isPlaceholderData || tenantActivity.isPlaceholderData ? 'is-fetching' : ''
+          }
           action={
             <div className="activity-controls">
               <Select

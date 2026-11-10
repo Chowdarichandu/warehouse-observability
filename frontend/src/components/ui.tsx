@@ -103,8 +103,8 @@ export function Pagination({
   return (
     <div className="pagination">
       <span>
-        Showing {Math.min((page - 1) * size + 1, total)}–{Math.min(page * size, total)} of{' '}
-        {total.toLocaleString()}
+        Showing{' '}
+        {`${Math.min((page - 1) * size + 1, total)}–${Math.min(page * size, total)} of ${total.toLocaleString()}`}
       </span>
       <div>
         <button aria-label="Previous page" disabled={page === 1} onClick={() => onChange(page - 1)}>
@@ -145,7 +145,15 @@ export function useFilters() {
     page: Number(params.get('page') || 1),
   };
 }
-export function Time({ value, relative = false }: { value?: string | null; relative?: boolean }) {
+export function Time({
+  value,
+  relative = false,
+  seconds = false,
+}: {
+  value?: string | null;
+  relative?: boolean;
+  seconds?: boolean;
+}) {
   if (!value) return <span className="muted">—</span>;
   const date = new Date(value);
   const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
@@ -159,12 +167,7 @@ export function Time({ value, relative = false }: { value?: string | null; relat
             : minutes < 1440
               ? `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`
               : `${Math.floor(minutes / 1440)}d ago`
-        : date.toLocaleString([], {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+        : formatDateTime(value, seconds)}
     </time>
   );
 }
@@ -200,5 +203,29 @@ export function Back({ to, children }: { to: string; children: ReactNode }) {
   );
 }
 export function formatDuration(seconds?: number | null) {
-  return seconds == null ? '—' : seconds < 60 ? `${seconds}s` : `${(seconds / 60).toFixed(1)}m`;
+  if (seconds == null) return '—';
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.round((seconds % 3600) / 60);
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+export function formatDateTime(value?: string | null, seconds = false) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(seconds ? { second: '2-digit' as const } : {}),
+  });
+}
+
+export function plural(count: number, singular: string, pluralForm?: string) {
+  return `${count} ${count === 1 ? singular : (pluralForm ?? `${singular}s`)}`;
+}
+
+export function displayTenantName(id: string) {
+  return id.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
