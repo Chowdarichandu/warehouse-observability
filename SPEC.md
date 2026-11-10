@@ -1031,7 +1031,10 @@ DEMO_PASSWORD (default demo ). The console is at http://localhost:8080; TV mode 
 
 
 16. Demo data
-demo/seed.py creates 10 fictional tenants with 7 days of history. demo/ticker.py then adds a new batch of runs
+demo/seed.py creates 10 fictional tenants with 7 days of history. Each tenant syncs its own business catalog
+(TENANT_TABLES in seed.py): a healthcare tenant's warehouse holds patients, appointments and claims, a logistics
+tenant's holds shipments, parcels and tracking events — table names, columns and relative volumes differ per
+tenant, and run stream stats split by those weights. demo/ticker.py then adds a new batch of runs
 every ~60 seconds, compressing "hourly" into minutes so the console visibly moves. It sends NOTIFY exactly like
 the live collector does.
 

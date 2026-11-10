@@ -19,7 +19,11 @@ MESSAGES = {
 
 
 def enrich_failure(
-    conn: psycopg.Connection, run: dict, message: str, origin: str = "source"
+    conn: psycopg.Connection,
+    run: dict,
+    message: str,
+    origin: str = "source",
+    streams: list[str] | None = None,
 ) -> None:
     previous = conn.execute(
         "SELECT fingerprint FROM obs.run_errors WHERE run_key=%s", (run["run_key"],)
@@ -57,7 +61,7 @@ def enrich_failure(
 {at.isoformat()} INFO  Tenant {run["tenant_id"]} · connection {run.get("airbyte_connection_id", "demo")}
 {at.isoformat()} INFO  Secret resolved: mysql://reader:demo-password@source.internal/app
 {at.isoformat()} INFO  Contact data-team@example.org · Authorization: Bearer demo-sensitive-token
-{at.isoformat()} INFO  Discovering streams: customers, orders, products, payments, events
+{at.isoformat()} INFO  Discovering streams: {", ".join(streams[:5]) if streams else "customers, orders, products, payments, events"}
 {at.isoformat()} INFO  Opening source replication cursor
 {at.isoformat()} WARN  Attempt {run.get("airbyte_attempts", 1)} could not complete
 {at.isoformat()} ERROR {message}

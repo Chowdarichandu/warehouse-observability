@@ -4,7 +4,7 @@ from psycopg.types.json import Jsonb
 
 from obs.db import connection, notify
 from obs.demo.scenarios import MESSAGES, enrich_failure, upsert_run
-from obs.demo.seed import make_run
+from obs.demo.seed import make_run, tables_for
 from obs.onboarding.service import plan_for
 from obs.onboarding.workflow import demo_tick
 from obs.settings import settings
@@ -38,7 +38,12 @@ def process_jobs() -> None:
                                 "failed",
                             )
                             upsert_run(conn, run)
-                            enrich_failure(conn, run, MESSAGES["MYSQL_BINLOG_PURGED"])
+                            enrich_failure(
+                                conn,
+                                run,
+                                MESSAGES["MYSQL_BINLOG_PURGED"],
+                                streams=tables_for(job["tenant_id"]),
+                            )
                         notify(
                             conn,
                             "run.updated",

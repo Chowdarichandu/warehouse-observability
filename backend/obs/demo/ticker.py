@@ -7,7 +7,7 @@ from psycopg.types.json import Jsonb
 
 from obs.db import connection, notify
 from obs.demo.scenarios import MESSAGES, enrich_failure, upsert_run
-from obs.demo.seed import STREAMS, TENANTS, make_run, seed
+from obs.demo.seed import TENANTS, make_run, seed, stream_shares, tables_for
 from obs.demo.simulate_actions import process_jobs
 from obs.quality.engine import evaluate_due
 from obs.redact import redact
@@ -61,7 +61,12 @@ def tick() -> None:
                     run["collected_at"] = now
                     upsert_run(conn, run)
                     if is_outage:
-                        enrich_failure(conn, run, MESSAGES["MYSQL_BINLOG_PURGED"])
+                        enrich_failure(
+                            conn,
+                            run,
+                            MESSAGES["MYSQL_BINLOG_PURGED"],
+                            streams=tables_for(tid),
+                        )
                     else:
                         with conn.cursor() as cur:
                             cur.executemany(
@@ -71,10 +76,10 @@ def tick() -> None:
                                     (
                                         run["run_key"],
                                         stream,
-                                        run["rows_synced"] // len(STREAMS),
-                                        run["bytes_synced"] // len(STREAMS),
+                                        int(run["rows_synced"] * share),
+                                        int(run["bytes_synced"] * share),
                                     )
-                                    for stream in STREAMS
+                                    for stream, share in stream_shares(tid)
                                 ],
                             )
                     notify(

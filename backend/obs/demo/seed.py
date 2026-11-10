@@ -32,6 +32,152 @@ STREAMS = [
     "invoices",
     "sessions",
 ]
+
+# Each tenant syncs its own business catalog: (table, relative record volume,
+# extra columns as "name:type" beyond the shared id/created_at pair). A
+# healthcare tenant's warehouse holds patients and claims, not a copy of the
+# retail tenant's orders — the console should read like ten real clients.
+TENANT_TABLES: dict[str, list[tuple[str, float, list[str]]]] = {
+    "acme_retail": [
+        ("customers", 0.7, ["email:text", "full_name:text", "segment:text"]),
+        ("orders", 1.6, ["customer_id:bigint", "amount:numeric", "status:text"]),
+        ("order_items", 2.6, ["order_id:bigint", "product_id:bigint", "quantity:integer", "unit_price:numeric"]),
+        ("products", 0.35, ["sku:text", "name:text", "price:numeric", "category:text"]),
+        ("payments", 1.5, ["order_id:bigint", "amount:numeric", "method:text"]),
+        ("refunds", 0.3, ["payment_id:bigint", "amount:numeric", "reason:text"]),
+        ("inventory", 0.9, ["product_id:bigint", "store_id:bigint", "quantity:integer"]),
+        ("stores", 0.05, ["name:text", "city:text"]),
+        ("promotions", 0.12, ["code:text", "discount_pct:numeric"]),
+        ("sessions", 2.2, ["customer_id:bigint", "device:text", "started_at:timestamp"]),
+    ],
+    "bluefin_health": [
+        ("patients", 0.8, ["full_name:text", "date_of_birth:date", "gender:text"]),
+        ("appointments", 1.7, ["patient_id:bigint", "provider_id:bigint", "scheduled_at:timestamp", "status:text"]),
+        ("encounters", 1.9, ["patient_id:bigint", "department_id:bigint", "diagnosis_code:text"]),
+        ("prescriptions", 1.4, ["patient_id:bigint", "medication:text", "dosage:text"]),
+        ("claims", 1.2, ["patient_id:bigint", "amount:numeric", "status:text"]),
+        ("providers", 0.15, ["full_name:text", "specialty:text"]),
+        ("departments", 0.05, ["name:text"]),
+        ("lab_results", 2.4, ["patient_id:bigint", "test_code:text", "result_value:numeric", "unit:text"]),
+    ],
+    "northwind": [
+        ("customers", 0.6, ["company_name:text", "contact_name:text", "country:text"]),
+        ("orders", 1.5, ["customer_id:bigint", "amount:numeric", "ship_country:text"]),
+        ("order_details", 2.8, ["order_id:bigint", "product_id:bigint", "quantity:integer", "unit_price:numeric"]),
+        ("products", 0.3, ["name:text", "category_id:bigint", "unit_price:numeric"]),
+        ("suppliers", 0.12, ["company_name:text", "country:text"]),
+        ("shippers", 0.05, ["company_name:text", "phone:text"]),
+        ("employees", 0.08, ["full_name:text", "title:text"]),
+        ("categories", 0.04, ["name:text"]),
+        ("territories", 0.1, ["name:text", "region_id:bigint"]),
+        ("invoices", 1.3, ["order_id:bigint", "amount:numeric", "due_date:date"]),
+    ],
+    "orbit_logistics": [
+        # orders keeps exactly id/created_at/amount: the seeded schema
+        # contract check and the delivery_region drift story depend on it.
+        ("orders", 1.4, ["amount:numeric"]),
+        ("shipments", 1.8, ["order_id:bigint", "status:text", "weight_kg:numeric"]),
+        ("parcels", 2.6, ["shipment_id:bigint", "barcode:text", "weight_kg:numeric"]),
+        ("tracking_events", 3.2, ["parcel_id:bigint", "event_type:text", "location:text"]),
+        ("routes", 0.4, ["origin_hub:text", "destination_hub:text", "distance_km:numeric"]),
+        ("vehicles", 0.2, ["plate:text", "vehicle_type:text", "capacity_kg:numeric"]),
+        ("drivers", 0.25, ["full_name:text", "license_no:text"]),
+        ("warehouses", 0.06, ["name:text", "city:text"]),
+        ("deliveries", 1.6, ["shipment_id:bigint", "delivered_at:timestamp", "signed_by:text"]),
+        ("hubs", 0.08, ["name:text", "city:text"]),
+    ],
+    "cedar_foods": [
+        ("menu_items", 0.3, ["name:text", "price:numeric", "category:text"]),
+        ("orders", 1.7, ["outlet_id:bigint", "amount:numeric", "status:text"]),
+        ("order_items", 2.4, ["order_id:bigint", "menu_item_id:bigint", "quantity:integer"]),
+        ("ingredients", 0.5, ["name:text", "unit:text"]),
+        ("recipes", 0.35, ["menu_item_id:bigint", "ingredient_id:bigint", "quantity:numeric"]),
+        ("suppliers", 0.12, ["name:text", "city:text"]),
+        ("outlets", 0.06, ["name:text", "city:text"]),
+        ("deliveries", 1.1, ["order_id:bigint", "rider_id:bigint", "delivered_at:timestamp"]),
+        ("waste_logs", 0.4, ["ingredient_id:bigint", "quantity:numeric", "reason:text"]),
+    ],
+    "helix_energy": [
+        ("customers", 0.7, ["full_name:text", "tariff_id:bigint", "address:text"]),
+        ("meters", 0.9, ["customer_id:bigint", "serial_no:text", "installed_at:date"]),
+        ("readings", 3.4, ["meter_id:bigint", "reading_kwh:numeric", "read_at:timestamp"]),
+        ("billing", 1.3, ["customer_id:bigint", "amount:numeric", "period_start:date"]),
+        ("payments", 1.2, ["billing_id:bigint", "amount:numeric", "method:text"]),
+        ("outages", 0.3, ["region:text", "started_at:timestamp", "restored_at:timestamp"]),
+        ("assets", 0.5, ["asset_type:text", "location:text", "status:text"]),
+        ("work_orders", 0.8, ["asset_id:bigint", "status:text", "priority:text"]),
+        ("tariffs", 0.05, ["name:text", "rate_per_kwh:numeric"]),
+    ],
+    "evergreen_market": [
+        ("products", 0.4, ["sku:text", "name:text", "price:numeric", "category:text"]),
+        ("orders", 1.5, ["customer_id:bigint", "amount:numeric", "status:text"]),
+        ("baskets", 2.0, ["order_id:bigint", "product_id:bigint", "quantity:integer"]),
+        ("suppliers", 0.12, ["name:text", "city:text"]),
+        ("stores", 0.05, ["name:text", "city:text"]),
+        ("inventory", 0.9, ["product_id:bigint", "store_id:bigint", "quantity:integer"]),
+        ("loyalty_members", 0.6, ["full_name:text", "points:integer"]),
+        ("deliveries", 1.1, ["order_id:bigint", "delivered_at:timestamp"]),
+    ],
+    "summit_media": [
+        ("content", 0.5, ["title:text", "creator_id:bigint", "content_type:text"]),
+        ("views", 3.4, ["content_id:bigint", "viewer_id:bigint", "watched_seconds:integer"]),
+        ("subscriptions", 0.9, ["user_id:bigint", "plan:text", "status:text"]),
+        ("creators", 0.2, ["full_name:text", "channel_name:text"]),
+        ("ad_impressions", 3.0, ["campaign_id:bigint", "content_id:bigint", "shown_at:timestamp"]),
+        ("campaigns", 0.15, ["advertiser:text", "budget:numeric", "status:text"]),
+        ("comments", 1.8, ["content_id:bigint", "user_id:bigint", "body:text"]),
+        ("payouts", 0.4, ["creator_id:bigint", "amount:numeric", "period:text"]),
+    ],
+    "luminous_labs": [
+        ("experiments", 0.4, ["name:text", "project_id:bigint", "status:text"]),
+        ("samples", 1.6, ["experiment_id:bigint", "sample_code:text", "collected_at:timestamp"]),
+        ("instruments", 0.2, ["name:text", "instrument_type:text", "status:text"]),
+        ("protocols", 0.25, ["name:text", "version:text"]),
+        ("results", 2.2, ["sample_id:bigint", "metric:text", "value:numeric", "unit:text"]),
+        ("projects", 0.15, ["name:text", "lead_researcher:text"]),
+        ("reagents", 0.5, ["name:text", "lot_no:text", "expires_on:date"]),
+        ("researchers", 0.1, ["full_name:text", "team:text"]),
+    ],
+    "beacon_finance": [
+        ("customers", 0.7, ["full_name:text", "kyc_status:text", "segment:text"]),
+        ("accounts", 1.0, ["customer_id:bigint", "account_type:text", "balance:numeric"]),
+        ("transactions", 3.2, ["account_id:bigint", "amount:numeric", "txn_type:text"]),
+        ("loans", 0.5, ["customer_id:bigint", "principal:numeric", "status:text"]),
+        ("cards", 0.6, ["account_id:bigint", "card_type:text", "status:text"]),
+        ("payments", 1.8, ["account_id:bigint", "amount:numeric", "beneficiary:text"]),
+        ("branches", 0.05, ["name:text", "city:text"]),
+        ("kyc_documents", 0.8, ["customer_id:bigint", "doc_type:text", "verified:boolean"]),
+    ],
+}
+
+
+_DEFAULT_TABLES: list[tuple[str, float, list[str]]] = [
+    (name, 1.0, ["amount:numeric"]) for name in STREAMS
+]
+
+
+def _tables(tenant_id: str) -> list[tuple[str, float, list[str]]]:
+    # Tenants onboarded after seeding fall back to the generic catalog.
+    return TENANT_TABLES.get(tenant_id, _DEFAULT_TABLES)
+
+
+def tables_for(tenant_id: str) -> list[str]:
+    return [name for name, _, _ in _tables(tenant_id)]
+
+
+def columns_for(tenant_id: str, table: str) -> list[dict]:
+    extras = next(extra for name, _, extra in _tables(tenant_id) if name == table)
+    return [
+        {"name": "id", "type": "bigint"},
+        {"name": "created_at", "type": "timestamp"},
+        *({"name": n, "type": t} for n, t in (e.split(":") for e in extras)),
+    ]
+
+
+def stream_shares(tenant_id: str) -> list[tuple[str, float]]:
+    tables = _tables(tenant_id)
+    total = sum(weight for _, weight, _ in tables)
+    return [(name, weight / total) for name, weight, _ in tables]
 DEFAULT_RULES = [
     ("cdc_consecutive_failures", "Consecutive CDC failures", "high", {"n": 2}),
     ("cdc_position_lost", "CDC replication position lost", "critical", {}),
@@ -206,6 +352,7 @@ def seed() -> None:
                                 run,
                                 MESSAGES[error],
                                 "destination" if error == "DESTINATION_ERROR" else "source",
+                                streams=tables_for(tenant),
                             )
                         else:
                             with conn.cursor() as cur:
@@ -215,22 +362,18 @@ def seed() -> None:
                                         (
                                             run["run_key"],
                                             stream,
-                                            run["rows_synced"] // len(STREAMS),
-                                            run["bytes_synced"] // len(STREAMS),
+                                            int(run["rows_synced"] * share),
+                                            int(run["bytes_synced"] * share),
                                         )
-                                        for stream in STREAMS
+                                        for stream, share in stream_shares(tenant)
                                     ],
                                 )
-            for table_index, table in enumerate(STREAMS):
-                base = (table_index + 1) * size * 24000
-                columns = [
-                    {"name": "id", "type": "bigint"},
-                    {"name": "created_at", "type": "timestamp"},
-                    {"name": "amount", "type": "numeric"},
-                ]
+            for table_index, (table, weight, _extra) in enumerate(TENANT_TABLES[tenant]):
+                base = int((table_index + 1) * weight * size * 24000)
+                columns = columns_for(tenant, table)
                 for i in range(672, -1, -1):
                     checked = now - timedelta(minutes=i * 15)
-                    count = base + max(0, 672 - i) * size * 19
+                    count = base + int(max(0, 672 - i) * size * 19 * weight)
                     if (
                         tenant == "orbit_logistics"
                         and table == "orders"
@@ -274,7 +417,12 @@ def seed() -> None:
             )
             run["airbyte_attempts"] = 3
             upsert_run(conn, run)
-            enrich_failure(conn, run, MESSAGES["SOURCE_UNREACHABLE"])
+            enrich_failure(
+                conn,
+                run,
+                MESSAGES["SOURCE_UNREACHABLE"],
+                streams=tables_for("bluefin_health"),
+            )
             recovery = make_run(
                 "bluefin_health",
                 "mongo",
