@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Select } from '../components/Select';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Database, GitBranch, Link2, Workflow } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -116,7 +117,7 @@ export function Dependencies() {
           }}
         />
         <label htmlFor="dependency-tenant">Tenant</label>
-        <select
+        <Select
           id="dependency-tenant"
           value={tenant}
           onChange={(event) => set('tenant', event.target.value)}
@@ -133,7 +134,7 @@ export function Dependencies() {
               {item.display_name}
             </option>
           ))}
-        </select>
+        </Select>
         <span className="dependency-legend">
           <i className="observed" /> Observed relationship
         </span>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useQuery } from '@tanstack/react-query';
 import { Database, Rows3, Table2 } from 'lucide-react';
 import { api } from '../api/client';
@@ -27,7 +28,7 @@ export function Warehouse() {
         title="Warehouse contents"
         subtitle="Pick a client to see their tables and how many records have been loaded into each one."
         action={
-          <select
+          <Select
             aria-label="Select client"
             value={tenantId}
             onChange={(e) => setSelected(e.target.value)}
@@ -37,7 +38,7 @@ export function Warehouse() {
                 {t.display_name} ({t.tenant_id})
               </option>
             ))}
-          </select>
+          </Select>
         }
       >
         {view.isPending ? (

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -64,7 +65,7 @@ export function Tenants() {
               onChange={(e) => set('q', e.target.value)}
             />
           </label>
-          <select
+          <Select
             aria-label="Filter by health"
             value={params.get('health') || ''}
             onChange={(e) => set('health', e.target.value)}
@@ -73,7 +74,7 @@ export function Tenants() {
             {['healthy', 'degraded', 'down', 'paused', 'onboarding'].map((s) => (
               <option key={s}>{s}</option>
             ))}
-          </select>
+          </Select>
           <span className="filter-count">{query.data?.total ?? '…'} tenants</span>
         </div>
         {query.isPending ? (

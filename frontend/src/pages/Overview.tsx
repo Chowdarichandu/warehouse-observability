@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Select } from '../components/Select';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Activity,
@@ -369,7 +370,7 @@ export function Overview() {
           }
           action={
             <div className="activity-controls">
-              <select
+              <Select
                 aria-label="Run activity tenant"
                 value={selectedTenant}
                 onChange={(e) => set('activity_tenant', e.target.value)}
@@ -380,9 +381,9 @@ export function Overview() {
                     {t.display_name}
                   </option>
                 ))}
-              </select>
+              </Select>
               {selectedTenant && (
-                <select
+                <Select
                   aria-label="Open run log"
                   value=""
                   disabled={filteredRuns.isPending || !!filteredRuns.error}
@@ -397,7 +398,7 @@ export function Overview() {
                       {new Date(r.started_at || r.collected_at).toLocaleString()}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </div>
           }

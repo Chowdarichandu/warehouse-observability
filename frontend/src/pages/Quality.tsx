@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FlaskConical, Pencil, Play, Plus, ShieldCheck } from 'lucide-react';
 import { api, queryString } from '../api/client';
@@ -138,7 +139,7 @@ export function Quality() {
         subtitle="Scheduled checks use each tenant’s registered warehouse schema."
       >
         <div className="filter-bar">
-          <select
+          <Select
             aria-label="Quality tenant"
             value={tenant}
             onChange={(e) => {
@@ -151,7 +152,7 @@ export function Quality() {
                 {t.display_name}
               </option>
             ))}
-          </select>
+          </Select>
           <span className="filter-count">{checks.data?.total ?? '…'} checks</span>
         </div>
         {checks.isPending ? (
@@ -431,7 +432,7 @@ function CheckEditor({
       <form className="quality-form" onSubmit={submit}>
         <label>
           Tenant
-          <select
+          <Select
             aria-label="Check tenant"
             required
             disabled={Boolean(initial)}
@@ -444,7 +445,7 @@ function CheckEditor({
                 {t.display_name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           Check name
@@ -461,13 +462,13 @@ function CheckEditor({
         </label>
         <label>
           Check type
-          <select value={kind} onChange={(e) => setKind(e.target.value as Input['kind'])}>
+          <Select value={kind} onChange={(e) => setKind(e.target.value as Input['kind'])}>
             {kinds.map((k) => (
               <option key={k.value} value={k.value}>
                 {k.label}
               </option>
             ))}
-          </select>
+          </Select>
           <small>{kinds.find((k) => k.value === kind)?.hint}</small>
         </label>
         {(kind === 'null_rate' || kind === 'accepted_values') && (

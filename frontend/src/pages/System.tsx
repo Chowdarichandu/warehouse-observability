@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Database, KeyRound, Plus, Search, Server, ShieldCheck, Trash2, X } from 'lucide-react';
@@ -290,11 +291,11 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
           </label>
           <label>
             Access level
-            <select value={baseLevel} onChange={(e) => setBaseLevel(e.target.value)}>
+            <Select value={baseLevel} onChange={(e) => setBaseLevel(e.target.value)}>
               <option value="viewer">Viewer — look, don’t touch</option>
               <option value="operator">Operator — run day-to-day work</option>
               <option value="admin">Admin — full control</option>
-            </select>
+            </Select>
           </label>
           <label>
             What is this role for? (optional)
@@ -479,7 +480,7 @@ export function Admin() {
               </label>
               <label>
                 Role
-                <select name="role" defaultValue="viewer">
+                <Select name="role" defaultValue="viewer">
                   <optgroup label="Built-in roles">
                     {['viewer', 'operator', 'admin'].map((role) => (
                       <option key={role} value={role}>
@@ -496,7 +497,7 @@ export function Admin() {
                       ))}
                     </optgroup>
                   )}
-                </select>
+                </Select>
               </label>
               <label>
                 Password (optional)
@@ -536,7 +537,7 @@ export function Admin() {
                       </td>
                       <td>{user.email}</td>
                       <td>
-                        <select
+                        <Select
                           aria-label={`Role for ${user.email}`}
                           value={user.role_name || user.role}
                           disabled={update.isPending || runtime.auth_provider === 'oidc'}
@@ -567,7 +568,7 @@ export function Admin() {
                               ))}
                             </optgroup>
                           )}
-                        </select>
+                        </Select>
                       </td>
                       <td>
                         <span className="tag">

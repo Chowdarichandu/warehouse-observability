@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { Schema } from '../api/client';
@@ -102,12 +103,12 @@ export function Operations() {
                         >
                           <label>
                             Verified upstream outcome
-                            <select name="status">
+                            <Select name="status">
                               <option value="succeeded">Accepted upstream</option>
                               <option value="failed">
                                 Confirmed not accepted — allow a new request
                               </option>
-                            </select>
+                            </Select>
                           </label>
                           <label>
                             Evidence

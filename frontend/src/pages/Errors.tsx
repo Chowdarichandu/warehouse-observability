@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Select } from '../components/Select';
 import { ArrowRight, Layers3, Search } from 'lucide-react';
 import { api } from '../api/client';
 import type { Schema } from '../api/client';
@@ -192,7 +193,7 @@ export function Errors() {
           title="Failure patterns"
           subtitle="Failures by hour and weekday · UTC"
           action={
-            <select
+            <Select
               aria-label="Heatmap tenant"
               value={params.get('heat_tenant') || ''}
               onChange={(e) => set('heat_tenant', e.target.value)}
@@ -200,7 +201,7 @@ export function Errors() {
               <option value="">All tenants</option>
               <option value="cedar_foods">Cedar Foods</option>
               <option value="acme_retail">Acme Retail</option>
-            </select>
+            </Select>
           }
         >
           {heatmap.isPending ? (

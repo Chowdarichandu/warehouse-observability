@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from './Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Bookmark, GitCompareArrows, Trash2 } from 'lucide-react';
@@ -75,7 +76,7 @@ export function SavedRunViews() {
       <div className="inline-flex">
         <Bookmark size={15} />
         <strong>Your views</strong>
-        <select
+        <Select
           aria-label="Saved investigation views"
           value={selected}
           disabled={views.isPending || !!views.error}
@@ -91,7 +92,7 @@ export function SavedRunViews() {
               {v.name}
             </option>
           ))}
-        </select>
+        </Select>
         <button
           className="icon-button"
           aria-label="Delete selected view"
@@ -173,7 +174,7 @@ export function RunComparison({
       <div className="filter-bar">
         <label className="comparison-picker">
           Baseline run
-          <select
+          <Select
             aria-label="Comparison baseline"
             value={key}
             onChange={(e) => set('compare', e.target.value)}
@@ -187,7 +188,7 @@ export function RunComparison({
             {key && !previous.some((r) => r.run_key === key) && (
               <option value={key}>Linked baseline</option>
             )}
-          </select>
+          </Select>
         </label>
         {b && (
           <Link className="text-link" to={runPath(b.run_key)}>

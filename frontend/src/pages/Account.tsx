@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation } from '@tanstack/react-query';
 import { useApp } from '../AppContext';
 import { api } from '../api/client';
@@ -43,14 +44,14 @@ export function Account() {
         <form className="settings-form" onSubmit={(e) => e.preventDefault()}>
           <label>
             Text size
-            <select
+            <Select
               aria-label="Text size"
               value={textSize}
               onChange={(e) => setTextSize(e.target.value)}
             >
               <option value="standard">Standard</option>
               <option value="large">Large</option>
-            </select>
+            </Select>
           </label>
         </form>
       </Panel>

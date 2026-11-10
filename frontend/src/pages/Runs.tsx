@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Download, ExternalLink, FileText, LockKeyhole, RefreshCw, Search } from 'lucide-react';
@@ -67,7 +68,7 @@ export function Runs() {
             />
           </label>
           {options.map((option) => (
-            <select
+            <Select
               key={option.key}
               aria-label={option.label}
               value={params.get(option.key) || ''}
@@ -77,7 +78,7 @@ export function Runs() {
               {option.values.map((v) => (
                 <option key={v}>{v}</option>
               ))}
-            </select>
+            </Select>
           ))}
           <input
             className="compact-input"
@@ -303,7 +304,7 @@ export function RunDetail() {
           subtitle="The Airflow log for this run — the task output where the failure occurred. Redacted at collection and again before display."
           action={
             <span className="inline-flex">
-              <select
+              <Select
                 aria-label="Choose a run to view its log"
                 value={run.run_key}
                 onChange={(e) => navigate(runPath(e.target.value))}
@@ -314,7 +315,7 @@ export function RunDetail() {
                     {r.started_at ? new Date(r.started_at).toLocaleString() : 'queued'} · {r.status}
                   </option>
                 ))}
-              </select>
+              </Select>
               <span className="redacted-label">
                 <LockKeyhole size={12} />
                 SECRETS REDACTED

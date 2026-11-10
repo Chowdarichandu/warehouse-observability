@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, CheckCheck, ChevronDown, Mail, Send, Settings2 } from 'lucide-react';
 import { api } from '../api/client';
@@ -264,11 +265,11 @@ function RuleEditor({ rule, channels }: { rule: Schema<'Rule'>; channels: Schema
         >
           <label>
             Severity
-            <select name="severity" defaultValue={rule.severity}>
+            <Select name="severity" defaultValue={rule.severity}>
               {['critical', 'high', 'medium', 'low'].map((s) => (
                 <option key={s}>{s}</option>
               ))}
-            </select>
+            </Select>
           </label>
           {Object.entries(rule.params || {}).map(([key, value]) => (
             <label key={key}>

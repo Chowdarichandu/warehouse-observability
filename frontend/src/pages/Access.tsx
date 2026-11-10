@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, KeyRound, LockKeyhole, LogOut, Minus, ShieldCheck, UserRound } from 'lucide-react';
 import { api } from '../api/client';
@@ -176,7 +177,7 @@ export function Access() {
         action={
           <label className="access-filter">
             Show
-            <select
+            <Select
               aria-label="Permission view"
               value={onlyAvailable ? 'available' : 'all'}
               onChange={(event) =>
@@ -185,7 +186,7 @@ export function Access() {
             >
               <option value="all">All permissions</option>
               <option value="available">Available to me</option>
-            </select>
+            </Select>
           </label>
         }
       >
@@ -294,7 +295,7 @@ export function Access() {
                         <p>{account.email}</p>
                       </div>
                       {canAssign ? (
-                        <select
+                        <Select
                           aria-label={`Role for ${account.email}`}
                           className="access-role-select"
                           value={
@@ -320,7 +321,7 @@ export function Access() {
                               {role.label}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       ) : (
                         <span className="tag">{account.role}</span>
                       )}

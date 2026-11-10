@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Select } from './components/Select';
 import {
   NavLink,
   Navigate,
@@ -559,7 +560,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
             <div className="inline-flex">
               <label className="range-picker">
                 <CalendarDays size={14} />
-                <select
+                <Select
                   aria-label="Global time range"
                   value={range}
                   onChange={(event) => {
@@ -575,7 +576,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   <option value="7d">Last 7 days</option>
                   <option value="30d">Last 30 days</option>
                   <option value="custom">Custom range</option>
-                </select>
+                </Select>
               </label>
               <button
                 className="icon-button"
