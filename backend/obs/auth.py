@@ -18,6 +18,13 @@ from obs.settings import settings
 hasher = PasswordHasher()
 login_attempts: dict[str, deque[float]] = defaultdict(deque)
 
+
+def temporary_password() -> str:
+    """One-time password shown once to an admin. Letters and digits only, so
+    it never renders with a doubled or leading dash."""
+    alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "Pravah-" + "".join(secrets.choice(alphabet) for _ in range(10))
+
 # Permission catalog. System roles map to fixed bundles; a custom role
 # (obs.roles) assigned via role_name replaces the bundle for its user.
 PERMISSIONS = [

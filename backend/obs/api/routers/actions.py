@@ -289,9 +289,7 @@ def update_user(
 def create_user(
     data: s.UserCreate, user: dict = Depends(require_role("admin", "manage_users"))
 ) -> dict:
-    import secrets as _secrets
-
-    from obs.auth import hasher
+    from obs.auth import hasher, temporary_password
 
     if settings().auth_provider == "oidc":
         fail(
@@ -305,7 +303,7 @@ def create_user(
     generated = None
     secret_value = data.initial_password
     if not secret_value:
-        generated = "Pravah-" + _secrets.token_urlsafe(9)
+        generated = temporary_password()
         secret_value = generated
     with connection() as conn:
         conn.execute("SELECT pg_advisory_xact_lock(110531)")
@@ -467,13 +465,11 @@ def delete_role(name: str, user: dict = Depends(require_permission("manage_users
 
 @router.post("/users/{id}/reset-password", response_model=s.PasswordResetResult)
 def reset_password(id: int, user: dict = Depends(require_permission("manage_users"))) -> dict:
-    import secrets as _secrets
-
-    from obs.auth import hasher
+    from obs.auth import hasher, temporary_password
 
     if settings().auth_provider == "oidc":
         fail(409, "sso_managed", "Passwords are managed by the identity provider.")
-    temporary = "Pravah-" + _secrets.token_urlsafe(9)
+    temporary = temporary_password()
     with connection() as conn:
         target = conn.execute(
             "SELECT * FROM obs.users WHERE user_id=%s FOR UPDATE", (id,)

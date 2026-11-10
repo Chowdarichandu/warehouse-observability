@@ -5524,3 +5524,15 @@ table td {
   min-height: 0;
   height: 100%;
 }
+
+/* KPI values never wrap mid-number or mid-word at large text sizes: a value
+   that cannot fit shrinks its type instead of breaking across lines. */
+.kpi-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpi-card .schema-value {
+  white-space: nowrap;
+  font-size: 19px;
+}

@@ -18,6 +18,7 @@ from obs.auth import (
     current_user,
     fail,
     hasher,
+    temporary_password,
     token,
     user_permissions,
     verify_password,
@@ -113,9 +114,7 @@ def forgot_password(data: ForgotPasswordIn, request: Request) -> dict:
             "message": "No local account uses that email in this demo workspace.",
             "temporary_password": None,
         }
-    import secrets as _secrets
-
-    temporary = "Pravah-" + _secrets.token_urlsafe(9)
+    temporary = temporary_password()
     with connection() as conn:
         conn.execute(
             "UPDATE obs.users SET password_hash=%s WHERE user_id=%s",

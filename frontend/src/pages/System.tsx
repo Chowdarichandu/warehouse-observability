@@ -681,8 +681,8 @@ export function Admin() {
               </button>
             </div>
             <p>
-              Share this with the user once — it is not stored anywhere you can see it again. They
-              sign in with it, then change it from their profile menu.
+              Share this with the user once. It is not stored anywhere, so you won't be able to see
+              it again. They sign in with it, then change it from their profile menu.
             </p>
             <p className="temp-password mono">{resetInfo.temporary}</p>
             <div className="modal-actions">
