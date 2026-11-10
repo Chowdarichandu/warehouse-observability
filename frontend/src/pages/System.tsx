@@ -469,6 +469,10 @@ export function Admin() {
   });
   const [resetInfo, setResetInfo] = useState<{ temporary: string } | null>(null);
   const [permTarget, setPermTarget] = useState<{ id: number; email: string } | null>(null);
+  const [roleChange, setRoleChange] = useState<{ id: number; email: string; value: string } | null>(
+    null,
+  );
+  const [resetTarget, setResetTarget] = useState<{ id: number; email: string } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const createUser = useMutation({
     mutationFn: (body: Schema<'UserCreate'>) =>
@@ -664,13 +668,8 @@ export function Admin() {
                           disabled={update.isPending || runtime.auth_provider === 'oidc'}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (!window.confirm(`Change ${user.email}'s role to ${value}?`)) return;
-                            update.mutate({
-                              id: user.user_id,
-                              body: ['viewer', 'operator', 'admin'].includes(value)
-                                ? { role: value }
-                                : { role_name: value },
-                            });
+                            if (value === (user.role_name || user.role)) return;
+                            setRoleChange({ id: user.user_id, email: user.email, value });
                           }}
                         >
                           <optgroup label="Built-in roles">
@@ -700,14 +699,7 @@ export function Admin() {
                         <button
                           className="button small"
                           disabled={reset.isPending || runtime.auth_provider === 'oidc'}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Reset the password for ${user.email}? Existing sessions will be revoked.`,
-                              )
-                            )
-                              reset.mutate(user.user_id);
-                          }}
+                          onClick={() => setResetTarget({ id: user.user_id, email: user.email })}
                         >
                           <KeyRound size={13} /> Reset
                         </button>
@@ -765,6 +757,95 @@ export function Admin() {
       {permTarget && <PermissionsDialog target={permTarget} onClose={() => setPermTarget(null)} />}
       {section === 'operations' && <Operations />}
       {section === 'activity' && <Activity embedded />}
+      {roleChange && (
+        <div className="modal-scrim" role="presentation" onClick={() => setRoleChange(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Change role"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Change role</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setRoleChange(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Change {roleChange.email}'s role to <strong>{roleChange.value}</strong>? Their access
+              changes straight away.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setRoleChange(null)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={update.isPending}
+                onClick={() => {
+                  const change = roleChange;
+                  setRoleChange(null);
+                  update.mutate({
+                    id: change.id,
+                    body: ['viewer', 'operator', 'admin'].includes(change.value)
+                      ? { role: change.value }
+                      : { role_name: change.value },
+                  });
+                }}
+              >
+                Change role
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {resetTarget && (
+        <div className="modal-scrim" role="presentation" onClick={() => setResetTarget(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reset password"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Reset password</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setResetTarget(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Reset the password for {resetTarget.email}? Their existing sessions will be revoked,
+              and you'll get a temporary password to share with them.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setResetTarget(null)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={reset.isPending}
+                onClick={() => {
+                  const target = resetTarget;
+                  setResetTarget(null);
+                  reset.mutate(target.id);
+                }}
+              >
+                Reset password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {removeTarget && (
         <div className="modal-scrim" role="presentation" onClick={() => setRemoveTarget(null)}>
           <div
