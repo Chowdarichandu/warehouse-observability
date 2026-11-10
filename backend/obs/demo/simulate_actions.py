@@ -50,6 +50,60 @@ def process_jobs() -> None:
                         conn.execute(
                             "UPDATE obs.demo_jobs SET done=true WHERE job_key=%s", (job["job_key"],)
                         )
+                    elif job["kind"] == "trigger":
+                        step = job["step"]
+                        tenant = job["tenant_id"]
+                        data = job["payload"]
+                        label = data["label"]
+                        event_step = (
+                            f"analytics:{data['dag']}"
+                            if data["load"] == "analytics"
+                            else label
+                        )
+                        if step == 0:
+                            if data["load"] in ("initial", "cdc"):
+                                run = make_run(
+                                    tenant,
+                                    data["source"],
+                                    data["load"],
+                                    now,
+                                    0,
+                                    int(now.timestamp() * 1000),
+                                    "running",
+                                    "manual",
+                                )
+                                upsert_run(conn, run)
+                                data["run_key"] = run["run_key"]
+                            conn.execute(
+                                "UPDATE obs.demo_jobs SET step=1,due_at=%s,payload=%s WHERE job_key=%s",
+                                (now + timedelta(seconds=20), Jsonb(data), job["job_key"]),
+                            )
+                        else:
+                            if data.get("run_key"):
+                                conn.execute(
+                                    """UPDATE obs.pipeline_runs SET status='success',ended_at=%s,
+                                    duration_s=greatest(1,extract(epoch FROM %s-started_at)::integer),
+                                    rows_synced=84000,bytes_synced=13440000
+                                    WHERE run_key=%s""",
+                                    (now, now, data["run_key"]),
+                                )
+                                notify(
+                                    conn,
+                                    "run.updated",
+                                    {
+                                        "run_key": data["run_key"],
+                                        "tenant_id": tenant,
+                                        "status": "success",
+                                    },
+                                )
+                            conn.execute(
+                                "INSERT INTO obs.tenant_events(tenant_id,step,status,message) VALUES(%s,%s,'ok','Completed in demo mode')",
+                                (tenant, event_step),
+                            )
+                            conn.execute(
+                                "UPDATE obs.demo_jobs SET step=2,done=true WHERE job_key=%s",
+                                (job["job_key"],),
+                            )
                     elif job["kind"] == "onboarding":
                         step = job["step"]
                         tenant = job["tenant_id"]

@@ -4,9 +4,24 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, Request, Response
 
 from obs import oidc
-from obs.api.schemas import ChangePassword, Login, Message, User
+from obs.api.schemas import (
+    ChangePassword,
+    ForgotPasswordIn,
+    ForgotPasswordResult,
+    Login,
+    Message,
+    User,
+)
 from obs.audit import audit
-from obs.auth import check_login_rate, current_user, fail, hasher, token, verify_password
+from obs.auth import (
+    check_login_rate,
+    current_user,
+    fail,
+    hasher,
+    token,
+    user_permissions,
+    verify_password,
+)
 from obs.db import connection, one
 from obs.settings import settings
 
@@ -39,7 +54,44 @@ def login(data: Login, request: Request, response: Response) -> dict:
     )
     with connection() as conn:
         audit(conn, user["email"], "login", str(user["user_id"]))
-    return {**user, "csrf_token": csrf}
+    return {**user, "csrf_token": csrf, "permissions": user_permissions(user)}
+
+
+@router.post("/auth/forgot-password", response_model=ForgotPasswordResult)
+def forgot_password(data: ForgotPasswordIn, request: Request) -> dict:
+    check_login_rate(request)
+    row = one(
+        "SELECT * FROM obs.users WHERE email=%s", (data.email.lower().strip(),)
+    )
+    if settings().mode != "demo" or settings().auth_provider != "local":
+        # Never reveal whether the account exists; real resets go through an
+        # administrator or the identity provider.
+        return {
+            "message": "If this account exists, an administrator can reset its password from Administration → Users & roles.",
+            "temporary_password": None,
+        }
+    if not row or not row.get("password_hash"):
+        return {
+            "message": "No local account uses that email in this demo workspace.",
+            "temporary_password": None,
+        }
+    import secrets as _secrets
+
+    temporary = "Pravah-" + _secrets.token_urlsafe(9)
+    with connection() as conn:
+        conn.execute(
+            "UPDATE obs.users SET password_hash=%s WHERE user_id=%s",
+            (hasher.hash(temporary), row["user_id"]),
+        )
+        conn.execute(
+            "UPDATE obs.sessions SET revoked_at=now() WHERE user_id=%s AND revoked_at IS NULL",
+            (row["user_id"],),
+        )
+        audit(conn, row["email"], "forgot_password_reset", str(row["user_id"]))
+    return {
+        "message": "Demo workspace: use this temporary password to sign in, then change it from your profile menu.",
+        "temporary_password": temporary,
+    }
 
 
 @router.post("/auth/change-password", response_model=Message)

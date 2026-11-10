@@ -9,6 +9,14 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
   const [email, setEmail] = useState('admin@demo.local');
   const [password, setPassword] = useState('');
   const client = useQueryClient();
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const forgot = useMutation({
+    mutationFn: () =>
+      api<Schema<'ForgotPasswordResult'>>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+  });
   const login = useMutation({
     mutationFn: () =>
       api<Schema<'User'>>('/auth/login', {
@@ -118,6 +126,46 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
                 {login.isPending ? 'Signing in…' : 'Sign in to workspace'}
                 <ArrowRight size={16} />
               </button>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => {
+                  setForgotOpen(!forgotOpen);
+                  forgot.reset();
+                }}
+              >
+                Forgot your password?
+              </button>
+              {forgotOpen && (
+                <div className="forgot-box">
+                  <p>
+                    Enter your account email above and we’ll reset it. In this demo workspace a
+                    temporary password is shown here directly; in a live workspace an administrator
+                    resets it from Administration → Users & roles.
+                  </p>
+                  <button
+                    type="button"
+                    className="button small"
+                    disabled={forgot.isPending || !email}
+                    onClick={() => forgot.mutate()}
+                  >
+                    {forgot.isPending ? 'Resetting…' : 'Reset my password'}
+                  </button>
+                  {forgot.error && (
+                    <p role="alert" className="danger-text">
+                      {forgot.error.message}
+                    </p>
+                  )}
+                  {forgot.data && (
+                    <div className="forgot-result">
+                      <p>{forgot.data.message}</p>
+                      {forgot.data.temporary_password && (
+                        <p className="temp-password mono">{forgot.data.temporary_password}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
           {config.mode === 'demo' && (

@@ -12,10 +12,20 @@ export const AppContext = createContext<{
 export function useApp() {
   const value = useContext(AppContext);
   if (!value) throw new Error('Application context is unavailable');
+  const permissions = value.user.permissions ?? [];
+  const has = (permission: string) =>
+    permissions.length > 0
+      ? permissions.includes(permission)
+      : value.user.role === 'admin' ||
+        (permission !== 'manage_users' &&
+          permission !== 'manage_platform' &&
+          value.user.role !== 'viewer');
   return {
     ...value,
-    canOperate: value.user.role !== 'viewer',
-    canMutatePipelines: value.user.role !== 'viewer' && value.runtime.live_actions_enabled,
-    isAdmin: value.user.role === 'admin',
+    permissions,
+    hasPermission: has,
+    canOperate: has('trigger_pipelines'),
+    canMutatePipelines: has('trigger_pipelines') && value.runtime.live_actions_enabled,
+    isAdmin: has('manage_users'),
   };
 }

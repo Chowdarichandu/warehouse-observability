@@ -50,6 +50,7 @@ import { Alerts } from './pages/Alerts';
 import { Onboarding } from './pages/Onboarding';
 import { Admin, Platform, SearchResults } from './pages/System';
 import { Quality } from './pages/Quality';
+import { Warehouse } from './pages/Warehouse';
 import { Dependencies } from './pages/Dependencies';
 import { Activity as ActivityPage } from './components/Investigation';
 
@@ -74,6 +75,7 @@ const NAV = [
     items: [
       { path: '/errors', label: 'Errors', icon: ShieldCheck },
       { path: '/freshness', label: 'Freshness & volume', icon: Database },
+      { path: '/warehouse', label: 'Warehouse', icon: Database },
       { path: '/dependencies', label: 'Dependencies', icon: Workflow },
       { path: '/quality', label: 'Data quality', icon: ShieldCheck },
       { path: '/alerts', label: 'Alerts', icon: Bell },
@@ -516,6 +518,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/quality" element={<Quality />} />
                 <Route path="/errors" element={<Errors />} />
                 <Route path="/freshness" element={<Freshness />} />
+                <Route path="/warehouse" element={<Warehouse />} />
                 <Route path="/alerts" element={<Alerts />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/platform" element={<Platform />} />

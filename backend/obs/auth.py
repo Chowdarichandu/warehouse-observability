@@ -17,6 +17,41 @@ from obs.settings import settings
 hasher = PasswordHasher()
 login_attempts: dict[str, deque[float]] = defaultdict(deque)
 
+# Permission catalog. System roles map to fixed bundles; a custom role
+# (obs.roles) assigned via role_name replaces the bundle for its user.
+PERMISSIONS = [
+    "view_console",
+    "trigger_pipelines",
+    "manage_tenants",
+    "manage_alerts",
+    "manage_users",
+    "manage_platform",
+]
+SYSTEM_ROLE_PERMISSIONS = {
+    "admin": list(PERMISSIONS),
+    "operator": ["view_console", "trigger_pipelines", "manage_tenants", "manage_alerts"],
+    "viewer": ["view_console"],
+}
+
+
+def user_permissions(user: dict) -> list:
+    """Effective permission bundle for a user row (role + optional role_name)."""
+    role_name = user.get("role_name")
+    if role_name:
+        row = one("SELECT permissions FROM obs.roles WHERE name=%s", (role_name,))
+        if row and isinstance(row.get("permissions"), list):
+            return [p for p in row["permissions"] if p in PERMISSIONS]
+    return list(SYSTEM_ROLE_PERMISSIONS.get(user.get("role") or "viewer", ["view_console"]))
+
+
+def require_permission(permission: str) -> Callable[..., dict]:
+    def dependency(user: dict = Depends(current_user)) -> dict:
+        if permission not in user.get("permissions", []):
+            fail(403, "forbidden", "Your role does not allow this action.")
+        return user
+
+    return dependency
+
 
 def fail(status: int, code: str, message: str) -> None:
     raise HTTPException(status, detail={"code": code, "message": message})
@@ -61,7 +96,7 @@ def current_user(request: Request) -> dict:
             request.cookies.get("obs_session", ""), settings().jwt_secret, algorithms=["HS256"]
         )
         user = one(
-            "SELECT u.user_id,u.email,u.display_name,u.role FROM obs.users u JOIN obs.sessions s USING(user_id) WHERE u.user_id=%s AND s.id=%s AND s.revoked_at IS NULL AND s.expires_at>now()",
+            "SELECT u.user_id,u.email,u.display_name,u.role,u.role_name FROM obs.users u JOIN obs.sessions s USING(user_id) WHERE u.user_id=%s AND s.id=%s AND s.revoked_at IS NULL AND s.expires_at>now()",
             (int(claims["sub"]), claims["jti"]),
         )
         if not user:
@@ -76,7 +111,12 @@ def current_user(request: Request) -> dict:
         allowed_hosts = {request.headers.get("host"), urlsplit(settings().console_url).netloc}
         if origin and urlsplit(origin).netloc not in allowed_hosts:
             fail(403, "csrf_origin", "Cross-origin action blocked.")
-    return {**user, "csrf_token": claims["csrf"], "session_id": claims["jti"]}
+    return {
+        **user,
+        "csrf_token": claims["csrf"],
+        "session_id": claims["jti"],
+        "permissions": user_permissions(user),
+    }
 
 
 def require_role(role: str) -> Callable[..., dict]:

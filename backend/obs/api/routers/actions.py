@@ -8,7 +8,7 @@ from obs.alerter.notify import deliver
 from obs.alerter.rules import PARAMS
 from obs.api import schemas as s
 from obs.audit import audit
-from obs.auth import fail, require_role
+from obs.auth import PERMISSIONS, SYSTEM_ROLE_PERMISSIONS, fail, require_permission, require_role
 from obs.db import connection, notify, one
 from obs.demo.scenarios import upsert_run
 from obs.demo.seed import make_run
@@ -212,21 +212,137 @@ def update_user(id: int, data: s.UserPatch, user: dict = Depends(require_role("a
         ).fetchone()
         if not target:
             fail(404, "user_not_found", "User not found.")
-        if target["role"] == "admin" and data.role != "admin":
+        new_role = data.role
+        new_role_name = data.role_name
+        if data.role_name:
+            bundle = conn.execute(
+                "SELECT * FROM obs.roles WHERE name=%s", (data.role_name,)
+            ).fetchone()
+            if not bundle:
+                fail(404, "role_not_found", "That role does not exist.")
+            new_role = bundle["base_level"]
+        elif data.role is not None:
+            new_role_name = None
+        else:
+            fail(422, "role_required", "Choose a role or a custom role bundle.")
+        if target["role"] == "admin" and new_role != "admin":
             admins = conn.execute(
                 "SELECT count(*) AS n FROM obs.users WHERE role='admin'"
             ).fetchone()["n"]
             if admins <= 1:
                 fail(409, "last_admin", "Keep at least one administrator.")
-        conn.execute("UPDATE obs.users SET role=%s WHERE user_id=%s", (data.role, id))
+        conn.execute(
+            "UPDATE obs.users SET role=%s, role_name=%s WHERE user_id=%s",
+            (new_role, new_role_name, id),
+        )
         audit(
             conn,
             user["email"],
             "update_user_role",
             str(id),
-            {"role": data.role, "user": redact(target["email"])},
+            {"role": new_role, "role_name": new_role_name, "user": redact(target["email"])},
         )
     return {"message": "User role updated.", "simulated": False}
+
+
+@router.get("/roles", response_model=list[s.RoleOut])
+def list_roles(user: dict = Depends(require_permission("manage_users"))) -> list:
+    rows = []
+    with connection() as conn:
+        custom = conn.execute("SELECT * FROM obs.roles ORDER BY name").fetchall()
+    for name in ("viewer", "operator", "admin"):
+        rows.append(
+            {
+                "name": name,
+                "base_level": name,
+                "permissions": SYSTEM_ROLE_PERMISSIONS[name],
+                "description": "Built-in role",
+                "system": True,
+                "created_by": None,
+            }
+        )
+    for row in custom:
+        rows.append(
+            {
+                "name": row["name"],
+                "base_level": row["base_level"],
+                "permissions": row["permissions"] if isinstance(row["permissions"], list) else [],
+                "description": row["description"],
+                "system": False,
+                "created_by": row["created_by"],
+            }
+        )
+    return rows
+
+
+@router.post("/roles", response_model=s.RoleOut, status_code=201)
+def create_role(data: s.RoleIn, user: dict = Depends(require_permission("manage_users"))) -> dict:
+    name = data.name.strip()
+    if name.lower() in SYSTEM_ROLE_PERMISSIONS:
+        fail(409, "reserved_role", "That name is a built-in role.")
+    permissions = [p for p in dict.fromkeys(data.permissions) if p in PERMISSIONS]
+    if "view_console" not in permissions:
+        permissions.insert(0, "view_console")
+    with connection() as conn:
+        if conn.execute("SELECT 1 FROM obs.roles WHERE name=%s", (name,)).fetchone():
+            fail(409, "role_exists", "A role with this name already exists.")
+        conn.execute(
+            "INSERT INTO obs.roles(name,base_level,permissions,description,created_by) VALUES(%s,%s,%s,%s,%s)",
+            (name, data.base_level, Jsonb(permissions), data.description, user["email"]),
+        )
+        audit(conn, user["email"], "create_role", name, {"base_level": data.base_level})
+    return {
+        "name": name,
+        "base_level": data.base_level,
+        "permissions": permissions,
+        "description": data.description,
+        "system": False,
+        "created_by": user["email"],
+    }
+
+
+@router.delete("/roles/{name}", response_model=s.Message)
+def delete_role(name: str, user: dict = Depends(require_permission("manage_users"))) -> dict:
+    if name in SYSTEM_ROLE_PERMISSIONS:
+        fail(409, "reserved_role", "Built-in roles cannot be deleted.")
+    with connection() as conn:
+        if not conn.execute("SELECT 1 FROM obs.roles WHERE name=%s", (name,)).fetchone():
+            fail(404, "role_not_found", "That role does not exist.")
+        conn.execute("UPDATE obs.users SET role_name=NULL WHERE role_name=%s", (name,))
+        conn.execute("DELETE FROM obs.roles WHERE name=%s", (name,))
+        audit(conn, user["email"], "delete_role", name)
+    return {"message": f"Role {name} deleted.", "simulated": False}
+
+
+@router.post("/users/{id}/reset-password", response_model=s.PasswordResetResult)
+def reset_password(id: int, user: dict = Depends(require_permission("manage_users"))) -> dict:
+    import secrets as _secrets
+
+    from obs.auth import hasher
+
+    if settings().auth_provider == "oidc":
+        fail(409, "sso_managed", "Passwords are managed by the identity provider.")
+    temporary = "Pravah-" + _secrets.token_urlsafe(9)
+    with connection() as conn:
+        target = conn.execute(
+            "SELECT * FROM obs.users WHERE user_id=%s", (id,)
+        ).fetchone()
+        if not target:
+            fail(404, "user_not_found", "User not found.")
+        conn.execute(
+            "UPDATE obs.users SET password_hash=%s WHERE user_id=%s",
+            (hasher.hash(temporary), id),
+        )
+        conn.execute(
+            "UPDATE obs.sessions SET revoked_at=now() WHERE user_id=%s AND revoked_at IS NULL",
+            (id,),
+        )
+        audit(conn, user["email"], "reset_password", str(id), {"user": redact(target["email"])})
+    return {
+        "message": "Password reset. Share the temporary password with the user; they can change it after signing in.",
+        "temporary_password": temporary,
+        "simulated": settings().mode == "demo",
+    }
 
 
 @router.post("/operations/{id}/reconcile", response_model=s.Message)
@@ -274,3 +390,152 @@ def revoke_sessions(id: int, user: dict = Depends(require_role("admin"))) -> dic
         )
         audit(conn, user["email"], "revoke_sessions", str(id))
     return {"message": "All existing sessions for this user were revoked.", "simulated": False}
+
+
+ANALYTICS_DAGS = [
+    {"id": "analytics_marts", "name": "Analytics marts build"},
+    {"id": "analytics_rollup", "name": "KPI rollup"},
+    {"id": "analytics_quality", "name": "Analytics quality checks"},
+]
+PIPELINE_DAGS = {
+    "mysql_initial": ("mysql", "initial", "MySQL initial load"),
+    "mongo_initial": ("mongo", "initial", "MongoDB initial load"),
+    "mysql_cdc": ("mysql", "cdc", "MySQL CDC sync"),
+    "mongo_cdc": ("mongo", "cdc", "MongoDB CDC sync"),
+}
+
+
+def _latest_run(conn, tenant: str, source: str, load: str):
+    return conn.execute(
+        """SELECT status, started_at FROM obs.pipeline_runs
+           WHERE tenant_id=%s AND source_type=%s AND load_type=%s
+           ORDER BY started_at DESC NULLS LAST LIMIT 1""",
+        (tenant, source, load),
+    ).fetchone()
+
+
+def _initial_done(conn, tenant: str, source: str) -> bool:
+    return bool(
+        conn.execute(
+            """SELECT 1 FROM obs.pipeline_runs
+               WHERE tenant_id=%s AND source_type=%s AND load_type='initial' AND status='success' LIMIT 1""",
+            (tenant, source),
+        ).fetchone()
+    )
+
+
+def _iso(value):
+    return value.isoformat() if value else None
+
+
+@router.get("/tenants/{id}/workflow", response_model=s.WorkflowState)
+def workflow(id: str, user: dict = Depends(require_permission("view_console"))) -> dict:
+    with connection() as conn:
+        tenant = conn.execute(
+            "SELECT * FROM obs.tenants WHERE tenant_id=%s", (id,)
+        ).fetchone()
+        if not tenant:
+            fail(404, "tenant_not_found", "Tenant not found.")
+        sources = []
+        for source in ("mysql", "mongo"):
+            if not tenant[f"has_{source}"]:
+                continue
+            initial = _latest_run(conn, id, source, "initial")
+            cdc = _latest_run(conn, id, source, "cdc")
+            sources.append(
+                {
+                    "source": source,
+                    "initial_status": initial["status"] if initial else "not_started",
+                    "cdc_status": (
+                        cdc["status"]
+                        if cdc
+                        else ("ready" if _initial_done(conn, id, source) else "locked")
+                    ),
+                    "last_initial_at": _iso(initial["started_at"]) if initial else None,
+                    "last_cdc_at": _iso(cdc["started_at"]) if cdc else None,
+                }
+            )
+        eligible = bool(tenant["has_mysql"]) and _initial_done(conn, id, "mysql")
+        analytics = []
+        for dag in ANALYTICS_DAGS:
+            event = conn.execute(
+                """SELECT status, at FROM obs.tenant_events
+                   WHERE tenant_id=%s AND step=%s ORDER BY at DESC LIMIT 1""",
+                (id, f"analytics:{dag['id']}"),
+            ).fetchone()
+            analytics.append(
+                {
+                    "id": dag["id"],
+                    "name": dag["name"],
+                    "last_status": event["status"] if event else None,
+                    "last_at": _iso(event["at"]) if event else None,
+                }
+            )
+    return {
+        "tenant_id": id,
+        "sources": sources,
+        "analytics_eligible": eligible,
+        "analytics": analytics,
+    }
+
+
+@router.post("/tenants/{id}/trigger", response_model=s.Message)
+def trigger(
+    id: str, data: s.TriggerIn, user: dict = Depends(require_permission("trigger_pipelines"))
+) -> dict:
+    if settings().mode != "demo":
+        fail(422, "demo_only", "Manual DAG triggers are available in demo mode.")
+    dag = data.dag
+    with connection() as conn:
+        tenant = conn.execute(
+            "SELECT * FROM obs.tenants WHERE tenant_id=%s", (id,)
+        ).fetchone()
+        if not tenant:
+            fail(404, "tenant_not_found", "Tenant not found.")
+        if dag in PIPELINE_DAGS:
+            source, load, label = PIPELINE_DAGS[dag]
+            if not tenant[f"has_{source}"]:
+                fail(422, "source_absent", f"This tenant has no {source} source.")
+            if load == "cdc" and not _initial_done(conn, id, source):
+                fail(
+                    422,
+                    "initial_required",
+                    f"Complete the {label.split()[0]} initial load before starting CDC.",
+                )
+            running = conn.execute(
+                """SELECT 1 FROM obs.pipeline_runs WHERE tenant_id=%s AND source_type=%s
+                   AND load_type=%s AND status='running' LIMIT 1""",
+                (id, source, load),
+            ).fetchone()
+            if running:
+                fail(409, "already_running", f"{label} is already running.")
+        elif dag in {d["id"] for d in ANALYTICS_DAGS}:
+            label = next(d["name"] for d in ANALYTICS_DAGS if d["id"] == dag)
+            source, load = None, "analytics"
+            if not (tenant["has_mysql"] and _initial_done(conn, id, "mysql")):
+                fail(
+                    422,
+                    "analytics_locked",
+                    "Analytics unlocks once the MySQL initial load completes.",
+                )
+        else:
+            fail(404, "dag_not_found", "Unknown DAG.")
+        job_key = f"trigger:{id}:{dag}:{int(datetime.now(UTC).timestamp())}"
+        conn.execute(
+            "INSERT INTO obs.demo_jobs(job_key,kind,tenant_id,payload) VALUES(%s,'trigger',%s,%s)",
+            (
+                job_key,
+                id,
+                Jsonb({"dag": dag, "source": source, "load": load, "label": label}),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO obs.tenant_events(tenant_id,step,status,message) VALUES(%s,%s,'started',%s)",
+            (
+                id,
+                f"analytics:{dag}" if load == "analytics" else label,
+                f"Triggered by {user['email']}",
+            ),
+        )
+        audit(conn, user["email"], "trigger_dag", id, {"dag": dag})
+    return {"message": f"{label} triggered for {id}.", "simulated": True}

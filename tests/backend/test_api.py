@@ -294,3 +294,90 @@ def test_change_password_flow(clients: dict) -> None:
     assert restored.status_code == 200, restored.text
     client.close()
     relogin.close()
+
+
+def test_roles_reset_and_trigger(clients: dict) -> None:
+    admin = clients["admin"]
+    roles = admin.get("/api/roles")
+    assert roles.status_code == 200, roles.text
+    names = {r["name"] for r in roles.json()}
+    assert {"viewer", "operator", "admin"} <= names
+    created = admin.post(
+        "/api/roles",
+        json={
+            "name": "support_engineer",
+            "base_level": "operator",
+            "permissions": ["trigger_pipelines", "manage_alerts"],
+            "description": "On-call support",
+        },
+    )
+    assert created.status_code == 201, created.text
+    assert "view_console" in created.json()["permissions"]
+    users = admin.get("/api/users").json()["items"]
+    viewer = next(u for u in users if u["email"] == "viewer@demo.local")
+    assigned = admin.patch(
+        f"/api/users/{viewer['user_id']}", json={"role_name": "support_engineer"}
+    )
+    assert assigned.status_code == 200, assigned.text
+    me = clients["viewer"].get("/api/me")
+    assert me.status_code == 200
+    assert me.json()["role_name"] == "support_engineer"
+    assert "trigger_pipelines" in me.json()["permissions"]
+    assert "manage_users" not in me.json()["permissions"]
+    # Restore the viewer to the plain system role for other tests.
+    restored = admin.patch(f"/api/users/{viewer['user_id']}", json={"role": "viewer"})
+    assert restored.status_code == 200
+    deleted = admin.delete("/api/roles/support_engineer")
+    assert deleted.status_code == 200, deleted.text
+
+
+def test_admin_password_reset(clients: dict) -> None:
+    import os
+
+    from fastapi.testclient import TestClient
+
+    from obs.api.main import app
+
+    admin = clients["admin"]
+    users = admin.get("/api/users").json()["items"]
+    operator = next(u for u in users if u["email"] == "operator@demo.local")
+    reset = admin.post(f"/api/users/{operator['user_id']}/reset-password")
+    assert reset.status_code == 200, reset.text
+    temporary = reset.json()["temporary_password"]
+    assert temporary
+    fresh = TestClient(app, base_url="https://localhost")
+    login = fresh.post(
+        "/api/auth/login",
+        json={"email": "operator@demo.local", "password": temporary},
+    )
+    assert login.status_code == 200, login.text
+    fresh.headers["X-CSRF-Token"] = login.json()["csrf_token"]
+    back = fresh.post(
+        "/api/auth/change-password",
+        json={
+            "current_password": temporary,
+            "new_password": os.getenv("DEMO_PASSWORD", "demo"),
+        },
+    )
+    assert back.status_code == 200, back.text
+    fresh.close()
+
+
+def test_workflow_trigger_and_warehouse(clients: dict) -> None:
+    operator = clients["operator"]
+    workflow = operator.get("/api/tenants/acme_retail/workflow")
+    assert workflow.status_code == 200, workflow.text
+    body = workflow.json()
+    assert body["tenant_id"] == "acme_retail"
+    assert {s["source"] for s in body["sources"]} == {"mysql", "mongo"}
+    triggered = operator.post(
+        "/api/tenants/acme_retail/trigger", json={"dag": "mysql_initial"}
+    )
+    assert triggered.status_code == 200, triggered.text
+    unknown = operator.post("/api/tenants/acme_retail/trigger", json={"dag": "nope"})
+    assert unknown.status_code == 404
+    warehouse = operator.get("/api/warehouse", params={"tenant": "acme_retail"})
+    assert warehouse.status_code == 200, warehouse.text
+    view = warehouse.json()
+    assert view["table_count"] >= 1
+    assert view["total_rows"] > 0

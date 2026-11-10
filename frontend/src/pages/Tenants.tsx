@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, Pause, Play, RefreshCw, Search, Settings2 } from 'lucide-react';
+import {
+  ArrowRight,
+  BarChart3,
+  Lock,
+  Pause,
+  Play,
+  RefreshCw,
+  Search,
+  Settings2,
+} from 'lucide-react';
 import { api, queryString, runPath } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
@@ -18,6 +27,7 @@ import {
   PageHeader,
   Pagination,
   Panel,
+  Source,
   Time,
   useFilters,
 } from '../components/ui';
@@ -128,6 +138,168 @@ export function Tenants() {
   );
 }
 
+function stageLabel(status: string) {
+  switch (status) {
+    case 'success':
+      return 'Passed';
+    case 'running':
+      return 'Running';
+    case 'failed':
+      return 'Failed';
+    case 'ready':
+      return 'Ready';
+    case 'locked':
+      return 'Locked';
+    default:
+      return 'Not started';
+  }
+}
+
+function WorkflowPanel({ tenantId }: { tenantId: string }) {
+  const { canOperate, notify } = useApp();
+  const client = useQueryClient();
+  const workflow = useQuery({
+    queryKey: ['workflow', tenantId],
+    queryFn: () => api<Schema<'WorkflowState'>>(`/tenants/${tenantId}/workflow`),
+    refetchInterval: (q) => {
+      const data = q.state.data;
+      const busy =
+        data?.sources.some((s) => s.initial_status === 'running' || s.cdc_status === 'running') ||
+        data?.analytics.some((a) => a.last_status === 'started');
+      return busy ? 4000 : 15000;
+    },
+  });
+  const trigger = useMutation({
+    mutationFn: (dag: string) =>
+      api<Schema<'Message'>>(`/tenants/${tenantId}/trigger`, {
+        method: 'POST',
+        body: JSON.stringify({ dag }),
+      }),
+    onSuccess: (result) => {
+      notify(result.message);
+      void client.invalidateQueries({ queryKey: ['workflow', tenantId] });
+      void client.invalidateQueries({ queryKey: ['timeline', tenantId] });
+    },
+    onError: (e) => notify(e.message),
+  });
+  if (workflow.isPending || workflow.error || !workflow.data) return null;
+  const data = workflow.data;
+  return (
+    <Panel
+      title="Workflows"
+      subtitle="Initial load first — when it passes, CDC starts keeping the warehouse current, and the MySQL load unlocks analytics. Trigger any DAG yourself."
+    >
+      <div className="wf-grid">
+        {data.sources.map((source) => {
+          const initialPassed = source.initial_status === 'success';
+          const cdcLocked = !initialPassed && source.cdc_status !== 'running';
+          return (
+            <div className="wf-card" key={source.source}>
+              <div className="wf-card-head">
+                <Source source={source.source} />
+                <strong>{source.source === 'mysql' ? 'MySQL' : 'MongoDB'} pipeline</strong>
+              </div>
+              <div className="wf-stage">
+                <div className="wf-stage-info">
+                  <span className="wf-stage-name">1 · Initial load</span>
+                  <span className={`wf-status wf-${source.initial_status}`}>
+                    {stageLabel(source.initial_status)}
+                  </span>
+                  {source.last_initial_at && (
+                    <small>
+                      Last run <Time value={source.last_initial_at} relative />
+                    </small>
+                  )}
+                </div>
+                <button
+                  className="button small"
+                  disabled={!canOperate || trigger.isPending || source.initial_status === 'running'}
+                  onClick={() => trigger.mutate(`${source.source}_initial`)}
+                >
+                  <Play size={13} /> Trigger
+                </button>
+              </div>
+              <div className="wf-arrow">
+                <ArrowRight size={14} />
+                <span>
+                  {initialPassed
+                    ? 'Initial load passed — this source now feeds CDC'
+                    : 'CDC unlocks when the initial load passes'}
+                </span>
+              </div>
+              <div className="wf-stage">
+                <div className="wf-stage-info">
+                  <span className="wf-stage-name">2 · CDC sync</span>
+                  <span className={`wf-status wf-${source.cdc_status}`}>
+                    {stageLabel(source.cdc_status)}
+                  </span>
+                  {source.last_cdc_at && (
+                    <small>
+                      Last run <Time value={source.last_cdc_at} relative />
+                    </small>
+                  )}
+                </div>
+                <button
+                  className="button small"
+                  disabled={
+                    !canOperate || trigger.isPending || cdcLocked || source.cdc_status === 'running'
+                  }
+                  title={cdcLocked ? 'Finish the initial load first' : ''}
+                  onClick={() => trigger.mutate(`${source.source}_cdc`)}
+                >
+                  {cdcLocked ? <Lock size={13} /> : <Play size={13} />} Trigger
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        <div className="wf-card wf-analytics">
+          <div className="wf-card-head">
+            <BarChart3 size={16} />
+            <strong>Analytics</strong>
+            <span className={`wf-status ${data.analytics_eligible ? 'wf-success' : 'wf-locked'}`}>
+              {data.analytics_eligible ? 'Unlocked' : 'Locked'}
+            </span>
+          </div>
+          {!data.analytics_eligible ? (
+            <p className="wf-note">
+              <Lock size={13} /> Analytics becomes available the moment this tenant’s MySQL initial
+              load passes.
+            </p>
+          ) : (
+            data.analytics.map((dag) => (
+              <div className="wf-stage" key={dag.id}>
+                <div className="wf-stage-info">
+                  <span className="wf-stage-name">{dag.name}</span>
+                  {dag.last_at ? (
+                    <small>
+                      Last run <Time value={dag.last_at} relative /> ·{' '}
+                      {dag.last_status === 'ok'
+                        ? 'Passed'
+                        : dag.last_status === 'started'
+                          ? 'Running'
+                          : dag.last_status}
+                    </small>
+                  ) : (
+                    <small>Not run yet</small>
+                  )}
+                </div>
+                <button
+                  className="button small"
+                  disabled={!canOperate || trigger.isPending || dag.last_status === 'started'}
+                  onClick={() => trigger.mutate(dag.id)}
+                >
+                  <Play size={13} /> Run
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 export function TenantDetail() {
   const { id = '' } = useParams();
   const { range, rangeQuery, params } = useFilters();
@@ -214,6 +386,7 @@ export function TenantDetail() {
           </button>
         </div>
       )}
+      <WorkflowPanel tenantId={id} />
       {settingsOpen && (
         <Panel title="Tenant settings">
           <form

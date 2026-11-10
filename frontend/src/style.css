@@ -3858,3 +3858,181 @@ button.workspace-switch:hover {
     box-shadow 200ms ease,
     border-color 200ms ease;
 }
+
+/* Workflow panel, roles admin, password reset, warehouse */
+.wf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+.wf-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--surface-2, transparent);
+  animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wf-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.wf-card-head .wf-status {
+  margin-left: auto;
+}
+.wf-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+}
+.wf-stage-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wf-stage-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.wf-stage-info small {
+  color: var(--muted);
+}
+.wf-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.wf-success {
+  color: var(--green, #2f9e6e);
+}
+.wf-running {
+  color: var(--amber, #d9930d);
+}
+.wf-failed {
+  color: var(--red, #d9534f);
+}
+.wf-ready {
+  color: var(--accent, #4f7cff);
+}
+.wf-locked,
+.wf-not_started {
+  color: var(--muted);
+}
+.wf-arrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 2px 0 2px 2px;
+}
+.wf-note {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.roles-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.role-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.role-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.role-card-head .icon-button {
+  margin-left: auto;
+}
+.role-desc {
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin: 6px 0;
+}
+.role-perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.role-form {
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+}
+.role-form h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.role-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.role-form-grid label,
+.role-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.role-perms-picker {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 14px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px 16px;
+}
+.role-perms-picker .check-row {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 500;
+}
+.temp-password {
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  word-break: break-all;
+}
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent, #4f7cff);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 4px 0;
+  text-align: left;
+}
+.link-button:hover {
+  text-decoration: underline;
+}
+.forgot-box {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  animation: pop-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.forgot-result {
+  margin-top: 10px;
+}

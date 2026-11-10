@@ -422,7 +422,7 @@ def audit(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
 @router.get("/users", response_model=s.Page[s.User], dependencies=[Depends(require_role("admin"))])
 def users(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
     return a.page(
-        rows("SELECT user_id,email,display_name,role FROM obs.users ORDER BY user_id"),
+        rows("SELECT user_id,email,display_name,role,role_name FROM obs.users ORDER BY user_id"),
         page,
         page_size,
     )
@@ -451,3 +451,33 @@ def deliveries() -> dict:
     for item in items:
         item["last_error"] = redact(item["last_error"]) if item["last_error"] else None
     return {"items": items, "total": len(items), "page": 1, "page_size": 100}
+
+
+@router.get("/warehouse", response_model=s.WarehouseView)
+def warehouse(
+    tenant: str, user: dict = Depends(current_user)
+) -> dict:
+    if not one("SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (tenant,)):
+        fail(404, "tenant_not_found", "Tenant not found.")
+    tables = rows(
+        """SELECT DISTINCT ON (table_name) table_name, row_count, last_loaded_at
+           FROM obs.warehouse_snapshots
+           WHERE tenant_id=%s
+           ORDER BY table_name, checked_at DESC""",
+        (tenant,),
+    )
+    return {
+        "tenant_id": tenant,
+        "tables": [
+            {
+                "table_name": t["table_name"],
+                "row_count": t["row_count"],
+                "last_loaded_at": t["last_loaded_at"].isoformat()
+                if t["last_loaded_at"]
+                else None,
+            }
+            for t in tables
+        ],
+        "table_count": len(tables),
+        "total_rows": sum(t["row_count"] or 0 for t in tables),
+    }

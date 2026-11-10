@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Database, Search, Server, ShieldCheck } from 'lucide-react';
+import { Database, KeyRound, Plus, Search, Server, ShieldCheck, Trash2, X } from 'lucide-react';
 import { Operations } from './Operations';
 import { api, runPath } from '../api/client';
 import type { Schema } from '../api/client';
@@ -181,6 +182,151 @@ export function Platform() {
   );
 }
 
+const PERMISSION_LABELS: Record<string, string> = {
+  view_console: 'View console',
+  trigger_pipelines: 'Trigger & retry pipelines',
+  manage_tenants: 'Onboard & edit tenants',
+  manage_alerts: 'Acknowledge & resolve alerts',
+  manage_users: 'Manage users & roles',
+  manage_platform: 'Platform operations',
+};
+
+function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
+  const { notify } = useApp();
+  const client = useQueryClient();
+  const [name, setName] = useState('');
+  const [baseLevel, setBaseLevel] = useState('operator');
+  const [description, setDescription] = useState('');
+  const [picked, setPicked] = useState<string[]>(['trigger_pipelines']);
+  const create = useMutation({
+    mutationFn: () =>
+      api<Schema<'RoleOut'>>('/roles', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: name.trim(),
+          base_level: baseLevel,
+          permissions: picked,
+          description: description || null,
+        }),
+      }),
+    onSuccess: (role) => {
+      notify(`Role ${role.name} created. Assign it from the user table above.`);
+      setName('');
+      setDescription('');
+      setPicked(['trigger_pipelines']);
+      void client.invalidateQueries({ queryKey: ['roles'] });
+    },
+    onError: (e) => notify(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (roleName: string) =>
+      api<Schema<'Message'>>(`/roles/${encodeURIComponent(roleName)}`, { method: 'DELETE' }),
+    onSuccess: (r) => {
+      notify(r.message);
+      void client.invalidateQueries();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const toggle = (permission: string) =>
+    setPicked((prev) =>
+      prev.includes(permission) ? prev.filter((x) => x !== permission) : [...prev, permission],
+    );
+  return (
+    <Panel
+      title="Roles & permissions"
+      subtitle="A role is a named bundle: pick who it is for, choose an access level, then tick what it can do. Assign it to people in the user table above."
+    >
+      <div className="roles-list">
+        {roles.map((role) => (
+          <div className="role-card" key={role.name}>
+            <div className="role-card-head">
+              <strong>{role.name}</strong>
+              <span className="tag">
+                {role.system ? 'BUILT-IN' : `CUSTOM · ${role.base_level.toUpperCase()} ACCESS`}
+              </span>
+              {!role.system && (
+                <button
+                  className="icon-button"
+                  aria-label={`Delete role ${role.name}`}
+                  disabled={remove.isPending}
+                  onClick={() => remove.mutate(role.name)}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            {role.description && <p className="role-desc">{role.description}</p>}
+            <div className="role-perms">
+              {role.permissions.map((permission) => (
+                <span className="tag" key={permission}>
+                  {PERMISSION_LABELS[permission] || permission}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <form
+        className="role-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <h4>
+          <Plus size={15} /> Create a role
+        </h4>
+        <div className="role-form-grid">
+          <label>
+            Role name
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. support_engineer"
+              required
+              minLength={2}
+            />
+          </label>
+          <label>
+            Access level
+            <select value={baseLevel} onChange={(e) => setBaseLevel(e.target.value)}>
+              <option value="viewer">Viewer — look, don’t touch</option>
+              <option value="operator">Operator — run day-to-day work</option>
+              <option value="admin">Admin — full control</option>
+            </select>
+          </label>
+          <label>
+            What is this role for? (optional)
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. On-call support engineers"
+            />
+          </label>
+        </div>
+        <fieldset className="role-perms-picker">
+          <legend>Permissions — tick what this role can do</legend>
+          {Object.entries(PERMISSION_LABELS).map(([permission, label]) => (
+            <label key={permission} className="check-row">
+              <input
+                type="checkbox"
+                checked={permission === 'view_console' || picked.includes(permission)}
+                disabled={permission === 'view_console'}
+                onChange={() => toggle(permission)}
+              />
+              {label}
+              {permission === 'view_console' && <small> (always on)</small>}
+            </label>
+          ))}
+        </fieldset>
+        <button className="button primary" disabled={create.isPending || name.trim().length < 2}>
+          <Plus size={14} /> Create role
+        </button>
+      </form>
+    </Panel>
+  );
+}
+
 export function Admin() {
   const { isAdmin, notify, runtime } = useApp();
   const { page, set } = useFilters();
@@ -195,9 +341,22 @@ export function Admin() {
     queryFn: () => api<Schema<'Page_AuditEntry_'>>(`/audit?page=${page}`),
     enabled: isAdmin,
   });
+  const [resetInfo, setResetInfo] = useState<{ temporary: string } | null>(null);
+  const roles = useQuery({
+    queryKey: ['roles'],
+    queryFn: () => api<Schema<'RoleOut'>[]>('/roles'),
+    enabled: isAdmin,
+  });
+  const customRoles = (roles.data ?? []).filter((r) => !r.system);
+  const reset = useMutation({
+    mutationFn: (id: number) =>
+      api<Schema<'PasswordResetResult'>>(`/users/${id}/reset-password`, { method: 'POST' }),
+    onSuccess: (r) => setResetInfo({ temporary: r.temporary_password }),
+    onError: (e) => notify(e.message),
+  });
   const update = useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) =>
-      api<Schema<'Message'>>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+    mutationFn: ({ id, body }: { id: number; body: { role?: string; role_name?: string } }) =>
+      api<Schema<'Message'>>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
     onSuccess: (r) => {
       notify(r.message);
       void client.invalidateQueries();
@@ -237,6 +396,7 @@ export function Admin() {
                   <th>Email</th>
                   <th>Role</th>
                   <th>Authentication</th>
+                  <th>Password</th>
                 </tr>
               </thead>
               <tbody>
@@ -249,19 +409,49 @@ export function Admin() {
                     <td>
                       <select
                         aria-label={`Role for ${user.email}`}
-                        value={user.role}
+                        value={user.role_name || user.role}
                         disabled={update.isPending || runtime.auth_provider === 'oidc'}
-                        onChange={(e) => update.mutate({ id: user.user_id, role: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          update.mutate({
+                            id: user.user_id,
+                            body: ['viewer', 'operator', 'admin'].includes(value)
+                              ? { role: value }
+                              : { role_name: value },
+                          });
+                        }}
                       >
-                        {['viewer', 'operator', 'admin'].map((role) => (
-                          <option key={role}>{role}</option>
-                        ))}
+                        <optgroup label="Built-in roles">
+                          {['viewer', 'operator', 'admin'].map((role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          ))}
+                        </optgroup>
+                        {customRoles.length > 0 && (
+                          <optgroup label="Custom roles">
+                            {customRoles.map((role) => (
+                              <option key={role.name} value={role.name}>
+                                {role.name} ({role.base_level})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </td>
                     <td>
                       <span className="tag">
                         {runtime.auth_provider === 'oidc' ? 'ORGANIZATION SSO' : 'LOCAL · ARGON2'}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        className="button small"
+                        disabled={reset.isPending || runtime.auth_provider === 'oidc'}
+                        onClick={() => reset.mutate(user.user_id)}
+                      >
+                        <KeyRound size={13} /> Reset
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -270,7 +460,36 @@ export function Admin() {
           </div>
         )}
       </Panel>
+      {roles.data && <RolesPanel roles={roles.data} />}
       <Operations />
+      {resetInfo && (
+        <div className="modal-scrim" role="presentation" onClick={() => setResetInfo(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Temporary password"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Temporary password</h3>
+              <button className="icon-button" aria-label="Close" onClick={() => setResetInfo(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Share this with the user once — it is not stored anywhere you can see it again. They
+              sign in with it, then change it from their profile menu.
+            </p>
+            <p className="temp-password mono">{resetInfo.temporary}</p>
+            <div className="modal-actions">
+              <button className="button primary" onClick={() => setResetInfo(null)}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Panel
         title="Audit trail"
         subtitle="Every successful mutation records its actor, target, and timestamp."

@@ -27,6 +27,8 @@ class User(BaseModel):
     email: str
     display_name: str
     role: Literal["viewer", "operator", "admin"]
+    role_name: str | None = None
+    permissions: list[str] = []
     csrf_token: str = ""
 
 
@@ -413,7 +415,78 @@ class SearchHit(BaseModel):
 
 
 class UserPatch(BaseModel):
-    role: Literal["viewer", "operator", "admin"]
+    role: Literal["viewer", "operator", "admin"] | None = None
+    role_name: str | None = None
+
+
+class RoleIn(BaseModel):
+    name: str = Field(min_length=2, max_length=60)
+    base_level: Literal["viewer", "operator", "admin"]
+    permissions: list[str] = []
+    description: str | None = None
+
+
+class RoleOut(BaseModel):
+    name: str
+    base_level: str
+    permissions: list[str] = []
+    description: str | None = None
+    system: bool = False
+    created_by: str | None = None
+
+
+class TriggerIn(BaseModel):
+    dag: str = Field(max_length=80)
+
+
+class PasswordResetResult(BaseModel):
+    message: str
+    temporary_password: str
+    simulated: bool = True
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str = Field(max_length=254)
+
+
+class ForgotPasswordResult(BaseModel):
+    message: str
+    temporary_password: str | None = None
+
+
+class WorkflowSource(BaseModel):
+    source: str
+    initial_status: str
+    cdc_status: str
+    last_initial_at: str | None = None
+    last_cdc_at: str | None = None
+
+
+class AnalyticsDag(BaseModel):
+    id: str
+    name: str
+    last_status: str | None = None
+    last_at: str | None = None
+
+
+class WorkflowState(BaseModel):
+    tenant_id: str
+    sources: list[WorkflowSource]
+    analytics_eligible: bool
+    analytics: list[AnalyticsDag]
+
+
+class WarehouseTable(BaseModel):
+    table_name: str
+    row_count: int | None = None
+    last_loaded_at: str | None = None
+
+
+class WarehouseView(BaseModel):
+    tenant_id: str
+    tables: list[WarehouseTable]
+    table_count: int
+    total_rows: int
 
 
 class RuntimeConfig(BaseModel):
