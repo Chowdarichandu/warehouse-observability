@@ -119,6 +119,7 @@ class Tenant(BaseModel):
     sla_compliance: float | None = None
     avg_duration_min: float | None = None
     last_success_at: datetime | None = None
+    analytics_eligible: bool = False
     latest_runs: list[Run] = []
 
 

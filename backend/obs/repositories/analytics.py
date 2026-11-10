@@ -81,7 +81,16 @@ def tenants() -> list[dict]:
         FROM obs.pipeline_runs WHERE tenant_id=h.tenant_id AND started_at>now()-interval '7 days') a ON true
         ORDER BY CASE h.health WHEN 'down' THEN 0 WHEN 'degraded' THEN 1 WHEN 'onboarding' THEN 2 ELSE 3 END,h.display_name""")
     latest = rows("SELECT * FROM obs.v_latest_runs")
+    eligible = {
+        r["tenant_id"]
+        for r in rows(
+            "SELECT DISTINCT tenant_id FROM obs.pipeline_runs WHERE source_type='mysql' AND load_type='initial' AND status='success'"
+        )
+    }
     for tenant in result:
+        tenant["analytics_eligible"] = bool(
+            tenant.get("has_mysql", True) and tenant["tenant_id"] in eligible
+        )
         tenant["sla_compliance"] = sla_rate(
             [c for c in compliance if c["tenant_id"] == tenant["tenant_id"]]
         )

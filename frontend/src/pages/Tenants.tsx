@@ -107,6 +107,7 @@ export function Tenants() {
                   <th>Average duration</th>
                   <th>Failures · 24h</th>
                   <th>Last success</th>
+                  <th>Analytics</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,6 +127,13 @@ export function Tenants() {
                     <td>{t.failures_24h}</td>
                     <td>
                       <Time value={t.last_success_at} relative />
+                    </td>
+                    <td>
+                      {t.analytics_eligible ? (
+                        <span className="wf-status wf-success">Unlocked</span>
+                      ) : (
+                        <span className="wf-status wf-locked">Locked</span>
+                      )}
                     </td>
                   </tr>
                 ))}

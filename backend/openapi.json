@@ -11776,6 +11776,11 @@
             ],
             "title": "Last Success At"
           },
+          "analytics_eligible": {
+            "type": "boolean",
+            "title": "Analytics Eligible",
+            "default": false
+          },
           "latest_runs": {
             "items": {
               "$ref": "#/components/schemas/Run"

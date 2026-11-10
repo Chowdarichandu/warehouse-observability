@@ -2468,6 +2468,11 @@ export interface components {
             /** Last Success At */
             last_success_at?: string | null;
             /**
+             * Analytics Eligible
+             * @default false
+             */
+            analytics_eligible: boolean;
+            /**
              * Latest Runs
              * @default []
              */

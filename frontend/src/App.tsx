@@ -10,7 +10,6 @@ import {
 import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
-  ArrowUpRight,
   Bell,
   CalendarDays,
   ChevronDown,
@@ -292,22 +291,6 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <PanelLeft size={15} />
                 <span>Collapse</span>
               </button>
-              <div className="environment-note">
-                <ShieldCheck size={17} />
-                <div>
-                  <strong>
-                    {runtime.mode === 'demo' ? 'Safe to explore' : 'Operations workspace'}
-                  </strong>
-                  <small>
-                    {runtime.mode === 'demo'
-                      ? 'Demo actions stay local.'
-                      : runtime.live_actions_enabled
-                        ? 'Live actions enabled'
-                        : 'Read-only connections'}
-                  </small>
-                </div>
-                <ArrowUpRight size={13} />
-              </div>
               <div className="profile">
                 <button
                   className="profile-main"
