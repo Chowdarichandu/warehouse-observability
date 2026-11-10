@@ -123,6 +123,13 @@ export function Overview() {
     },
   ];
   const attention = tenants.data!.items.filter((t) => ['down', 'degraded'].includes(t.health));
+  const namesFor = (state: string) =>
+    tenants
+      .data!.items.filter((t) => t.health === state)
+      .map((t) => t.display_name)
+      .join(', ') || 'none';
+  const stateTip = (state: string, count: number) =>
+    `${state[0].toUpperCase() + state.slice(1)} — ${count} tenant${count === 1 ? '' : 's'}: ${namesFor(state)}`;
   const primaryIssue = attention[0];
   const total = tenants.data!.total;
   const healthyPercent = total ? Math.round((k.healthy / total) * 100) : 0;
@@ -155,7 +162,22 @@ export function Overview() {
             />{' '}
             WORKSPACE HEALTH <span className="pulse-current">Current status</span>
           </div>
-          <h2>
+          <h2
+            title={
+              attention.length
+                ? `Needs attention: ${attention
+                    .map(
+                      (t) =>
+                        `${t.display_name} (${t.health}, last success ${
+                          t.last_success_at
+                            ? new Date(t.last_success_at).toLocaleString()
+                            : 'not recorded'
+                        })`,
+                    )
+                    .join(' · ')}`
+                : 'Every tenant is healthy right now.'
+            }
+          >
             <span>{k.healthy}</span> of {total} tenants healthy
           </h2>
           <p>
@@ -173,23 +195,25 @@ export function Overview() {
             ].map(([state, count]) => (
               <span
                 key={state}
+                title={stateTip(String(state), Number(count))}
                 style={{
                   width: `${total ? (Number(count) / total) * 100 : 0}%`,
                   background: STATUS_COLORS[String(state)],
+                  cursor: 'help',
                 }}
               />
             ))}
           </div>
           <div className="pulse-breakdown">
-            <Link to="/tenants?health=healthy">
+            <Link to="/tenants?health=healthy" title={stateTip('healthy', k.healthy)}>
               <i className="status-dot green" />
               {k.healthy} healthy
             </Link>
-            <Link to="/tenants?health=degraded">
+            <Link to="/tenants?health=degraded" title={stateTip('degraded', k.degraded)}>
               <i className="status-dot amber" />
               {k.degraded} degraded
             </Link>
-            <Link to="/tenants?health=down">
+            <Link to="/tenants?health=down" title={stateTip('down', k.down)}>
               <i className="status-dot red" />
               {k.down} down
             </Link>
@@ -225,7 +249,19 @@ export function Overview() {
       </section>
       <div className="kpi-grid executive-metrics">
         {metrics.map((stat) => (
-          <div className="kpi-card" key={stat.label}>
+          <div
+            className="kpi-card"
+            key={stat.label}
+            title={
+              {
+                'Success rate': 'Share of pipeline runs that passed in the selected range.',
+                'Failed runs': 'Runs that failed in the selected range, out of the total runs.',
+                'CDC duration':
+                  'Average CDC sync duration in the selected range; p95 is shown below.',
+                'SLA compliance': 'Share of active tenant sources inside their freshness SLA.',
+              }[stat.label]
+            }
+          >
             <div className="kpi-label">
               {stat.label}
               <stat.icon size={15} />

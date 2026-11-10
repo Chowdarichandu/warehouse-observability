@@ -1,7 +1,16 @@
 import { STATUS_COLORS } from './statusColors';
-export function StatusPill({ status, dot = true }: { status: string; dot?: boolean }) {
+export function StatusPill({
+  status,
+  dot = true,
+  title,
+}: {
+  status: string;
+  dot?: boolean;
+  title?: string;
+}) {
   return (
     <span
+      title={title}
       className="status-pill"
       style={{
         color: STATUS_COLORS[status] || '#83909e',
