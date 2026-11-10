@@ -317,6 +317,7 @@ strong {
   margin-left: auto;
 }
 .profile {
+  position: relative;
   display: flex;
   gap: 9px;
   align-items: center;
