@@ -52,6 +52,10 @@ export function Chart({
     };
   }, []);
   useEffect(() => {
+    const pageTooltip =
+      option && typeof option === 'object' && 'tooltip' in option
+        ? (option.tooltip as Record<string, unknown>)
+        : {};
     chart.current?.setOption(
       {
         animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -59,8 +63,10 @@ export function Chart({
         animationDurationUpdate: 260,
         textStyle: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: '#81909f' },
         grid: { left: 46, right: 24, top: 30, bottom: 36, containLabel: true },
+        ...option,
         tooltip: {
           trigger: 'axis',
+          ...pageTooltip,
           confine: true,
           backgroundColor: 'rgba(13, 24, 36, 0.96)',
           borderWidth: 0,
@@ -68,7 +74,6 @@ export function Chart({
           extraCssText:
             'border-radius: 10px; box-shadow: 0 14px 34px rgba(5, 12, 22, 0.35); padding: 10px 12px;',
         },
-        ...option,
       },
       { replaceMerge: ['series'], lazyUpdate: true },
     );

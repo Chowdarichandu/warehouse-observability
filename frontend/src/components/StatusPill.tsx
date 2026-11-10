@@ -2,16 +2,16 @@ import { STATUS_COLORS } from './statusColors';
 export function StatusPill({
   status,
   dot = true,
-  title,
+  tip,
 }: {
   status: string;
   dot?: boolean;
-  title?: string;
+  tip?: string;
 }) {
   return (
     <span
-      title={title}
-      className="status-pill"
+      data-tip={tip}
+      className={`status-pill${tip ? ' has-tip tip-below' : ''}`}
       style={{
         color: STATUS_COLORS[status] || '#83909e',
         background: `${STATUS_COLORS[status] || '#83909e'}13`,

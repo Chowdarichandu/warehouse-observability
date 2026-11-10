@@ -35,7 +35,7 @@ export function Pipelines() {
         {dag.latest_status ? (
           <StatusPill
             status={dag.latest_status}
-            title={`${dag.label} (${dag.dag_id}) — last recorded ${
+            tip={`${dag.label} (${dag.dag_id}) — last recorded ${
               dag.last_recorded_at
                 ? new Date(dag.last_recorded_at).toLocaleString()
                 : 'not recorded'
@@ -43,8 +43,8 @@ export function Pipelines() {
           />
         ) : (
           <span
-            className="dag-unobserved"
-            title={`${dag.label} (${dag.dag_id}) — no run has been recorded for this DAG yet`}
+            className="dag-unobserved has-tip"
+            data-tip={`${dag.label} (${dag.dag_id}) — no run has been recorded for this DAG yet`}
           >
             Not yet observed
           </span>

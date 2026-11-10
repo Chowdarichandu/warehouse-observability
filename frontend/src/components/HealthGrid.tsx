@@ -61,7 +61,7 @@ export function HealthGrid({ tenants }: { tenants: Schema<'Tenant'>[] }) {
                   </Link>
                 </td>
                 <td>
-                  <StatusPill status={tenant.health} title={tip} />
+                  <StatusPill status={tenant.health} tip={tip} />
                 </td>
                 {(['mysql:cdc', 'mysql:initial', 'mongo:cdc', 'mongo:initial'] as const).map(
                   (pipeline) => {

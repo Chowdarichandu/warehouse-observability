@@ -163,7 +163,8 @@ export function Overview() {
             WORKSPACE HEALTH <span className="pulse-current">Current status</span>
           </div>
           <h2
-            title={
+            className="has-tip"
+            data-tip={
               attention.length
                 ? `Needs attention: ${attention
                     .map(
@@ -195,7 +196,8 @@ export function Overview() {
             ].map(([state, count]) => (
               <span
                 key={state}
-                title={stateTip(String(state), Number(count))}
+                className="has-tip"
+                data-tip={stateTip(String(state), Number(count))}
                 style={{
                   width: `${total ? (Number(count) / total) * 100 : 0}%`,
                   background: STATUS_COLORS[String(state)],
@@ -205,15 +207,23 @@ export function Overview() {
             ))}
           </div>
           <div className="pulse-breakdown">
-            <Link to="/tenants?health=healthy" title={stateTip('healthy', k.healthy)}>
+            <Link
+              to="/tenants?health=healthy"
+              className="has-tip"
+              data-tip={stateTip('healthy', k.healthy)}
+            >
               <i className="status-dot green" />
               {k.healthy} healthy
             </Link>
-            <Link to="/tenants?health=degraded" title={stateTip('degraded', k.degraded)}>
+            <Link
+              to="/tenants?health=degraded"
+              className="has-tip"
+              data-tip={stateTip('degraded', k.degraded)}
+            >
               <i className="status-dot amber" />
               {k.degraded} degraded
             </Link>
-            <Link to="/tenants?health=down" title={stateTip('down', k.down)}>
+            <Link to="/tenants?health=down" className="has-tip" data-tip={stateTip('down', k.down)}>
               <i className="status-dot red" />
               {k.down} down
             </Link>
@@ -250,9 +260,9 @@ export function Overview() {
       <div className="kpi-grid executive-metrics">
         {metrics.map((stat) => (
           <div
-            className="kpi-card"
+            className="kpi-card has-tip"
             key={stat.label}
-            title={
+            data-tip={
               {
                 'Success rate': 'Share of pipeline runs that passed in the selected range.',
                 'Failed runs': 'Runs that failed in the selected range, out of the total runs.',
