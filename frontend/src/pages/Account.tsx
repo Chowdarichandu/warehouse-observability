@@ -4,9 +4,10 @@ import { useApp } from '../AppContext';
 import { api } from '../api/client';
 import type { Schema } from '../api/client';
 import { PageHeader, Panel } from '../components/ui';
+import { Link } from 'react-router-dom';
 
 export function Account() {
-  const { user, runtime, notify } = useApp();
+  const { user, runtime, notify, textSize, setTextSize, isAdmin, access } = useApp();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const change = useMutation({
@@ -38,6 +39,44 @@ export function Account() {
           </div>
         </div>
       </Panel>
+      <Panel title="Display" subtitle="Reading comfort for this console, saved on this device.">
+        <form className="settings-form" onSubmit={(e) => e.preventDefault()}>
+          <label>
+            Text size
+            <select
+              aria-label="Text size"
+              value={textSize}
+              onChange={(e) => setTextSize(e.target.value)}
+            >
+              <option value="standard">Standard</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+        </form>
+      </Panel>
+      {isAdmin && (
+        <Panel
+          title="Admin privileges"
+          subtitle="Extra controls your admin role unlocks across this workspace."
+        >
+          <div className="governance-link">
+            <div>
+              <strong>
+                {access?.permissions.filter((p) => p.minimum_role === 'admin' && p.enabled)
+                  .length ?? 0}{' '}
+                admin controls available
+              </strong>
+              <p>
+                Assign roles, revoke sessions, configure tenants, alerts and quality checks, and
+                review audit history.
+              </p>
+            </div>
+            <Link className="button small" to="/access">
+              Open privilege access
+            </Link>
+          </div>
+        </Panel>
+      )}
       <Panel
         title="Password"
         subtitle={

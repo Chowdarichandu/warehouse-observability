@@ -9,6 +9,8 @@ export const AppContext = createContext<{
   connected: boolean;
   activity: Activity[];
   notify: (message: string) => void;
+  textSize: string;
+  setTextSize: (value: string) => void;
 } | null>(null);
 
 export function useApp() {

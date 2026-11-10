@@ -138,6 +138,40 @@ select:focus-visible,
   font-size: 11px;
   font-weight: 700;
 }
+.product-menu .product-planned {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--title);
+  opacity: 0.75;
+}
+.product-menu .product-planned > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.product-menu .product-planned strong,
+.product-menu .product-planned small {
+  display: block;
+}
+.product-menu .product-planned small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.product-menu .workspace-avatar.planned {
+  background: var(--subtle);
+  color: var(--muted);
+}
+.product-planned-tag {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 .product-menu .product-settings {
   display: flex;
   justify-content: space-between;

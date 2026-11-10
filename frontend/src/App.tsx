@@ -229,7 +229,17 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
       v.path === '/' ? location.pathname === '/' : location.pathname.startsWith(v.path),
     )?.label || 'Search';
   return (
-    <AppContext.Provider value={{ user, runtime, access: access.data, ...live, notify: setToast }}>
+    <AppContext.Provider
+      value={{
+        user,
+        runtime,
+        access: access.data,
+        ...live,
+        notify: setToast,
+        textSize,
+        setTextSize,
+      }}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -274,7 +284,25 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   </span>
                   <span className="product-current">Current</span>
                 </NavLink>
-                <p>Additional business modules can be added here as they become available.</p>
+                {[
+                  ['P', 'POS', 'Point of sale operations'],
+                  ['I', 'Inventory', 'Stock and supply movement'],
+                  ['F', 'Finance', 'Billing, payments and payouts'],
+                  ['S', 'Support', 'Customer tickets and SLAs'],
+                ].map(([mark, name, blurb]) => (
+                  <div className="product-planned" key={name} aria-disabled="true">
+                    <span className="workspace-avatar planned">{mark}</span>
+                    <span>
+                      <strong>{name}</strong>
+                      <small>{blurb}</small>
+                    </span>
+                    <span className="product-planned-tag">Planned</span>
+                  </div>
+                ))}
+                <p>
+                  New domains plug into this same workspace — one sign-in, one role model, one
+                  search and one settings surface across every module.
+                </p>
                 <NavLink to="/account" className="product-settings">
                   Account settings <ArrowRight size={14} />
                 </NavLink>
@@ -297,17 +325,6 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               ))}
             </nav>
             <div className="sidebar-bottom">
-              <label className="text-size-control">
-                <span>Text size</span>
-                <select
-                  aria-label="Text size"
-                  value={textSize}
-                  onChange={(event) => setTextSize(event.target.value)}
-                >
-                  <option value="standard">Standard</option>
-                  <option value="large">Large</option>
-                </select>
-              </label>
               <button
                 className="collapse-toggle"
                 onClick={() => setCollapsed(!collapsed)}

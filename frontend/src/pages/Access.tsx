@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, KeyRound, LockKeyhole, LogOut, Minus, ShieldCheck, UserRound } from 'lucide-react';
 import { api } from '../api/client';
+import { Link } from 'react-router-dom';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
 import {
@@ -60,6 +61,10 @@ export function Access() {
   if (access.error) return <ErrorState error={access.error} />;
   const policy = access.data;
   const ownRole = policy.roles.find((role) => role.role === policy.role);
+  const adminPrivileges = policy.permissions.filter(
+    (permission) => permission.minimum_role === 'admin',
+  );
+  const isAdmin = policy.role === 'admin';
   const onlyAvailable = params.get('view') === 'available';
   const permissions = onlyAvailable
     ? policy.permissions.filter((permission) => permission.enabled)
@@ -122,6 +127,49 @@ export function Access() {
           </p>
         </Panel>
       </div>
+      {isAdmin && (
+        <Panel
+          title="Privilege access"
+          subtitle="Admin-only controls. Every action is checked by the server and written to the audit history."
+        >
+          <div className="access-permissions">
+            {adminPrivileges.map((permission) => (
+              <div className="access-permission" key={permission.id}>
+                <span className={`access-permission-icon ${permission.enabled ? 'available' : ''}`}>
+                  {permission.enabled ? <Check size={17} /> : <LockKeyhole size={16} />}
+                </span>
+                <div>
+                  <strong>{permission.label}</strong>
+                  <p>{permission.description}</p>
+                  {permission.reason && <small>{permission.reason}</small>}
+                </div>
+                <span className={`access-state ${permission.enabled ? 'available' : ''}`}>
+                  {permission.enabled ? 'Available' : 'Environment restricted'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="access-quicklinks">
+            <Link className="button small" to="/admin?section=users">
+              Manage users
+            </Link>
+            <Link className="button small" to="/admin?section=roles">
+              Roles &amp; permissions
+            </Link>
+            <Link className="button small" to="/admin?section=operations">
+              Operations
+            </Link>
+            <Link className="button small" to="/admin?section=audit">
+              Audit history
+            </Link>
+            {(canRevoke || canAssign) && (
+              <a className="button small" href="#access-users">
+                User access &amp; sessions
+              </a>
+            )}
+          </div>
+        </Panel>
+      )}
       <Panel
         title="Your permissions"
         subtitle="Role grants and environment controls determine which actions are available."
