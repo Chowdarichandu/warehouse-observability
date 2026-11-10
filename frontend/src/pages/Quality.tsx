@@ -97,7 +97,7 @@ export function Quality() {
     <>
       <PageHeader
         title="Data quality"
-        description="Validate the data behind successful runs, with controlled reads and clear evidence."
+        description="Data quality checks on warehouse tables, evidenced by counts and rates."
         actions={
           canWrite && (
             <button className="button primary" onClick={() => setEditor('new')}>

@@ -144,7 +144,7 @@ export function Overview() {
     <>
       <PageHeader
         title="Pipeline overview"
-        description="Delivery, reliability, and the work that needs your attention."
+        description="Tenant health, run reliability, and open issues across your workspace."
         eyebrow="OPERATIONS"
         actions={
           <>
@@ -583,7 +583,7 @@ export function Overview() {
       <div className="two-column bottom-row">
         <Panel
           title="Recent failures"
-          subtitle="A starting point for your next investigation"
+          subtitle="The most recent failed runs across tenants"
           action={
             <Link className="text-link" to="/runs?status=failed">
               View failed runs <ArrowRight size={12} />

@@ -94,7 +94,7 @@ export function Dependencies() {
     <>
       <PageHeader
         title="Pipeline dependencies"
-        description="Follow configured routes and observed execution links to understand what could be affected."
+        description="Configured and observed links between pipelines, and what a failure could affect."
         actions={
           <span className="tag">
             <GitBranch size={13} /> DEPENDENCY MAP

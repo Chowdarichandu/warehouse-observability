@@ -47,7 +47,7 @@ export function Runs() {
     <>
       <PageHeader
         title="Pipeline runs"
-        description="Trace every run from orchestration to the warehouse."
+        description="Every pipeline run, from Airflow execution to warehouse load."
         actions={
           <a className="button" href={`/api/runs?${qs}&format=csv`}>
             <Download size={14} />

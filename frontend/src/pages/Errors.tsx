@@ -62,7 +62,7 @@ export function Errors() {
     <>
       <PageHeader
         title="Error intelligence"
-        description="Find root causes across tenants, rather than chasing individual failures."
+        description="Failures grouped by root cause, across all tenants."
       />
       <div className="insight-banner">
         <Layers3 size={25} />

@@ -55,7 +55,7 @@ export function Alerts() {
     <>
       <PageHeader
         title="Alerts"
-        description="Act on what matters. Acknowledge, investigate, and track recovery."
+        description="Alerts from your pipelines. Acknowledge, investigate, and track recovery."
         actions={
           <span className="tag">
             <Bell size={13} />

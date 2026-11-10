@@ -36,7 +36,7 @@ export function Freshness() {
     <>
       <PageHeader
         title="Freshness & volume"
-        description="Make sure data arrives on time, in the right shape, and at the expected volume."
+        description="Data freshness, volume anomalies, and schema changes for every source."
       />
       <Panel
         title="Data freshness"

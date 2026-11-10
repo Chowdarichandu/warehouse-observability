@@ -40,7 +40,7 @@ export function Account() {
           </div>
         </div>
       </Panel>
-      <Panel title="Display" subtitle="Reading comfort for this console, saved on this device.">
+      <Panel title="Display" subtitle="Text size for this console, saved on this device.">
         <form className="settings-form" onSubmit={(e) => e.preventDefault()}>
           <label>
             Text size

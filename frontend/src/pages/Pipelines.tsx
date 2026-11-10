@@ -161,7 +161,7 @@ export function Pipelines() {
       </p>
       <Panel
         title="Tenant launches"
-        subtitle="Resume an investigation where it left off. Progress is stored, so a page refresh does not restart the workflow."
+        subtitle="Onboarding progress per tenant. Progress is stored, so a page refresh does not restart the workflow."
       >
         {data.launches.length ? (
           <div className="launch-list">
