@@ -22,7 +22,11 @@ export function Warehouse() {
     queryFn: () => api<Schema<'Page_Tenant_'>>('/tenants?page=1&page_size=100'),
   });
   const [pickedTable, setPickedTable] = useState('');
-  const tenantId = params.get('tenant') || tenants.data?.items[0]?.tenant_id || '';
+  const tenantId =
+    params.get('tenant') ||
+    localStorage.getItem('obs-warehouse-tenant') ||
+    tenants.data?.items[0]?.tenant_id ||
+    '';
   const view = useQuery({
     queryKey: ['warehouse', tenantId],
     queryFn: () => api<Schema<'WarehouseView'>>(`/warehouse?tenant=${tenantId}`),
@@ -44,6 +48,7 @@ export function Warehouse() {
             value={tenantId}
             onChange={(e) => {
               setPickedTable('');
+              localStorage.setItem('obs-warehouse-tenant', e.target.value);
               set('tenant', e.target.value);
             }}
           >

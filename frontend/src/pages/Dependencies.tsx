@@ -25,7 +25,11 @@ export function Dependencies() {
     queryKey: ['tenants', 1],
     queryFn: () => api<Schema<'Page_Tenant_'>>('/tenants?page=1&page_size=100'),
   });
-  const tenant = params.get('tenant') || tenants.data?.items[0]?.tenant_id || '';
+  const tenant =
+    params.get('tenant') ||
+    localStorage.getItem('obs-dependencies-tenant') ||
+    tenants.data?.items[0]?.tenant_id ||
+    '';
   const graph = useQuery({
     queryKey: ['dependencies', tenant],
     queryFn: () =>
@@ -105,6 +109,7 @@ export function Dependencies() {
           id="dependency-tenant"
           value={tenant}
           onChange={(event) => {
+            localStorage.setItem('obs-dependencies-tenant', event.target.value);
             const next = new URLSearchParams(params);
             next.set('tenant', event.target.value);
             next.delete('node');

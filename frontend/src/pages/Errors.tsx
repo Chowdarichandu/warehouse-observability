@@ -116,7 +116,7 @@ export function Errors() {
                       >
                         <strong>{g.error_class}</strong>
                         <span className="has-tip" data-tip={g.sample_message}>
-                          {g.sample_message}
+                          <span className="sample-text">{g.sample_message}</span>
                         </span>
                       </button>
                     </td>
@@ -231,6 +231,7 @@ export function Errors() {
               height={290}
               option={{
                 tooltip: {
+                  trigger: 'item',
                   formatter: (value: unknown) => {
                     const v = value as { value: number[] };
                     const days = [

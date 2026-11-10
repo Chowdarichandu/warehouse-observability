@@ -338,6 +338,9 @@ function RuleEditor({ rule, channels }: { rule: Schema<'Rule'>; channels: Schema
             <label key={key}>
               {{
                 pct: 'Threshold (%)',
+                drop_pct: 'Drop (%)',
+                n: 'Consecutive failures',
+                multiplier: 'Duration multiplier (×)',
                 consecutive_failures: 'Consecutive failures',
                 minutes: 'Window (minutes)',
                 count: 'Count',

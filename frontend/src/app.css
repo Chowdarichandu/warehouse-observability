@@ -1643,14 +1643,17 @@ th:first-child {
   font-size: 10px;
   color: #ba6567;
 }
-.group-button span {
+.group-button > span {
   font-size: 9px;
   color: var(--muted);
   margin-top: 7px;
+  width: 100%;
+}
+.group-button .sample-text {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
 }
 .count-pill {
   color: #be6b6f;
