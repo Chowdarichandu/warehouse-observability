@@ -205,6 +205,36 @@ class Breakdown(BaseModel):
     count: int
 
 
+class PipelineMetric(BaseModel):
+    source_type: str
+    load_type: str
+    runs: int
+    avg_s: float | None = None
+    p95_s: float | None = None
+    queue_avg_s: float | None = None
+    queue_p95_s: float | None = None
+
+
+class PipelineHour(BaseModel):
+    bucket: datetime
+    source_type: str
+    load_type: str
+    avg_s: float | None = None
+
+
+class ActivityBucket(BaseModel):
+    bucket: datetime
+    success: int
+    failed: int
+    running: int
+
+
+class TenantMetrics(BaseModel):
+    pipelines: list[PipelineMetric] = []
+    hourly: list[PipelineHour] = []
+    activity: list[ActivityBucket] = []
+
+
 class TenantDetail(BaseModel):
     config: TenantConfig
     health: Tenant

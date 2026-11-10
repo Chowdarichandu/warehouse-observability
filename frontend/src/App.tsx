@@ -425,7 +425,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   <Search size={15} />
                   <input
                     ref={searchRef}
-                    aria-label="Search errors and logs"
+                    aria-label="Search tenants, logs, pages"
                     placeholder="Search tenants, logs, pages…"
                     maxLength={200}
                     value={search}
@@ -527,18 +527,29 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                     {firing.isPending ? (
                       <p className="muted bell-empty">Loading…</p>
                     ) : firing.data?.items.length ? (
-                      firing.data.items.slice(0, 5).map((alert) => (
-                        <NavLink key={alert.id} to="/alerts" className="bell-item">
-                          <StatusPill status={alert.severity} />
-                          <span className="bell-text">
-                            <strong>{alert.title}</strong>
-                            <small>
-                              {alert.tenant_id || 'Platform'} ·{' '}
-                              <Time value={alert.first_fired_at} relative />
-                            </small>
-                          </span>
-                        </NavLink>
-                      ))
+                      <>
+                        {firing.data.items.slice(0, 5).map((alert) => (
+                          <NavLink key={alert.id} to="/alerts" className="bell-item">
+                            <StatusPill status={alert.severity} />
+                            <span className="bell-text">
+                              <strong>
+                                {alert.tenant_id && alert.title.endsWith(` · ${alert.tenant_id}`)
+                                  ? alert.title.slice(0, -(alert.tenant_id.length + 3))
+                                  : alert.title}
+                              </strong>
+                              <small>
+                                {alert.tenant_id || 'Platform'} ·{' '}
+                                <Time value={alert.first_fired_at} relative />
+                              </small>
+                            </span>
+                          </NavLink>
+                        ))}
+                        {firing.data.total > 5 && (
+                          <p className="muted bell-empty">
+                            and {firing.data.total - 5} more firing — View all alerts
+                          </p>
+                        )}
+                      </>
                     ) : (
                       <p className="muted bell-empty">Nothing firing. All quiet.</p>
                     )}

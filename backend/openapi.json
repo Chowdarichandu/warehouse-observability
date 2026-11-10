@@ -1911,6 +1911,163 @@
         }
       }
     },
+    "/api/tenants/{id}/metrics": {
+      "get": {
+        "tags": [
+          "Console"
+        ],
+        "summary": "Tenant Metrics",
+        "description": "Duration and queue aggregates over EVERY run in the range.\n\nThe tenant page used to derive these from the latest-200 timeline page,\nso initial loads silently vanished once CDC runs filled the page. This\nendpoint aggregates the full range in SQL instead.",
+        "operationId": "tenant_metrics_api_tenants__id__metrics_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "title": "Range"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantMetrics"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/api/runs/{run_key}/log": {
       "get": {
         "tags": [
@@ -3603,6 +3760,16 @@
               "type": "string",
               "default": "",
               "title": "State"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Tenant"
             }
           },
           {
@@ -9357,6 +9524,35 @@
         ],
         "title": "AccessRole"
       },
+      "ActivityBucket": {
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bucket"
+          },
+          "success": {
+            "type": "integer",
+            "title": "Success"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bucket",
+          "success",
+          "failed",
+          "running"
+        ],
+        "title": "ActivityBucket"
+      },
       "Alert": {
         "properties": {
           "id": {
@@ -12205,6 +12401,108 @@
         ],
         "title": "PipelineCatalog"
       },
+      "PipelineHour": {
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bucket"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "load_type": {
+            "type": "string",
+            "title": "Load Type"
+          },
+          "avg_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg S"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bucket",
+          "source_type",
+          "load_type"
+        ],
+        "title": "PipelineHour"
+      },
+      "PipelineMetric": {
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "load_type": {
+            "type": "string",
+            "title": "Load Type"
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs"
+          },
+          "avg_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg S"
+          },
+          "p95_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 S"
+          },
+          "queue_avg_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Avg S"
+          },
+          "queue_p95_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue P95 S"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "load_type",
+          "runs"
+        ],
+        "title": "PipelineMetric"
+      },
       "Platform": {
         "properties": {
           "components": {
@@ -13577,6 +13875,36 @@
           "at"
         ],
         "title": "TenantEvent"
+      },
+      "TenantMetrics": {
+        "properties": {
+          "pipelines": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineMetric"
+            },
+            "type": "array",
+            "title": "Pipelines",
+            "default": []
+          },
+          "hourly": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineHour"
+            },
+            "type": "array",
+            "title": "Hourly",
+            "default": []
+          },
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityBucket"
+            },
+            "type": "array",
+            "title": "Activity",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "TenantMetrics"
       },
       "TenantPatch": {
         "properties": {

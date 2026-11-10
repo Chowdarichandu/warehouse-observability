@@ -212,7 +212,7 @@ export function RunDetail() {
           <span>Duration</span>
           <strong>
             {formatDuration(run.duration_s)}
-            <small> usual {formatDuration(usual_duration_s)}</small>
+            <small> · typical {formatDuration(usual_duration_s)}</small>
           </strong>
         </div>
         <div>
@@ -301,7 +301,11 @@ export function RunDetail() {
       <div id="run-log">
         <Panel
           title="Airflow task log"
-          subtitle="The Airflow log for this run — the task output where the failure occurred. Redacted at collection and again before display."
+          subtitle={
+            run.status === 'failed'
+              ? 'The Airflow log for this run — the task output where the failure occurred. Redacted at collection and again before display.'
+              : 'The Airflow log for this run. Redacted at collection and again before display.'
+          }
           action={
             <span className="inline-flex">
               <Select

@@ -47,6 +47,18 @@ export function Overview() {
     enabled: !!selectedTenant,
     placeholderData: undefined,
   });
+  const tenantActivity = useQuery({
+    queryKey: ['tenant-activity', selectedTenant, rangeQuery],
+    queryFn: () => api<Schema<'TenantMetrics'>>(`/tenants/${selectedTenant}/metrics?${rangeQuery}`),
+    enabled: !!selectedTenant,
+    placeholderData: undefined,
+  });
+  const activityByHour = new Map(
+    (tenantActivity.data?.activity ?? []).map((b) => [
+      new Date(b.bucket).toISOString().slice(0, 13),
+      b,
+    ]),
+  );
   const { activity, connected } = useApp();
   const overview = useQuery({
     queryKey: ['overview', rangeQuery],
@@ -79,11 +91,12 @@ export function Overview() {
       value: <NumberValue value={k.success_rate} suffix="%" />,
       icon: CheckCheck,
       foot: (
-        <>
-          <span className="positive-text">
-            <TrendingUp size={12} /> Passed runs
-          </span>
-        </>
+        <Link
+          className="positive-text"
+          to={`/runs?status=success&range=${params.get('range') || '24h'}`}
+        >
+          <TrendingUp size={12} /> Passed runs
+        </Link>
       ),
     },
     {
@@ -257,7 +270,9 @@ export function Overview() {
           </div>
         </div>
       </section>
-      <div className="kpi-grid executive-metrics">
+      <div
+        className={`kpi-grid executive-metrics${overview.isPlaceholderData ? ' is-fetching' : ''}`}
+      >
         {metrics.map((stat) => (
           <div
             className="kpi-card has-tip"
@@ -316,8 +331,8 @@ export function Overview() {
           </span>
           <div>
             <strong>
-              {k.down + k.degraded} tenant {k.down + k.degraded === 1 ? 'needs' : 'need'} your
-              attention
+              {k.down + k.degraded} {k.down + k.degraded === 1 ? 'tenant needs' : 'tenants need'}{' '}
+              your attention
             </strong>
             <span>
               {primaryIssue.display_name} · {primaryIssue.failures_24h} failed runs in 24 hours.
@@ -332,6 +347,7 @@ export function Overview() {
       <Panel
         title="Tenant health"
         subtitle="Latest source pipeline status across your tenants. Issues appear first."
+        className={overview.isPlaceholderData ? 'is-fetching' : ''}
         action={
           <div className="inline-flex">
             <span className="legend-dot green" />
@@ -365,7 +381,7 @@ export function Overview() {
           title="Run activity"
           subtitle={
             selectedTenant
-              ? 'Latest 200 runs at most for this tenant in the selected range'
+              ? 'Passed, failed and active runs for this tenant'
               : 'Passed, failed and active pipeline runs'
           }
           action={
@@ -450,13 +466,9 @@ export function Overview() {
                   },
                   data: data.series.map((point) =>
                     selectedTenant
-                      ? (filteredRuns.data?.items || []).filter(
-                          (r) =>
-                            r.status === status &&
-                            r.started_at &&
-                            new Date(r.started_at).toISOString().slice(0, 13) ===
-                              new Date(point.hour).toISOString().slice(0, 13),
-                        ).length
+                      ? (activityByHour.get(new Date(point.hour).toISOString().slice(0, 13))?.[
+                          status as 'success' | 'failed' | 'running'
+                        ] ?? 0)
                       : point[status as 'success' | 'failed' | 'running'],
                   ),
                 })),
@@ -519,6 +531,7 @@ export function Overview() {
       <Panel
         title="Duration trends & queue capacity"
         subtitle="Successful duration in minutes, split by pipeline. Queue delay measures Airflow capacity."
+        className={overview.isPlaceholderData ? 'is-fetching' : ''}
       >
         <Chart
           label="Average duration trend by pipeline"

@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Search,
   Settings2,
+  X,
 } from 'lucide-react';
 import { api, queryString, runPath } from '../api/client';
 import type { Schema } from '../api/client';
@@ -54,7 +55,7 @@ export function Tenants() {
           )
         }
       />
-      <Panel>
+      <Panel className={query.isPlaceholderData ? 'is-fetching' : ''}>
         <div className="filter-bar">
           <label className="search-field">
             <Search size={15} />
@@ -75,7 +76,9 @@ export function Tenants() {
               <option key={s}>{s}</option>
             ))}
           </Select>
-          <span className="filter-count">{query.data?.total ?? '…'} tenants</span>
+          <span className="filter-count">
+            {query.data ? `${query.data.total} tenant${query.data.total === 1 ? '' : 's'}` : '…'}
+          </span>
         </div>
         {query.isPending ? (
           <Loading />
@@ -146,6 +149,13 @@ export function Tenants() {
     </>
   );
 }
+
+const PIPELINE_LABELS: Record<string, string> = {
+  'mysql cdc': 'MySQL CDC',
+  'mysql initial': 'MySQL initial load',
+  'mongo cdc': 'MongoDB CDC',
+  'mongo initial': 'MongoDB initial load',
+};
 
 function stageLabel(status: string) {
   switch (status) {
@@ -328,11 +338,32 @@ export function TenantDetail() {
     queryKey: ['timeline', id, rangeQuery],
     queryFn: () => api<Schema<'Page_Run_'>>(`/tenants/${id}/timeline?${rangeQuery}&page_size=200`),
   });
+  const metrics = useQuery({
+    queryKey: ['tenant-metrics', id, rangeQuery],
+    queryFn: () => api<Schema<'TenantMetrics'>>(`/tenants/${id}/metrics?${rangeQuery}`),
+  });
   const update = useMutation({
     mutationFn: (body: Schema<'TenantPatch'>) =>
       api<Schema<'Message'>>(`/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
     onSuccess: (result) => {
       notify(result.message);
+      void client.invalidateQueries();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const [pauseConfirm, setPauseConfirm] = useState(false);
+  const setStatus = useMutation({
+    mutationFn: (status: 'paused' | 'active') =>
+      api<Schema<'Message'>>(`/tenants/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: (_result, status) => {
+      notify(
+        status === 'paused'
+          ? 'Tenant paused. Its pipelines stop syncing until you resume it.'
+          : 'Tenant resumed.',
+      );
       void client.invalidateQueries();
     },
     onError: (e) => notify(e.message),
@@ -358,41 +389,27 @@ export function TenantDetail() {
       ['mongo', 'initial', '#b7a5cb'],
     ] as const
   ).filter(([source]) => (source === 'mysql' ? config.has_mysql : config.has_mongo));
-  const percentile = (values: number[], q: number) => {
-    if (!values.length) return null;
-    const ordered = [...values].sort((a, b) => a - b);
-    return ordered[Math.min(ordered.length - 1, Math.ceil(q * ordered.length) - 1)];
-  };
-  const average = (values: number[]) =>
-    values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : null;
   const minutes = (seconds: number | null) => (seconds == null ? null : seconds / 60);
   const metricRows = pipelineKeys.map(([source, load]) => {
-    const own = runs.filter((r) => r.source_type === source && r.load_type === load);
-    const durations = own
-      .filter((r) => r.status === 'success' && r.duration_s != null)
-      .map((r) => r.duration_s!);
-    const queues = own.filter((r) => r.queue_delay_s != null).map((r) => r.queue_delay_s!);
+    const row = metrics.data?.pipelines.find(
+      (p) => p.source_type === source && p.load_type === load,
+    );
     return {
-      name: `${source} ${load}`,
-      count: own.length,
-      avg: minutes(average(durations)),
-      p95: minutes(percentile(durations, 0.95)),
-      queueAvg: minutes(average(queues)),
-      queueP95: minutes(percentile(queues, 0.95)),
+      name: PIPELINE_LABELS[`${source} ${load}`] || `${source} ${load}`,
+      load,
+      count: row?.runs ?? 0,
+      avg: minutes(row?.avg_s ?? null),
+      p95: minutes(row?.p95_s ?? null),
+      queueAvg: minutes(row?.queue_avg_s ?? null),
+      queueP95: minutes(row?.queue_p95_s ?? null),
     };
   });
-  const hourBuckets = new Map<string, Map<string, number[]>>();
-  for (const run of runs) {
-    if (run.status !== 'success' || run.duration_s == null || !run.started_at) continue;
-    const hour = new Date(run.started_at);
-    hour.setMinutes(0, 0, 0);
-    const key = hour.toISOString();
-    if (!hourBuckets.has(key)) hourBuckets.set(key, new Map());
-    const label = `${run.source_type} ${run.load_type}`;
-    const bucket = hourBuckets.get(key)!;
-    bucket.set(label, [...(bucket.get(label) || []), run.duration_s / 60]);
-  }
-  const metricHours = [...hourBuckets.keys()].sort();
+  const metricHours = [...new Set((metrics.data?.hourly ?? []).map((h) => h.bucket))].sort();
+  const metricTotal = metricRows.reduce((sum, r) => sum + r.count, 0);
+  const overallAvg =
+    metricTotal > 0
+      ? metricRows.reduce((sum, r) => sum + (r.avg ?? 0) * r.count, 0) / metricTotal
+      : null;
   const formatMinutes = (value: number | null) =>
     value == null ? '—' : `${Math.round(value * 10) / 10}m`;
   return (
@@ -400,17 +417,18 @@ export function TenantDetail() {
       <Back to="/tenants">All tenants</Back>
       <PageHeader
         title={config.display_name}
-        description={`${id} · ${config.warehouse_schema} · Created ${new Date(config.created_at).toLocaleDateString()}`}
+        description={`${id} · Created ${new Date(config.created_at).toLocaleDateString()}`}
         actions={
           <>
             <StatusPill status={health.health} />
             <button
               className="button"
-              disabled={!isAdmin || !runtime.live_actions_enabled || update.isPending}
+              disabled={!isAdmin || !runtime.live_actions_enabled || setStatus.isPending}
               title={!isAdmin ? 'Administrator role required' : ''}
-              onClick={() =>
-                update.mutate({ status: config.status === 'paused' ? 'active' : 'paused' })
-              }
+              onClick={() => {
+                if (config.status === 'paused') setStatus.mutate('active');
+                else setPauseConfirm(true);
+              }}
             >
               {config.status === 'paused' ? <Play size={14} /> : <Pause size={14} />}
               {config.status === 'paused' ? 'Resume tenant' : 'Pause tenant'}
@@ -471,13 +489,59 @@ export function TenantDetail() {
             </label>
             <label>
               Owner email
-              <input type="email" name="owner" placeholder="owner@company.example" />
+              <input
+                type="email"
+                name="owner"
+                placeholder="owner@company.example"
+                defaultValue={config.owner_email ?? ''}
+              />
             </label>
             <button className="button primary" disabled={update.isPending}>
               Save settings
             </button>
           </form>
         </Panel>
+      )}
+      {pauseConfirm && (
+        <div className="modal-scrim" role="presentation" onClick={() => setPauseConfirm(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pause tenant"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Pause tenant</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setPauseConfirm(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Pause {config.display_name}? Its pipelines stop syncing until you resume it. Existing
+              data stays as it is.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setPauseConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={setStatus.isPending}
+                onClick={() => {
+                  setPauseConfirm(false);
+                  setStatus.mutate('paused');
+                }}
+              >
+                Pause tenant
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <div className="detail-kpis">
         <div>
@@ -487,7 +551,7 @@ export function TenantDetail() {
         <div>
           <span>Freshness</span>
           <strong>
-            <NumberValue value={health.worst_stale_min} suffix=" min" />
+            <NumberValue value={health.worst_stale_min} suffix="m" />
             <small> / {config.freshness_sla_min}m SLA</small>
           </strong>
         </div>
@@ -504,30 +568,26 @@ export function TenantDetail() {
         <div>
           <span>Avg run duration</span>
           <strong>
-            {formatMinutes(
-              minutes(
-                average(
-                  runs
-                    .filter((r) => r.status === 'success' && r.duration_s != null)
-                    .map((r) => r.duration_s!),
-                ),
-              ),
-            )}
+            {formatMinutes(overallAvg)}
             <small> per successful run</small>
           </strong>
         </div>
         <div>
           <span>Open alerts</span>
-          <Link to="/alerts">
-            {alerts.length} <ArrowRight size={13} />
-          </Link>
+          <strong>
+            <Link to={`/alerts?tenant=${id}`}>
+              {alerts.length} <ArrowRight size={13} />
+            </Link>
+          </strong>
         </div>
       </div>
       <Panel
         title="Duration & queue metrics"
         subtitle="Successful duration in minutes, split by pipeline for this tenant. Queue delay measures Airflow capacity."
       >
-        {runs.length ? (
+        {metrics.isPending ? (
+          <Loading />
+        ) : metrics.data ? (
           <>
             <Chart
               label={`Average duration trend by pipeline for ${config.display_name}`}
@@ -546,16 +606,17 @@ export function TenantDetail() {
                 },
                 yAxis: { type: 'value', splitLine: { lineStyle: { color: '#81909f22' } } },
                 series: pipelineKeys.map(([source, load, color]) => ({
-                  name: `${source} ${load}`,
+                  name: PIPELINE_LABELS[`${source} ${load}`] || `${source} ${load}`,
                   type: 'line',
                   showSymbol: false,
                   smooth: true,
                   connectNulls: true,
                   itemStyle: { color },
                   data: metricHours.map((h) => {
-                    const values = hourBuckets.get(h)?.get(`${source} ${load}`);
-                    const avg = average(values || []);
-                    return avg == null ? null : Math.round(avg * 100) / 100;
+                    const point = metrics.data?.hourly.find(
+                      (x) => x.bucket === h && x.source_type === source && x.load_type === load,
+                    );
+                    return point?.avg_s == null ? null : Math.round((point.avg_s / 60) * 100) / 100;
                   }),
                 })),
               }}
@@ -577,10 +638,8 @@ export function TenantDetail() {
                       <td>{row.name}</td>
                       {row.count === 0 ? (
                         <td colSpan={4} className="muted">
-                          No runs in the selected range
-                          {row.name.endsWith('initial')
-                            ? ' — initial loads run once, at onboarding'
-                            : ''}
+                          No successful runs in the selected range
+                          {row.load === 'initial' ? ' — initial loads run once, at onboarding' : ''}
                         </td>
                       ) : (
                         <>
@@ -725,6 +784,9 @@ export function TenantDetail() {
                 <div>
                   <strong className="mono">{error.error_class}</strong>
                   <p>{error.hint}</p>
+                  <small className="muted">
+                    <Time value={error.created_at} relative />
+                  </small>
                 </div>
                 <ArrowRight size={15} />
               </Link>

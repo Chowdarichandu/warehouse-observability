@@ -440,3 +440,29 @@ def test_pipeline_catalog_includes_demo_analytics(clients: dict) -> None:
     for node in ("analytics_marts", "analytics_rollup", "analytics_quality"):
         assert dags[node]["depends_on"] == ["mysql_initial"]
         assert dags[node]["run_policy"] == "Demo only"
+
+
+def test_tenant_metrics_cover_initial_loads_and_activity(clients):
+    response = clients["admin"].get("/api/tenants/acme_retail/metrics?range=24h")
+    assert response.status_code == 200
+    body = response.json()
+    by_pipeline = {(p["source_type"], p["load_type"]): p for p in body["pipelines"]}
+    # Initial loads ran at onboarding, inside the range: they must be present
+    # even though the latest-200 timeline page is full of CDC runs.
+    assert by_pipeline[("mysql", "initial")]["runs"] >= 1
+    assert by_pipeline[("mysql", "initial")]["avg_s"] > 0
+    assert by_pipeline[("mysql", "cdc")]["runs"] >= 1
+    assert body["activity"], "expected hourly activity buckets"
+    assert sum(b["failed"] for b in body["activity"]) >= 1  # Acme's outage
+    assert clients["admin"].get("/api/tenants/nope/metrics").status_code == 404
+
+
+def test_alerts_can_filter_by_tenant(clients):
+    response = clients["admin"].get("/api/alerts?tenant=northwind")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] >= 1
+    assert all(item["tenant_id"] == "northwind" for item in body["items"])
+    empty = clients["admin"].get("/api/alerts?tenant=acme_retail&state=firing")
+    assert empty.status_code == 200
+    assert all(item["tenant_id"] == "acme_retail" for item in empty.json()["items"])

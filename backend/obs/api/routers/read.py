@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -44,7 +44,10 @@ def tenant_detail(id: str) -> dict:
     if not config:
         fail(404, "tenant_not_found", "Tenant not found.")
     return {
-        "config": {**config, "owner_email": redact(config["owner_email"])},
+        # The owner email is workspace-internal data (the users list shows
+        # emails too); redacting it here leaked a "[EMAIL]" placeholder into
+        # the Connections panel and starved the settings form of its value.
+        "config": config,
         "health": next(t for t in a.tenants() if t["tenant_id"] == id),
         "tables": rows(
             "SELECT DISTINCT ON(table_name) * FROM obs.warehouse_snapshots WHERE tenant_id=%s ORDER BY table_name,checked_at DESC",
@@ -158,6 +161,61 @@ def runs(
     return result
 
 
+@router.get("/tenants/{id}/metrics", response_model=s.TenantMetrics)
+def tenant_metrics(
+    id: str,
+    range: str = "24h",
+    from_: datetime | None = Query(None, alias="from"),
+    to: datetime | None = None,
+) -> dict:
+    """Duration and queue aggregates over EVERY run in the range.
+
+    The tenant page used to derive these from the latest-200 timeline page,
+    so initial loads silently vanished once CDC runs filled the page. This
+    endpoint aggregates the full range in SQL instead.
+    """
+    if not one("SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (id,)):
+        fail(404, "tenant_not_found", "Tenant not found.")
+    start, end = a.bounds(range, from_, to)
+    pipelines = rows(
+        """SELECT source_type, load_type,
+                  count(*) FILTER (WHERE status='success' AND duration_s IS NOT NULL) AS runs,
+                  avg(duration_s) FILTER (WHERE status='success') AS avg_s,
+                  percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_s)
+                      FILTER (WHERE status='success') AS p95_s,
+                  avg(queue_delay_s) AS queue_avg_s,
+                  percentile_cont(0.95) WITHIN GROUP (ORDER BY queue_delay_s) AS queue_p95_s
+           FROM obs.pipeline_runs
+           WHERE tenant_id=%s AND started_at>=%s AND started_at<%s
+           GROUP BY source_type, load_type
+           ORDER BY source_type, load_type""",
+        (id, start, end),
+    )
+    bucket_hours = 1 if end - start <= timedelta(hours=48) else 6
+    hourly = rows(
+        """SELECT to_timestamp(floor(extract(epoch FROM started_at) / %s) * %s) AS bucket,
+                  source_type, load_type, avg(duration_s) AS avg_s
+           FROM obs.pipeline_runs
+           WHERE tenant_id=%s AND started_at>=%s AND started_at<%s
+             AND status='success' AND duration_s IS NOT NULL
+           GROUP BY bucket, source_type, load_type
+           ORDER BY bucket""",
+        (bucket_hours * 3600, bucket_hours * 3600, id, start, end),
+    )
+    activity = rows(
+        """SELECT date_trunc('hour', started_at) AS bucket,
+                  count(*) FILTER (WHERE status='success') AS success,
+                  count(*) FILTER (WHERE status='failed') AS failed,
+                  count(*) FILTER (WHERE status='running') AS running
+           FROM obs.pipeline_runs
+           WHERE tenant_id=%s AND started_at>=%s AND started_at<%s
+           GROUP BY bucket
+           ORDER BY bucket""",
+        (id, start, end),
+    )
+    return {"pipelines": pipelines, "hourly": hourly, "activity": activity}
+
+
 @router.get("/runs/{run_key}/log", response_model=s.Log)
 def log(run_key: str) -> dict:
     run = r.detail(run_key)["run"]
@@ -184,7 +242,12 @@ def log(run_key: str) -> dict:
         "content": redact(
             stored.get(
                 "content",
-                f"{run['started_at']} INFO Demo sync {run['status']}.\nNo failure log was stored for this run.\n",
+                f"{run['started_at']} INFO Demo sync {run['status']}.\n"
+                + (
+                    "This run succeeded; no error output was recorded.\n"
+                    if run["status"] == "success"
+                    else "No failure log was stored for this run.\n"
+                ),
             )
         ),
         "redacted": True,
@@ -329,17 +392,19 @@ def schema(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
 @router.get("/alerts", response_model=s.Page[s.Alert])
 def alerts(
     state: Literal["", "firing", "acked", "resolved"] = "",
+    tenant: str = "",
     page: PageNumber = 1,
     page_size: PageSize = 25,
 ) -> dict:
-    total = one("SELECT count(*) AS n FROM obs.alerts WHERE (%s='' OR state=%s)", (state, state))[
-        "n"
-    ]
+    total = one(
+        "SELECT count(*) AS n FROM obs.alerts WHERE (%s='' OR state=%s) AND (%s='' OR tenant_id=%s)",
+        (state, state, tenant, tenant),
+    )["n"]
     items = rows(
-        """SELECT * FROM obs.alerts WHERE (%s='' OR state=%s)
+        """SELECT * FROM obs.alerts WHERE (%s='' OR state=%s) AND (%s='' OR tenant_id=%s)
         ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,first_fired_at DESC
         LIMIT %s OFFSET %s""",
-        (state, state, page_size, (page - 1) * page_size),
+        (state, state, tenant, tenant, page_size, (page - 1) * page_size),
     )
     return {"items": redact_tree(items), "total": total, "page": page, "page_size": page_size}
 

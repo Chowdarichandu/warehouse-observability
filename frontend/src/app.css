@@ -5536,3 +5536,31 @@ table td {
   white-space: nowrap;
   font-size: 19px;
 }
+
+/* Clear button inside a filter tag (e.g. the Alerts tenant filter). */
+.tag-clear {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 1px;
+}
+
+/* KPI values that are links (tenant Open alerts) sit inline like the other
+   values instead of stacking above their arrow. */
+.detail-kpis strong a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* While a filter change is loading, the previous data stays visible
+   (keepPreviousData) but dimmed, so stale values never read as current. */
+.is-fetching {
+  opacity: 0.5;
+  transition: opacity 0.18s ease;
+}

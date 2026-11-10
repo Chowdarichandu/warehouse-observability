@@ -277,6 +277,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tenant Metrics
+         * @description Duration and queue aggregates over EVERY run in the range.
+         *
+         *     The tenant page used to derive these from the latest-200 timeline page,
+         *     so initial loads silently vanished once CDC runs filled the page. This
+         *     endpoint aggregates the full range in SQL instead.
+         */
+        get: operations["tenant_metrics_api_tenants__id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs/{run_key}/log": {
         parameters: {
             query?: never;
@@ -1241,6 +1265,20 @@ export interface components {
             label: string;
             /** Description */
             description: string;
+        };
+        /** ActivityBucket */
+        ActivityBucket: {
+            /**
+             * Bucket
+             * Format: date-time
+             */
+            bucket: string;
+            /** Success */
+            success: number;
+            /** Failed */
+            failed: number;
+            /** Running */
+            running: number;
         };
         /** Alert */
         Alert: {
@@ -2376,6 +2414,37 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** PipelineHour */
+        PipelineHour: {
+            /**
+             * Bucket
+             * Format: date-time
+             */
+            bucket: string;
+            /** Source Type */
+            source_type: string;
+            /** Load Type */
+            load_type: string;
+            /** Avg S */
+            avg_s?: number | null;
+        };
+        /** PipelineMetric */
+        PipelineMetric: {
+            /** Source Type */
+            source_type: string;
+            /** Load Type */
+            load_type: string;
+            /** Runs */
+            runs: number;
+            /** Avg S */
+            avg_s?: number | null;
+            /** P95 S */
+            p95_s?: number | null;
+            /** Queue Avg S */
+            queue_avg_s?: number | null;
+            /** Queue P95 S */
+            queue_p95_s?: number | null;
+        };
         /** Platform */
         Platform: {
             /** Components */
@@ -2873,6 +2942,24 @@ export interface components {
              * Format: date-time
              */
             at: string;
+        };
+        /** TenantMetrics */
+        TenantMetrics: {
+            /**
+             * Pipelines
+             * @default []
+             */
+            pipelines: components["schemas"]["PipelineMetric"][];
+            /**
+             * Hourly
+             * @default []
+             */
+            hourly: components["schemas"]["PipelineHour"][];
+            /**
+             * Activity
+             * @default []
+             */
+            activity: components["schemas"]["ActivityBucket"][];
         };
         /** TenantPatch */
         TenantPatch: {
@@ -4482,6 +4569,104 @@ export interface operations {
             };
         };
     };
+    tenant_metrics_api_tenants__id__metrics_get: {
+        parameters: {
+            query?: {
+                range?: string;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantMetrics"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     log_api_runs__run_key__log_get: {
         parameters: {
             query?: never;
@@ -5552,6 +5737,7 @@ export interface operations {
         parameters: {
             query?: {
                 state?: "" | "firing" | "acked" | "resolved";
+                tenant?: string;
                 page?: number;
                 page_size?: number;
             };

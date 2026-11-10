@@ -632,6 +632,14 @@ Metric definitions. Use these exact definitions everywhere so the numbers never 
                                                                                                     Runs per pipeline
   GET /tenants/{id}/timeline?range=                                                     viewer      lane for the
                                                                                                     swimlane chart
+
+                                                                                                    Duration/queue
+  GET /tenants/{id}/metrics?range=                                                      viewer      aggregates and
+                                                                                                    hourly activity
+                                                                                                    over ALL runs in
+                                                                                                    range (never the
+                                                                                                    200-run timeline
+                                                                                                    page)
                                                                                         Pause or resume,
 PATCH /tenants/{id}                                                          admin
                                                                                         SLA, owner

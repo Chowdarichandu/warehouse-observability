@@ -21,11 +21,13 @@ import {
 export function Alerts() {
   const { params, set, page } = useFilters();
   const state = params.get('state') || '';
+  const tenant = params.get('tenant') || '';
   const { canOperate, isAdmin, notify } = useApp();
   const client = useQueryClient();
   const query = useQuery({
-    queryKey: ['alerts', state, page],
-    queryFn: () => api<Schema<'Page_Alert_'>>(`/alerts?state=${state}&page=${page}`),
+    queryKey: ['alerts', state, tenant, page],
+    queryFn: () =>
+      api<Schema<'Page_Alert_'>>(`/alerts?state=${state}&tenant=${tenant}&page=${page}`),
   });
   const rules = useQuery({
     queryKey: ['rules'],
@@ -64,6 +66,20 @@ export function Alerts() {
         }
       />
       <Panel>
+        {tenant && (
+          <div className="filter-bar">
+            <span className="tag">
+              Tenant: {tenant}
+              <button
+                className="tag-clear"
+                aria-label="Clear tenant filter"
+                onClick={() => set('tenant', '')}
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        )}
         <div className="tabs">
           {[
             ['', 'All alerts'],
