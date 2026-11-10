@@ -359,14 +359,16 @@ export function EventTimeline({
   );
 }
 
-export function Activity() {
+export function Activity({ embedded = false }: { embedded?: boolean }) {
   const { params, set, rangeQuery } = useFilters();
   return (
     <>
-      <PageHeader
-        title="Activity"
-        description="Follow runs, alerts, onboarding, and operator actions across your workspace."
-      />
+      {!embedded && (
+        <PageHeader
+          title="Activity"
+          description="Follow runs, alerts, onboarding, and operator actions across your workspace."
+        />
+      )}
       <div className="filter-bar">
         <input
           aria-label="Activity tenant filter"

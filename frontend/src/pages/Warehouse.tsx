@@ -74,7 +74,7 @@ export function Warehouse() {
                 <div className="kpi-label">
                   <Database size={15} /> Client schema
                 </div>
-                <div className="kpi-value">{view.data.tenant_id}</div>
+                <div className="kpi-value schema-value">{view.data.tenant_id}</div>
                 <div className="kpi-foot">One warehouse schema per client</div>
               </div>
             </div>

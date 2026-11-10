@@ -201,7 +201,6 @@ export function Overview() {
                 style={{
                   width: `${total ? (Number(count) / total) * 100 : 0}%`,
                   background: STATUS_COLORS[String(state)],
-                  cursor: 'help',
                 }}
               />
             ))}

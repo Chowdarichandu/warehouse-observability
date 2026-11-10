@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Database, KeyRound, Plus, Search, Server, ShieldCheck, Trash2, X } from 'lucide-react';
 import { Operations } from './Operations';
+import { Activity } from '../components/Investigation';
 import { api, runPath } from '../api/client';
 import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
@@ -328,9 +329,11 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
 }
 
 export function Admin() {
-  const { isAdmin, notify, runtime } = useApp();
+  const { isAdmin, notify, runtime, user: currentUser } = useApp();
   const { page, set, params } = useFilters();
-  const section = ['users', 'roles', 'operations', 'audit'].includes(params.get('section') || '')
+  const section = ['users', 'roles', 'operations', 'activity', 'audit'].includes(
+    params.get('section') || '',
+  )
     ? params.get('section')!
     : 'users';
   const client = useQueryClient();
@@ -345,6 +348,29 @@ export function Admin() {
     enabled: isAdmin,
   });
   const [resetInfo, setResetInfo] = useState<{ temporary: string } | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const createUser = useMutation({
+    mutationFn: (body: Schema<'UserCreate'>) =>
+      api<Schema<'UserCreateResult'>>('/users', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (r) => {
+      notify(r.message);
+      setAddOpen(false);
+      if (r.temporary_password) setResetInfo({ temporary: r.temporary_password });
+      void client.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (e) => notify(e.message),
+  });
+  const removeUser = useMutation({
+    mutationFn: (id: number) => api<Schema<'Message'>>(`/users/${id}`, { method: 'DELETE' }),
+    onSuccess: (r) => {
+      notify(r.message);
+      void client.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (e) => notify(e.message),
+  });
   const roles = useQuery({
     queryKey: ['roles'],
     queryFn: () => api<Schema<'RoleOut'>[]>('/roles'),
@@ -396,6 +422,7 @@ export function Admin() {
           ['users', 'Users'],
           ['roles', 'Roles'],
           ['operations', 'Operations'],
+          ['activity', 'Activity'],
           ['audit', 'Audit trail'],
         ].map(([id, label]) => (
           <button
@@ -412,7 +439,76 @@ export function Admin() {
         <Panel
           title="Users & roles"
           subtitle="Viewers inspect. Operators act. Administrators manage access and settings."
+          action={
+            <button
+              className="button small primary"
+              disabled={runtime.auth_provider === 'oidc'}
+              onClick={() => setAddOpen(!addOpen)}
+            >
+              <Plus size={13} /> Add user
+            </button>
+          }
         >
+          {addOpen && (
+            <form
+              className="settings-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const data = new FormData(e.currentTarget);
+                const roleValue = String(data.get('role'));
+                const chosen = String(data.get('initial_password') || '').trim();
+                const builtin = ['viewer', 'operator', 'admin'].includes(roleValue);
+                createUser.mutate({
+                  email: String(data.get('email')),
+                  display_name: String(data.get('display_name')),
+                  role: (builtin ? roleValue : 'viewer') as 'viewer' | 'operator' | 'admin',
+                  ...(builtin ? {} : { role_name: roleValue }),
+                  ...(chosen ? { initial_password: chosen } : {}),
+                });
+              }}
+            >
+              <label>
+                Email
+                <input type="email" name="email" required placeholder="person@company.example" />
+              </label>
+              <label>
+                Display name
+                <input name="display_name" required placeholder="Full name" />
+              </label>
+              <label>
+                Role
+                <select name="role" defaultValue="viewer">
+                  <optgroup label="Built-in roles">
+                    {['viewer', 'operator', 'admin'].map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customRoles.length > 0 && (
+                    <optgroup label="Custom roles">
+                      {customRoles.map((role) => (
+                        <option key={role.name} value={role.name}>
+                          {role.name} ({role.base_level})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </label>
+              <label>
+                Password (optional)
+                <input
+                  name="initial_password"
+                  minLength={8}
+                  placeholder="Leave blank to generate one"
+                />
+              </label>
+              <button className="button primary" disabled={createUser.isPending}>
+                <Plus size={14} /> Create user
+              </button>
+            </form>
+          )}
           {users.isPending ? (
             <Loading />
           ) : users.error ? (
@@ -427,6 +523,7 @@ export function Admin() {
                     <th>Role</th>
                     <th>Authentication</th>
                     <th>Password</th>
+                    <th>Manage</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -491,6 +588,31 @@ export function Admin() {
                           <KeyRound size={13} /> Reset
                         </button>
                       </td>
+                      <td>
+                        <button
+                          className="button small"
+                          disabled={
+                            removeUser.isPending ||
+                            user.user_id === currentUser.user_id ||
+                            runtime.auth_provider === 'oidc'
+                          }
+                          title={
+                            user.user_id === currentUser.user_id
+                              ? 'You cannot remove your own account'
+                              : `Remove ${user.email}`
+                          }
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Remove ${user.email}? They will no longer be able to sign in.`,
+                              )
+                            )
+                              removeUser.mutate(user.user_id);
+                          }}
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -508,6 +630,7 @@ export function Admin() {
           roles.data && <RolesPanel roles={roles.data} />
         ))}
       {section === 'operations' && <Operations />}
+      {section === 'activity' && <Activity embedded />}
       {resetInfo && (
         <div className="modal-scrim" role="presentation" onClick={() => setResetInfo(null)}>
           <div

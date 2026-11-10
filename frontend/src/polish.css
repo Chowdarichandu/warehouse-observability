@@ -431,3 +431,193 @@ select:focus-visible,
 .dag-card-head .has-tip:focus-visible::after {
   transform: translate(0, 0);
 }
+
+/* --- 2026-11-10 fix round: theme, search suggestions, alignment --- */
+/* Light theme must restyle the whole shell, sidebar included. */
+:root[data-theme='light'] .sidebar {
+  background: #ffffff;
+  color: var(--text);
+  border-right-color: var(--line);
+  box-shadow: 1px 0 0 var(--line);
+}
+:root[data-theme='light'] .sidebar .brand {
+  color: var(--title);
+}
+:root[data-theme='light'] .sidebar .brand small,
+:root[data-theme='light'] .sidebar .nav-label,
+:root[data-theme='light'] .sidebar .switch-chevron {
+  color: var(--muted);
+}
+:root[data-theme='light'] .sidebar .workspace-switch {
+  background: var(--subtle);
+  border-color: var(--line);
+}
+:root[data-theme='light'] .sidebar .workspace-switch strong,
+:root[data-theme='light'] .sidebar .profile-text strong {
+  color: var(--title);
+}
+:root[data-theme='light'] .sidebar .workspace-switch small,
+:root[data-theme='light'] .sidebar .profile-text small {
+  color: var(--muted);
+}
+:root[data-theme='light'] .sidebar .workspace-avatar {
+  background: #e3ebef;
+  color: #33505e;
+}
+:root[data-theme='light'] .sidebar .nav-group a {
+  color: #51687a;
+}
+:root[data-theme='light'] .sidebar .nav-group a:hover {
+  background: var(--subtle);
+  color: var(--title);
+}
+:root[data-theme='light'] .sidebar .nav-group a.active {
+  background: var(--accent-soft);
+  color: var(--green);
+  box-shadow: inset 2px 0 var(--green);
+}
+:root[data-theme='light'] .sidebar .collapse-toggle {
+  color: var(--muted);
+}
+:root[data-theme='light'] .sidebar .collapse-toggle:hover {
+  background: var(--subtle);
+  color: var(--title);
+}
+:root[data-theme='light'] .sidebar .profile {
+  border-color: var(--line);
+}
+:root[data-theme='light'] .sidebar > nav {
+  scrollbar-color: #c8d3da transparent;
+}
+:root[data-theme='light'] .sidebar .environment-note {
+  background: var(--accent-soft);
+  color: var(--green);
+}
+
+/* Product popover gets room to breathe instead of squeezing text. */
+.workspace-pop {
+  width: 300px;
+  right: auto;
+  max-width: calc(100vw - 24px);
+}
+
+/* KPI cards never let a long value spill outside the card. */
+.kpi-card {
+  min-width: 0;
+}
+.kpi-value {
+  overflow-wrap: anywhere;
+}
+.kpi-value.schema-value {
+  font-size: 21px;
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+/* Filter bars wrap cleanly at high zoom instead of overlapping. */
+.filter-bar {
+  flex-wrap: wrap;
+}
+.filter-bar .search-field {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.search-field input {
+  min-width: 0;
+  width: 100%;
+}
+.filter-bar select {
+  max-width: 100%;
+}
+
+/* Top bar stays on one aligned line. */
+.topbar {
+  flex-wrap: nowrap;
+}
+.topbar-actions {
+  gap: 14px;
+  min-width: 0;
+}
+.breadcrumb {
+  min-width: 0;
+  white-space: nowrap;
+}
+.range-bar {
+  gap: 12px;
+}
+.demo-tag,
+.demo-tag .muted {
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .demo-tag .muted {
+    display: none;
+  }
+}
+
+/* Global search suggestions dropdown. */
+.search-wrap {
+  position: relative;
+}
+.search-suggest {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, 82vw);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgb(9 20 32 / 0.28);
+  z-index: 70;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.search-suggest-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 8px 2px;
+}
+.search-suggest-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+}
+.search-suggest-item:hover {
+  background: var(--subtle);
+}
+.search-suggest-item strong {
+  font-size: 13px;
+  color: var(--title);
+}
+.search-suggest-item small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.search-suggest-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  padding: 10px 8px 4px;
+  color: var(--green);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}

@@ -171,8 +171,12 @@ export function Errors() {
                       <TenantLink id={id} key={id} />
                     ))}
                   </div>
+                  <p className="muted">
+                    These failures come from Airflow task runs. Open a run's Airflow log to see the
+                    exact task error; a failed run can be retried from its run page.
+                  </p>
                 </div>
-                <RunsTable runs={group.data.runs.items} />
+                <RunsTable runs={group.data.runs.items} logLink />
                 <Pagination
                   total={group.data.runs.total}
                   page={Number(params.get('run_page') || 1)}

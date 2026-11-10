@@ -55,7 +55,6 @@ import { Account } from './pages/Account';
 import { Pipelines } from './pages/Pipelines';
 import { Access } from './pages/Access';
 import { Dependencies } from './pages/Dependencies';
-import { Activity as ActivityPage } from './components/Investigation';
 
 function localInputTime(iso: string | null) {
   if (!iso) return undefined;
@@ -71,7 +70,6 @@ const NAV = [
       { path: '/tenants', label: 'Tenants', icon: Users },
       { path: '/pipelines', label: 'Orchestration', icon: Workflow },
       { path: '/runs', label: 'Pipeline runs', icon: Activity },
-      { path: '/activity', label: 'Activity', icon: CalendarDays },
     ],
   },
   {
@@ -163,6 +161,20 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
   const [toast, setToast] = useState('');
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchTerm = search.trim();
+  const suggestTenants = useQuery({
+    queryKey: ['suggest-tenants', searchTerm],
+    queryFn: () =>
+      api<Schema<'Page_Tenant_'>>(`/tenants?q=${encodeURIComponent(searchTerm)}&page_size=5`),
+    enabled: searchOpen && searchTerm.length >= 2,
+  });
+  const suggestPages =
+    searchTerm.length >= 2
+      ? NAV.flatMap((g) => g.items).filter((item) =>
+          item.label.toLowerCase().includes(searchTerm.toLowerCase()),
+        )
+      : [];
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -195,6 +207,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
   useEffect(() => {
     setMenu(false);
     setPanel('none');
+    setSearchOpen(false);
   }, [location.pathname]);
   useEffect(() => {
     if (!toast) return;
@@ -215,6 +228,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
       if (event.key === 'Escape') {
         setMenu(false);
         setPanel('none');
+        setSearchOpen(false);
       }
     };
     window.addEventListener('keydown', shortcut);
@@ -386,34 +400,102 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               <strong>{section}</strong>
             </div>
             <div className="topbar-actions">
-              <form
-                className="global-search"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (search.trim()) navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+              <div
+                className="search-wrap"
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node))
+                    setSearchOpen(false);
                 }}
               >
-                <Search size={15} />
-                <input
-                  ref={searchRef}
-                  aria-label="Search errors and logs"
-                  placeholder="Search tenants, logs, pages…"
-                  maxLength={200}
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-                {search.trim() ? (
-                  <button
-                    type="submit"
-                    aria-label="Submit global search"
-                    className="global-search-submit"
-                  >
-                    Search
-                  </button>
-                ) : (
-                  <Command size={12} aria-hidden="true" />
+                <form
+                  className="global-search"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (search.trim()) {
+                      setSearchOpen(false);
+                      navigate(`/search?q=${encodeURIComponent(search.trim())}`);
+                    }
+                  }}
+                >
+                  <Search size={15} />
+                  <input
+                    ref={searchRef}
+                    aria-label="Search errors and logs"
+                    placeholder="Search tenants, logs, pages…"
+                    maxLength={200}
+                    value={search}
+                    onFocus={() => setSearchOpen(true)}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setSearchOpen(true);
+                    }}
+                  />
+                  {search.trim() ? (
+                    <button
+                      type="submit"
+                      aria-label="Submit global search"
+                      className="global-search-submit"
+                    >
+                      Search
+                    </button>
+                  ) : (
+                    <Command size={12} aria-hidden="true" />
+                  )}
+                </form>
+                {searchOpen && searchTerm.length >= 2 && (
+                  <div className="search-suggest" role="listbox" aria-label="Search suggestions">
+                    {suggestTenants.data && suggestTenants.data.items.length > 0 && (
+                      <>
+                        <span className="search-suggest-label">Tenants</span>
+                        {suggestTenants.data.items.map((tenant) => (
+                          <button
+                            type="button"
+                            key={tenant.tenant_id}
+                            className="search-suggest-item"
+                            onClick={() => {
+                              setSearchOpen(false);
+                              setSearch('');
+                              navigate(`/tenants/${tenant.tenant_id}`);
+                            }}
+                          >
+                            <strong>{tenant.display_name}</strong>
+                            <small>{tenant.tenant_id}</small>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {suggestPages.length > 0 && (
+                      <>
+                        <span className="search-suggest-label">Pages</span>
+                        {suggestPages.map((item) => (
+                          <button
+                            type="button"
+                            key={item.path}
+                            className="search-suggest-item"
+                            onClick={() => {
+                              setSearchOpen(false);
+                              setSearch('');
+                              navigate(item.path);
+                            }}
+                          >
+                            <strong>{item.label}</strong>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      className="search-suggest-all"
+                      onClick={() => {
+                        setSearchOpen(false);
+                        navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+                      }}
+                    >
+                      See all results for “{searchTerm}” <ArrowRight size={13} />
+                    </button>
+                  </div>
                 )}
-              </form>
+              </div>
               <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
                 <span />
                 {live.connected ? 'Live' : 'Polling · 30s'}
@@ -552,7 +634,10 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Route path="/tenants/:id" element={<TenantDetail />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/runs/:key" element={<RunDetail />} />
-                <Route path="/activity" element={<ActivityPage />} />
+                <Route
+                  path="/activity"
+                  element={<Navigate to="/admin?section=activity" replace />}
+                />
                 <Route path="/pipelines" element={<Pipelines />} />
                 <Route path="/workspace" element={<Navigate to="/" replace />} />
                 <Route path="/workspace/pipelines" element={<Navigate to="/pipelines" replace />} />

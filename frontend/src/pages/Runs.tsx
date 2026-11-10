@@ -299,8 +299,8 @@ export function RunDetail() {
       </div>
       <div id="run-log">
         <Panel
-          title="Run log"
-          subtitle="Redacted at collection and again before display."
+          title="Airflow task log"
+          subtitle="The Airflow log for this run — the task output where the failure occurred. Redacted at collection and again before display."
           action={
             <span className="inline-flex">
               <select

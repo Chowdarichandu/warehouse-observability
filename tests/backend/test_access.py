@@ -280,3 +280,62 @@ def test_forgot_password_is_disabled_by_default_without_touching_accounts(monkey
     )
     result = auth.forgot_password(ForgotPasswordIn(email="admin@demo.local"), None)
     assert result["temporary_password"] is None
+
+
+def test_admin_can_create_and_remove_user(clients):
+    created = clients["admin"].post(
+        "/api/users",
+        json={
+            "email": "newhire@demo.local",
+            "display_name": "New Hire",
+            "role": "operator",
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["temporary_password"]
+    user_id = body["user_id"]
+    # The new account can sign in with the generated temporary password.
+    guest = TestClient(app, base_url="https://localhost")
+    login = guest.post(
+        "/api/auth/login",
+        json={"email": "newhire@demo.local", "password": body["temporary_password"]},
+    )
+    assert login.status_code == 200, login.text
+    guest.close()
+    duplicate = clients["admin"].post(
+        "/api/users",
+        json={"email": "newhire@demo.local", "display_name": "Dup", "role": "viewer"},
+    )
+    assert duplicate.status_code == 409
+    removed = clients["admin"].delete(f"/api/users/{user_id}")
+    assert removed.status_code == 200
+    assert clients["admin"].delete(f"/api/users/{user_id}").status_code == 404
+
+
+def test_create_user_with_chosen_password_returns_no_temporary(clients):
+    created = clients["admin"].post(
+        "/api/users",
+        json={
+            "email": "chosen@demo.local",
+            "display_name": "Chosen Password",
+            "role": "viewer",
+            "initial_password": "a-strong-passphrase",
+        },
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["temporary_password"] is None
+    clients["admin"].delete(f"/api/users/{created.json()['user_id']}")
+
+
+def test_non_admin_cannot_create_or_remove_users(clients):
+    payload = {"email": "nope@demo.local", "display_name": "Nope", "role": "viewer"}
+    assert clients["viewer"].post("/api/users", json=payload).status_code == 403
+    assert clients["operator"].post("/api/users", json=payload).status_code == 403
+    assert clients["viewer"].delete("/api/users/1").status_code == 403
+
+
+def test_admin_cannot_remove_own_account(clients):
+    me = clients["admin"].get("/api/me").json()
+    response = clients["admin"].delete(f"/api/users/{me['user_id']}")
+    assert response.status_code == 409

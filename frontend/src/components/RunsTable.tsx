@@ -11,9 +11,11 @@ import { Empty, NumberValue, Source, TenantLink, Time, formatDuration } from './
 export function RunsTable({
   runs,
   onSort,
+  logLink = false,
 }: {
   runs: Schema<'Run'>[];
   onSort?: (field: string) => void;
+  logLink?: boolean;
 }) {
   const columns = useMemo<ColumnDef<Schema<'Run'>>[]>(
     () => [
@@ -69,17 +71,28 @@ export function RunsTable({
         id: 'detail',
         header: '',
         cell: ({ row }) => (
-          <Link
-            className="text-link"
-            to={runPath(row.original.run_key)}
-            aria-label={`Open ${row.original.status} run for ${row.original.tenant_id}`}
-          >
-            View run <ExternalLink size={12} />
-          </Link>
+          <span className="inline-flex">
+            <Link
+              className="text-link"
+              to={runPath(row.original.run_key)}
+              aria-label={`Open ${row.original.status} run for ${row.original.tenant_id}`}
+            >
+              View run <ExternalLink size={12} />
+            </Link>
+            {logLink && (
+              <Link
+                className="text-link"
+                to={`${runPath(row.original.run_key)}?focus=log`}
+                aria-label={`Open the Airflow log for this ${row.original.tenant_id} run`}
+              >
+                Airflow log
+              </Link>
+            )}
+          </span>
         ),
       },
     ],
-    [],
+    [logLink],
   );
   const table = useReactTable({ data: runs, columns, getCoreRowModel: getCoreRowModel() });
   if (!runs.length) return <Empty title="No runs match these filters" />;

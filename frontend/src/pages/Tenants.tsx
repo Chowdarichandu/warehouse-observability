@@ -501,6 +501,21 @@ export function TenantDetail() {
           <strong>{health.failures_24h}</strong>
         </div>
         <div>
+          <span>Avg run duration</span>
+          <strong>
+            {formatMinutes(
+              minutes(
+                average(
+                  runs
+                    .filter((r) => r.status === 'success' && r.duration_s != null)
+                    .map((r) => r.duration_s!),
+                ),
+              ),
+            )}
+            <small> per successful run</small>
+          </strong>
+        </div>
+        <div>
           <span>Open alerts</span>
           <Link to="/alerts">
             {alerts.length} <ArrowRight size={13} />

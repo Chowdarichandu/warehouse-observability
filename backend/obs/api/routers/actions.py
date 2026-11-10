@@ -285,6 +285,115 @@ def update_user(
     return {"message": "User role updated.", "simulated": False}
 
 
+@router.post("/users", response_model=s.UserCreateResult)
+def create_user(
+    data: s.UserCreate, user: dict = Depends(require_role("admin", "manage_users"))
+) -> dict:
+    import secrets as _secrets
+
+    from obs.auth import hasher
+
+    if settings().auth_provider == "oidc":
+        fail(
+            403,
+            "sso_managed_roles",
+            "Manage accounts through the configured identity provider.",
+        )
+    email = data.email.strip().lower()
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        fail(422, "invalid_email", "Enter a valid email address.")
+    generated = None
+    secret_value = data.initial_password
+    if not secret_value:
+        generated = "Pravah-" + _secrets.token_urlsafe(9)
+        secret_value = generated
+    with connection() as conn:
+        conn.execute("SELECT pg_advisory_xact_lock(110531)")
+        existing = conn.execute(
+            "SELECT user_id FROM obs.users WHERE lower(email)=%s", (email,)
+        ).fetchone()
+        if existing:
+            fail(409, "user_exists", "A user with that email already exists.")
+        role = data.role
+        role_name = None
+        if data.role_name:
+            bundle = conn.execute(
+                "SELECT * FROM obs.roles WHERE name=%s FOR SHARE", (data.role_name,)
+            ).fetchone()
+            if not bundle:
+                fail(404, "role_not_found", "That role does not exist.")
+            role = bundle["base_level"]
+            role_name = bundle["name"]
+            granted_bundle = (
+                bundle["permissions"] if isinstance(bundle["permissions"], list) else []
+            )
+        else:
+            granted_bundle = SYSTEM_ROLE_PERMISSIONS.get(role, [])
+        _check_grantable(user, role, granted_bundle)
+        row = conn.execute(
+            "INSERT INTO obs.users (email, display_name, role, role_name, password_hash)"
+            " VALUES (%s,%s,%s,%s,%s) RETURNING user_id",
+            (email, data.display_name.strip(), role, role_name, hasher.hash(secret_value)),
+        ).fetchone()
+        new_id = row["user_id"]
+        audit(
+            conn,
+            user["email"],
+            "create_user",
+            str(new_id),
+            {"role": role, "role_name": role_name, "user": redact(email)},
+        )
+    message = "User created."
+    if generated:
+        message += (
+            " Share the temporary password with them;"
+            " they can change it after signing in."
+        )
+    return {
+        "message": message,
+        "user_id": new_id,
+        "temporary_password": generated,
+        "simulated": settings().mode == "demo",
+    }
+
+
+@router.delete("/users/{id}", response_model=s.Message)
+def delete_user(
+    id: int, user: dict = Depends(require_role("admin", "manage_users"))
+) -> dict:
+    if settings().auth_provider == "oidc":
+        fail(
+            403,
+            "sso_managed_roles",
+            "Manage accounts through the configured identity provider.",
+        )
+    with connection() as conn:
+        conn.execute("SELECT pg_advisory_xact_lock(110531)")
+        target = conn.execute(
+            "SELECT * FROM obs.users WHERE user_id=%s FOR UPDATE", (id,)
+        ).fetchone()
+        if not target:
+            fail(404, "user_not_found", "User not found.")
+        if target["email"].lower() == str(user.get("email", "")).lower():
+            fail(409, "cannot_delete_self", "You cannot remove your own account.")
+        if target["role"] == "admin":
+            admins = conn.execute(
+                "SELECT count(*) AS n FROM obs.users WHERE role='admin'"
+            ).fetchone()["n"]
+            if admins <= 1:
+                fail(409, "last_admin", "Keep at least one administrator.")
+        conn.execute("DELETE FROM obs.sessions WHERE user_id=%s", (id,))
+        conn.execute("DELETE FROM obs.users WHERE user_id=%s", (id,))
+        audit(
+            conn,
+            user["email"],
+            "delete_user",
+            str(id),
+            {"user": redact(target["email"])},
+        )
+    return {"message": "User removed.", "simulated": False}
+
+
 @router.get("/roles", response_model=list[s.RoleOut])
 def list_roles(user: dict = Depends(require_permission("manage_users"))) -> list:
     rows = []

@@ -477,6 +477,21 @@ class UserPatch(BaseModel):
     role_name: str | None = None
 
 
+class UserCreate(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+    display_name: str = Field(min_length=1, max_length=120)
+    role: Literal["viewer", "operator", "admin"] = "viewer"
+    role_name: str | None = None
+    initial_password: str | None = Field(default=None, min_length=8, max_length=200)
+
+
+class UserCreateResult(BaseModel):
+    message: str
+    user_id: int
+    temporary_password: str | None = None
+    simulated: bool = True
+
+
 class RoleIn(BaseModel):
     name: str = Field(min_length=2, max_length=60)
     base_level: Literal["viewer", "operator", "admin"]
