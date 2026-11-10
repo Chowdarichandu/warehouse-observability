@@ -4,9 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { keepPreviousData, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
 import { API_POLL_MS } from './config';
-import './style.css';
-import './design.css';
-import './polish.css';
+import './app.css';
 
 const client = new QueryClient({
   defaultOptions: {
