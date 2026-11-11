@@ -539,7 +539,13 @@ def activate(tenant_id: str, *, actor: str = "airflow:onboarding") -> bool:
                     (
                         check["id"],
                         tenant_id,
-                        Jsonb({"foreign_rows": 0, "total_rows": 0, "scope": "demo onboarding isolation gate"}),
+                        Jsonb(
+                            {
+                                "foreign_rows": 0,
+                                "total_rows": 0,
+                                "scope": "demo onboarding isolation gate",
+                            }
+                        ),
                     ),
                 )
                 isolation = {"status": "pass"}

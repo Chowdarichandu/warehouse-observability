@@ -190,9 +190,7 @@ for router in (
     onboarding_workflow_router,
 ):
     module_dependencies = (
-        []
-        if router in (auth.router, access.router)
-        else [Depends(access.require_module("pravah"))]
+        [] if router in (auth.router, access.router) else [Depends(access.require_module("pravah"))]
     )
     app.include_router(
         router,

@@ -80,7 +80,9 @@ def patch_auth(monkeypatch, connection, claims):
 def test_current_user_refreshes_last_seen_for_active_session(monkeypatch):
     row = {"user_id": 7, "email": "active@example.com", "role": "viewer"}
     connection = Connection(row)
-    patch_auth(monkeypatch, connection, {"sub": "7", "jti": "session-1", "csrf": "csrf"})
+    patch_auth(
+        monkeypatch, connection, {"sub": "7", "jti": "session-1", "csrf": "csrf"}
+    )
 
     user = auth.current_user(request_with_cookie("signed"))
 
@@ -98,7 +100,11 @@ def test_current_user_refreshes_last_seen_for_active_session(monkeypatch):
 @pytest.mark.parametrize("reason", ["disabled", "idle", "absolute"])
 def test_current_user_rejects_sessions_that_fail_policy(monkeypatch, reason):
     connection = Connection(None)
-    patch_auth(monkeypatch, connection, {"sub": "7", "jti": f"{reason}-session", "csrf": "csrf"})
+    patch_auth(
+        monkeypatch,
+        connection,
+        {"sub": "7", "jti": f"{reason}-session", "csrf": "csrf"},
+    )
 
     with pytest.raises(HTTPException) as error:
         auth.current_user(request_with_cookie("signed"))

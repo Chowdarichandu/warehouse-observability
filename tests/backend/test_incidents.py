@@ -7,7 +7,9 @@ from obs.db import connection, one
 
 @pytest.fixture()
 def incident_id():
-    tenant = one("SELECT tenant_id FROM obs.tenants ORDER BY tenant_id LIMIT 1")["tenant_id"]
+    tenant = one("SELECT tenant_id FROM obs.tenants ORDER BY tenant_id LIMIT 1")[
+        "tenant_id"
+    ]
     with connection() as conn:
         row = conn.execute(
             """INSERT INTO obs.incidents(tenant_id,source_type,severity,state,title,cause_rule)
@@ -31,8 +33,15 @@ def test_incident_list_and_detail(clients, incident_id):
 
 
 def test_incident_actions_require_operator(clients, incident_id):
-    assert clients["viewer"].post(f"/api/incidents/{incident_id}/ack").status_code == 403
-    assert clients["viewer"].post(f"/api/incidents/{incident_id}/resolve", json={}).status_code == 403
+    assert (
+        clients["viewer"].post(f"/api/incidents/{incident_id}/ack").status_code == 403
+    )
+    assert (
+        clients["viewer"]
+        .post(f"/api/incidents/{incident_id}/resolve", json={})
+        .status_code
+        == 403
+    )
     assert (
         clients["viewer"]
         .post(f"/api/incidents/{incident_id}/notes", json={"body": "hi"})
@@ -53,7 +62,8 @@ def test_incident_ack_assign_note_resolve_flow(clients, incident_id):
     )
     assert assign.status_code == 200
     note = clients["operator"].post(
-        f"/api/incidents/{incident_id}/notes", json={"body": "Looking into the binlog gap."}
+        f"/api/incidents/{incident_id}/notes",
+        json={"body": "Looking into the binlog gap."},
     )
     assert note.status_code == 200
     detail = clients["operator"].get(f"/api/incidents/{incident_id}").json()
@@ -69,7 +79,9 @@ def test_incident_ack_assign_note_resolve_flow(clients, incident_id):
     assert detail["state"] == "resolved"
     assert detail["root_cause_category"] == "Sync / CDC"
     # A resolved incident cannot be acknowledged or reassigned.
-    assert clients["operator"].post(f"/api/incidents/{incident_id}/ack").status_code == 409
+    assert (
+        clients["operator"].post(f"/api/incidents/{incident_id}/ack").status_code == 409
+    )
     assert (
         clients["operator"]
         .post(f"/api/incidents/{incident_id}/assign", json={"assignee": "x@demo.local"})
