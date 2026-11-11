@@ -470,6 +470,41 @@ def test_module_registry_filters_disabled_areas_and_honors_role_and_user_overrid
             conn.execute("UPDATE obs.modules SET enabled=false WHERE module_id='hrms'")
 
 
+def test_data_routers_enforce_the_pravah_module_on_direct_api_requests(clients):
+    viewer_id = _permissions_user_id("viewer@demo.local")
+    previous = one(
+        "SELECT effect,updated_by FROM obs.user_module_overrides WHERE user_id=%s AND module_id='pravah'",
+        (viewer_id,),
+    )
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO obs.user_module_overrides(user_id,module_id,effect,updated_by)
+            VALUES(%s,'pravah','revoke','test')
+            ON CONFLICT(user_id,module_id) DO UPDATE SET effect='revoke',updated_by='test'""",
+            (viewer_id,),
+        )
+    try:
+        response = clients["viewer"].get("/api/overview")
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "module_forbidden"
+        # Account and access administration remain reachable so a denied user
+        # can review their access and an administrator can restore a grant.
+        assert clients["viewer"].get("/api/access").status_code == 200
+    finally:
+        with connection() as conn:
+            if previous:
+                conn.execute(
+                    """UPDATE obs.user_module_overrides SET effect=%s,updated_by=%s
+                    WHERE user_id=%s AND module_id='pravah'""",
+                    (previous["effect"], previous["updated_by"], viewer_id),
+                )
+            else:
+                conn.execute(
+                    "DELETE FROM obs.user_module_overrides WHERE user_id=%s AND module_id='pravah'",
+                    (viewer_id,),
+                )
+
+
 def test_admin_module_grant_endpoint_is_audited_and_non_admin_is_denied(clients):
     with connection() as conn:
         conn.execute(

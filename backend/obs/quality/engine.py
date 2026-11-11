@@ -200,6 +200,24 @@ def execute(conn: psycopg.Connection, check: dict) -> dict:
         ),
     ).fetchone()
     conn.execute("UPDATE obs.quality_checks SET last_checked_at=now() WHERE id=%s", (check["id"],))
+    if check["kind"] == "tenant_isolation" and status in {"fail", "error"}:
+        # Isolation failures are security incidents, even when the quality
+        # worker cannot associate them with a pipeline run key.
+        title = "Tenant isolation check failed"
+        incident = conn.execute(
+            """INSERT INTO obs.incidents(tenant_id,source_type,severity,title,cause_rule)
+               SELECT %s, 'mongo',
+                      'critical', %s, 'tenant_isolation'
+                FROM obs.tenants t
+               WHERE t.tenant_id=%s AND t.sources->'mongo'->>'shared'='true'
+                 AND NOT EXISTS (
+                  SELECT 1 FROM obs.incidents
+                   WHERE tenant_id=%s AND cause_rule='tenant_isolation'
+                     AND state IN ('open','acknowledged'))""",
+            (check["tenant_id"], title, check["tenant_id"], check["tenant_id"]),
+        )
+        if incident.rowcount:
+            notify(conn, "incident.created", {"tenant_id": check["tenant_id"], "severity": "critical", "rule_id": "tenant_isolation"})
     if (
         check["kind"] == "tenant_isolation"
         and status == "fail"

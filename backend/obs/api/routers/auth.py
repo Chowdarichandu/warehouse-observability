@@ -79,7 +79,9 @@ def login(data: Login, request: Request, response: Response) -> dict:
         fail(403, "csrf_origin", "Cross-origin login blocked.")
     user = one("SELECT * FROM obs.users WHERE email=%s", (data.email.lower().strip(),))
     valid = verify_password(data.password, (user or {}).get("password_hash") or DUMMY_HASH)
-    if not user or not valid:
+    # Keep disabled accounts indistinguishable from invalid credentials and do
+    # not mint a session cookie for them.
+    if not user or not valid or user.get("status") == "disabled":
         record_login_failure(request)
         fail(401, "invalid_credentials", "Email or password is incorrect.")
     clear_login_attempts(request)
@@ -87,7 +89,7 @@ def login(data: Login, request: Request, response: Response) -> dict:
     response.set_cookie(
         "obs_session",
         token(user, csrf),
-        max_age=43200,
+        max_age=settings().session_absolute_days * 86400,
         httponly=True,
         secure=settings().cookie_secure,
         samesite="lax",

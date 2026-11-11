@@ -207,6 +207,7 @@ DEFAULT_RULES = [
     ("dag_import_errors", "DAG import errors", "high", {}),
     ("platform_down", "Platform component down", "critical", {}),
     ("collector_silent", "Collector heartbeat missing", "critical", {"minutes": 10}),
+    ("tenant_isolation", "Tenant isolation breach", "critical", {}),
 ]
 
 

@@ -18,6 +18,7 @@ PARAMS = {
     "dag_import_errors": set(),
     "platform_down": set(),
     "collector_silent": {"minutes"},
+    "tenant_isolation": set(),
 }
 
 _SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
@@ -141,6 +142,17 @@ def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
             """SELECT component AS source_type,'Collector heartbeat missing' AS reason
             FROM obs.collector_state WHERE last_success_at IS NULL OR last_success_at<now()-%s*interval '1 minute'""",
             (params.get("minutes", 10),),
+        ).fetchall()
+    elif key == "tenant_isolation":
+        found = conn.execute(
+            """SELECT q.tenant_id, 'mongo' AS source_type,
+                      'Tenant isolation check failed' AS reason, r.details
+               FROM obs.quality_results r
+               JOIN obs.quality_checks q ON q.id=r.check_id
+               JOIN obs.tenants t ON t.tenant_id=q.tenant_id
+              WHERE q.kind='tenant_isolation' AND r.status IN ('fail','error')
+                AND t.sources->'mongo'->>'shared'='true'
+                AND r.checked_at=(SELECT max(r2.checked_at) FROM obs.quality_results r2 WHERE r2.check_id=r.check_id)"""
         ).fetchall()
     return found
 

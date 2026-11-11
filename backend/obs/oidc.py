@@ -93,6 +93,8 @@ def identity(claims: dict) -> dict:
             "SELECT u.* FROM obs.oidc_identities i JOIN obs.users u USING(user_id) WHERE i.issuer=%s AND i.subject=%s",
             (claims["iss"], claims["sub"]),
         ).fetchone()
+        if existing and existing.get("status") == "disabled":
+            fail(401, "authentication_failed", "Unable to authenticate with this account.")
         if not existing:
             if conn.execute("SELECT 1 FROM obs.users WHERE email=%s", (email,)).fetchone():
                 fail(
@@ -182,7 +184,7 @@ def callback(request: Request, code: str = "", state: str = "") -> Response:
     response.set_cookie(
         "obs_session",
         token(user, secrets.token_urlsafe(32)),
-        max_age=config.session_hours * 3600,
+        max_age=config.session_absolute_days * 86400,
         httponly=True,
         secure=True,
         samesite="lax",

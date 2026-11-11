@@ -74,7 +74,10 @@ class Settings(BaseSettings):
     oidc_client_secret: str = ""
     oidc_groups_claim: str = "groups"
     oidc_group_roles: dict[str, Literal["viewer", "operator", "admin"]] = {}
-    session_hours: int = Field(default=8, ge=1, le=24)
+    # Sessions are refreshed while active, but are bounded by both an idle
+    # timeout and an absolute lifetime.
+    session_idle_hours: int = Field(default=12, ge=1, le=24)
+    session_absolute_days: int = Field(default=7, ge=1, le=30)
     notification_max_attempts: int = Field(default=5, ge=1, le=10)
     notification_allowed_hosts: list[str] = ["hooks.slack.com", "outlook.office.com"]
     ses_from_address: str = ""

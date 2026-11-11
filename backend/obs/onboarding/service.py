@@ -147,7 +147,14 @@ def start(data: OnboardInput, actor: str) -> dict:
                 (data.tenant_id, Jsonb(data.model_dump())),
             )
             workflow_id = workflow.initialize(conn, data)
-            if not live:
+            if not live and data.has_mongo:
+                conn.execute(
+                    """INSERT INTO obs.quality_checks(tenant_id,name,table_name,kind,params,sample_limit)
+                    VALUES(%s,'Tenant isolation','orders','tenant_isolation',%s,100)
+                    ON CONFLICT(tenant_id,name) DO UPDATE SET enabled=true
+                    RETURNING id""",
+                    (data.tenant_id, Jsonb({"tenant_field": "tenant_id"})),
+                ).fetchone()
                 conn.execute(
                     "INSERT INTO obs.demo_jobs(job_key,kind,tenant_id,payload) VALUES(%s,'onboarding',%s,%s)",
                     (f"onboard:{data.tenant_id}", data.tenant_id, Jsonb(data.model_dump())),

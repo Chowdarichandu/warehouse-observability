@@ -56,7 +56,8 @@ Every application setting is listed below. Live integrations never run in demo m
 - `OIDC_CLIENT_SECRET`: <class 'str'>. Default: ``.
 - `OIDC_GROUPS_CLAIM`: <class 'str'>. Default: `groups`.
 - `OIDC_GROUP_ROLES`: dict[str, typing.Literal['viewer', 'operator', 'admin']]. Default: `{}`.
-- `SESSION_HOURS`: <class 'int'>. Default: `8`.
+- `SESSION_IDLE_HOURS`: <class 'int'>. Default: `12`. Idle session timeout before reauthentication.
+- `SESSION_ABSOLUTE_DAYS`: <class 'int'>. Default: `7`. Maximum session lifetime, even while active.
 - `NOTIFICATION_MAX_ATTEMPTS`: <class 'int'>. Default: `5`.
 - `NOTIFICATION_ALLOWED_HOSTS`: list[str]. Default: `['hooks.slack.com', 'outlook.office.com']`.
 - `SES_FROM_ADDRESS`: <class 'str'>. Default: ``.
