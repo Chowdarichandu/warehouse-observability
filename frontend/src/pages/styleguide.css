@@ -27,6 +27,37 @@
   border-radius: var(--radius-control);
 }
 
+.token-paper {
+  background: var(--paper);
+}
+.token-surface {
+  background: var(--surface);
+}
+.token-sunken {
+  background: var(--sunken);
+}
+.token-ink-900 {
+  background: var(--ink-900);
+}
+.token-accent {
+  background: var(--accent);
+}
+.token-ok {
+  background: var(--ok);
+}
+.token-warn {
+  background: var(--warn);
+}
+.token-bad {
+  background: var(--bad);
+}
+.token-run {
+  background: var(--run);
+}
+.token-idle {
+  background: var(--idle);
+}
+
 .token-swatch code,
 .type-specimens code,
 .spacing-scale code {
@@ -54,6 +85,25 @@
   font-weight: 600;
 }
 
+.type-display {
+  font-size: var(--text-display);
+}
+.type-title {
+  font-size: var(--text-title);
+}
+.type-heading {
+  font-size: var(--text-heading);
+}
+.type-body {
+  font-size: var(--text-body);
+}
+.type-label {
+  font-size: var(--text-label);
+}
+.type-meta {
+  font-size: var(--text-meta);
+}
+
 .type-specimens .mono {
   color: var(--ink-600);
   font-family: var(--font-code);
@@ -64,6 +114,133 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+
+.styleguide-state-grid,
+.styleguide-display-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.styleguide-state-grid > div,
+.styleguide-display-grid > section {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.styleguide-state-grid > div > span,
+.styleguide-display-grid h3 {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: var(--text-meta);
+  font-weight: 500;
+}
+
+.styleguide-state-grid .demo-hover {
+  background: var(--sunken);
+  border-color: var(--line-strong);
+}
+
+.styleguide-state-grid .demo-active {
+  filter: brightness(0.9);
+}
+
+.styleguide-state-grid .demo-focus,
+.styleguide-form .demo-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.styleguide-spinner {
+  animation: styleguide-spin 1.2s linear infinite;
+}
+
+@keyframes styleguide-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.styleguide-overlay-controls {
+  margin-top: var(--space-4);
+}
+
+.styleguide-popover,
+.styleguide-toast {
+  display: grid;
+  gap: var(--space-2);
+  width: min(100%, 320px);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  color: var(--ink-900);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-overlay);
+  box-shadow: var(--shadow-overlay);
+}
+
+.styleguide-toast {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  border-inline-start: 3px solid var(--ok);
+}
+
+.styleguide-popover span,
+.styleguide-toast {
+  font-size: var(--text-meta);
+}
+
+.styleguide-dialog-backdrop {
+  position: fixed;
+  z-index: var(--layer-dialog);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--ink-900) 55%, transparent);
+  inset: 0;
+}
+
+.styleguide-dialog {
+  display: grid;
+  gap: var(--space-3);
+  width: min(100%, 420px);
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-overlay);
+  box-shadow: var(--shadow-overlay);
+}
+
+.styleguide-dialog h3,
+.styleguide-dialog p {
+  margin: 0;
+}
+
+.styleguide-dialog h3 {
+  font-size: var(--text-heading);
+}
+.styleguide-dialog p {
+  color: var(--ink-600);
+  font-size: var(--text-body);
+}
+
+.styleguide-password {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.styleguide-password input {
+  min-width: 0;
+  flex: 1;
 }
 
 .styleguide-form {
@@ -110,9 +287,42 @@
   border-inline-end: 1px solid var(--accent);
 }
 
+.space-unit-1 {
+  width: var(--space-1);
+}
+.space-unit-2 {
+  width: var(--space-2);
+}
+.space-unit-3 {
+  width: var(--space-3);
+}
+.space-unit-4 {
+  width: var(--space-4);
+}
+.space-unit-5 {
+  width: var(--space-5);
+}
+.space-unit-6 {
+  width: var(--space-6);
+}
+.space-unit-8 {
+  width: var(--space-8);
+}
+.space-unit-10 {
+  width: var(--space-10);
+}
+.space-unit-12 {
+  width: var(--space-12);
+}
+.space-unit-16 {
+  width: var(--space-16);
+}
+
 @media (max-width: 720px) {
   .styleguide-grid,
-  .styleguide-form {
+  .styleguide-form,
+  .styleguide-state-grid,
+  .styleguide-display-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

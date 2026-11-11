@@ -246,6 +246,15 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
   const client = useQueryClient();
   const tv = params.get('tv') === '1';
   const range = params.get('range') || '24h';
+  const rangeLabel =
+    {
+      '1h': 'Last hour',
+      '6h': 'Last 6 hours',
+      '24h': 'Last 24 hours',
+      '7d': 'Last 7 days',
+      '30d': 'Last 30 days',
+      custom: 'Custom range',
+    }[range] || 'Last 24 hours';
   const logout = useMutation({
     mutationFn: () => api('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
@@ -590,7 +599,11 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   <button
                     className="theme-toggle"
                     title="Notifications"
-                    aria-label="Notifications"
+                    aria-label={
+                      firing.data && firing.data.total > 0
+                        ? `Notifications, ${firing.data.total} firing`
+                        : 'Notifications'
+                    }
                     aria-expanded={panel === 'bell'}
                     onClick={() => setPanel(panel === 'bell' ? 'none' : 'bell')}
                   >
@@ -659,7 +672,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               <label className="range-picker">
                 <CalendarDays size={14} />
                 <Select
-                  aria-label="Global time range"
+                  aria-label={`Global time range ${rangeLabel}`}
                   value={range}
                   onChange={(event) => {
                     const next = new URLSearchParams(params);

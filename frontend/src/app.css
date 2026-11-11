@@ -221,7 +221,7 @@ strong {
 .workspace-switch small {
   display: block;
   font-size: 9px;
-  color: #8294a4;
+  color: #9caeb8;
   margin-top: 4px;
 }
 .workspace-switch > svg {
@@ -338,7 +338,7 @@ strong {
   text-transform: capitalize;
   margin-top: 3px;
   font-size: 9px;
-  color: #718496;
+  color: #9caeb8;
 }
 .profile button {
   margin-left: auto;
@@ -409,7 +409,7 @@ strong {
   align-items: center;
   gap: 6px;
   font-size: 10px;
-  color: #258870;
+  color: var(--green);
   font-weight: 550;
 }
 .live-indicator > span,
@@ -422,7 +422,7 @@ strong {
   box-shadow: 0 0 0 3px #36af8b16;
 }
 .live-indicator.disconnected {
-  color: #bd902e;
+  color: var(--warn);
 }
 .live-indicator.disconnected > span {
   background: #bd902e;
@@ -446,7 +446,7 @@ strong {
   font-size: 8px;
   letter-spacing: 1.1px;
   font-weight: 650;
-  color: #728496;
+  color: var(--muted);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -817,6 +817,26 @@ strong {
   font-weight: 550;
   line-height: 1.3;
   white-space: nowrap;
+}
+.status-pill[data-tone='ok'] {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.status-pill[data-tone='warn'] {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.status-pill[data-tone='bad'] {
+  color: var(--bad);
+  background: var(--bad-soft);
+}
+.status-pill[data-tone='run'] {
+  color: var(--run);
+  background: var(--run-soft);
+}
+.status-pill[data-tone='idle'] {
+  color: var(--ink-600);
+  background: var(--sunken);
 }
 .table-scroll {
   overflow-x: auto;
@@ -1315,14 +1335,14 @@ th:first-child {
   margin-top: 5px;
 }
 .notice.danger {
-  color: #b45e59;
-  background: #df53560b;
-  border-color: #df53562b;
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-color: var(--bad);
 }
 .notice.info {
-  color: #577f9c;
-  background: #488bd009;
-  border-color: #488bd025;
+  color: var(--run);
+  background: var(--run-soft);
+  border-color: var(--run);
 }
 .notice button:not(.button) {
   text-decoration: underline;
@@ -3483,7 +3503,7 @@ button.workspace-switch:hover {
 }
 .switch-chevron {
   flex: none;
-  color: #8294a4;
+  color: #9caeb8;
 }
 .popover-scrim {
   position: fixed;
@@ -3542,7 +3562,7 @@ button.workspace-switch:hover {
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: #8294a4;
+  color: #9caeb8;
   font: inherit;
   font-size: 11px;
   cursor: pointer;
@@ -3579,7 +3599,7 @@ button.workspace-switch:hover {
 }
 .profile-main > svg {
   margin-left: auto;
-  color: #8294a4;
+  color: #9caeb8;
   flex: none;
 }
 .profile-pop {
@@ -4229,7 +4249,7 @@ button.workspace-switch:hover {
   --subtle: #f7f9fa;
   --line: #e3e9ec;
   --text: #344552;
-  --muted: #71818e;
+  --muted: #586b78;
   --title: #132f3c;
   --green: #127f70;
   --accent-soft: #eaf5f1;
@@ -4360,7 +4380,7 @@ input[type='radio'] {
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 1.35px;
-  color: #718893;
+  color: var(--muted);
 }
 .page-content {
   padding: 29px 30px 36px;
@@ -4400,7 +4420,7 @@ input[type='radio'] {
 .nav-label {
   font-size: 9px;
   font-weight: 700;
-  color: #68858f;
+  color: #94acb4;
   letter-spacing: 1.1px;
 }
 .nav-group a {
