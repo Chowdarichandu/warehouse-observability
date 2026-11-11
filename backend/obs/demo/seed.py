@@ -261,9 +261,7 @@ def seed() -> None:
     rng = random.Random(271828)
     now = datetime.now(UTC).replace(microsecond=0)
     anchor = now.replace(minute=0, second=0)
-    outage = now.replace(hour=2, minute=0, second=0)
-    if now - outage < timedelta(hours=3):
-        outage -= timedelta(days=1)
+    outage = now - timedelta(hours=8)
     with connection() as conn:
         conn.execute("SELECT pg_advisory_xact_lock(110528)")
         for role in ("admin", "operator", "viewer"):
@@ -336,7 +334,12 @@ def seed() -> None:
                         error = rng.choice(list(MESSAGES))
                         if tenant == "cedar_foods" and at.hour < 5 and rng.random() < 0.48:
                             fail, error = True, "SOURCE_UNREACHABLE"
-                        if tenant == "acme_retail" and source == "mysql" and at >= outage:
+                        if (
+                            tenant == "acme_retail"
+                            and source == "mysql"
+                            and load == "cdc"
+                            and at >= outage
+                        ):
                             fail, error = True, "MYSQL_BINLOG_PURGED"
                         if (
                             tenant == "bluefin_health"

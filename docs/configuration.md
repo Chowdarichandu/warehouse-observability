@@ -1,8 +1,10 @@
-# Runtime configuration
+# Configuration
 
 Every application setting is listed below. Live integrations never run in demo mode. Secrets belong in the service-specific Secrets Manager JSON, not Git. JSON arrays/maps must be encoded on a single line.
 
 - `MODE`: typing.Literal['demo', 'live']. Default: `demo`.
+- `DEMO_PUBLIC`: <class 'bool'>. Default: `False`. Enables the hosted, read-only demo flow; it cannot be used with `MODE=live`.
+- `ALLOW_LOCAL_AUTH_IN_LIVE`: <class 'bool'>. Default: `False`. Allows local password authentication in live mode when explicitly enabled.
 - `DATABASE_URL`: <class 'str'>. Default: `postgresql://obs:obs_local@127.0.0.1:55432/obs`.
 - `JWT_SECRET`: <class 'str'>. Default: `local-demo-only-change-before-live-use-32-characters`.
 - `DEMO_PASSWORD`: <class 'str'>. Default: `demo`.
@@ -66,7 +68,7 @@ Every application setting is listed below. Live integrations never run in demo m
 
 `OBS_CONFIG_SECRET_ID` selects a per-service Secrets Manager JSON for the entrypoint; `AWS_REGION` selects its region. `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, and `SMTP_URL` are channel target environment variables. `OBS_DB_PASSWORD` is only for the local Compose database. `OBS_DATABASE_URL` is the read-only Airflow registry DSN. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` and `OBS_NATIVE` are developer-only settings.
 
-`OBS_WEB_PORT` optionally changes the local demo Compose web port (default 8080); CI uses 18080 to isolate container checks from the native preview.
+The native demo runner supports isolated local workspaces through `OBS_RUNTIME_DIR` (a dedicated directory directly under `/tmp` named `obs-console-*`), `OBS_PG_PORT` (default 55432) and `OBS_API_PORT` (default 8000). `OBS_WEB_PORT` optionally changes the web port (default 8080); CI uses 18080 for container checks. `OBS_API_PROXY_TARGET` changes the API target for a local Vite dev server when it needs to run beside another console instance.
 
 ## Data-quality scheduler
 
@@ -74,7 +76,7 @@ Every application setting is listed below. Live integrations never run in demo m
 
 Release tools use separate invocation-only variables: `OBS_LOAD_SESSION` is an authenticated staging viewer session (never a CLI argument); `OBS_DRILL_ADMIN_DSN` identifies a dedicated loopback PostgreSQL server permitted to create scratch databases. These are not application service settings. See [release safeguards](release-safeguards.md).
 
-`SERVICE_KIND=console` is required for the API. Reviewed Airflow workers use `SERVICE_KIND=airflow_worker`; the API refuses to start in worker mode. `ONBOARDING_DAG_IDS` optionally overrides individual DAG IDs; defaults retain `ONBOARDING_DAG_ID` and `AIRFLOW_DAGS`. Live onboarding remains disabled until staging validates recovery and shared MongoDB `tenant_id` isolation.
+`SERVICE_KIND=console` is required for the API. Reviewed Airflow workers use `SERVICE_KIND=airflow_worker`; the API refuses to start in worker mode. `ONBOARDING_DAG_IDS` optionally overrides individual DAG IDs; defaults retain `ONBOARDING_DAG_ID` and `AIRFLOW_DAGS`.
 
 
 `DEMO_UNSAFE_SELF_SERVICE_PASSWORD_RESET` defaults to `false`. The optional legacy self-service reset exposes temporary passwords and must only be enabled in a disposable, isolated demo; it is never enabled in live mode.

@@ -17,7 +17,7 @@ from obs.db import connection, one
 from obs.integrations import aws, http, warehouse
 from obs.integrations.airbyte import Airbyte, duration_seconds
 from obs.integrations.airflow import Airflow
-from obs.settings import Settings, settings
+from obs.settings import Settings, assert_no_demo_users, settings
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 
@@ -79,9 +79,43 @@ def test_live_configuration_fails_closed():
         {"oidc_group_roles": {}},
         {"database_url": "postgresql://db/obs"},
         {"airflow_url": "http://airflow"},
+        {"demo_public": True},
     ]:
         with pytest.raises(ValidationError):
             Settings(_env_file=None, **(base | change))
+
+    local_auth = base | {"auth_provider": "local", "allow_local_auth_in_live": True}
+    assert Settings(_env_file=None, **local_auth).auth_provider == "local"
+    local_http = local_auth | {
+        "console_url": "http://localhost:8080",
+        "cookie_secure": False,
+    }
+    assert Settings(_env_file=None, **local_http).mode == "live"
+    with pytest.raises(ValidationError, match="COOKIE_SECURE"):
+        Settings(
+            _env_file=None, **(local_http | {"console_url": "https://obs.example.test"})
+        )
+
+
+def test_live_startup_refuses_seeded_demo_users(monkeypatch):
+    config = Settings(
+        _env_file=None,
+        mode="live",
+        jwt_secret="a-secure-random-production-signing-key-123",
+        console_url="https://obs.example.test",
+        database_url="postgresql://user:password@db/obs?sslmode=verify-full",
+        auth_provider="oidc",
+        oidc_issuer="https://id.example.test",
+        oidc_client_id="client",
+        oidc_group_roles={"ops": "operator"},
+    )
+    monkeypatch.setattr("obs.settings.settings", lambda: config)
+    monkeypatch.setattr("obs.db.one", lambda *_: {"email": "admin@demo.local"})
+    with pytest.raises(RuntimeError, match="demo accounts exist"):
+        assert_no_demo_users()
+
+    monkeypatch.setattr("obs.db.one", lambda *_: {})
+    assert_no_demo_users()
 
 
 def test_demo_blocks_all_live_entry_points():

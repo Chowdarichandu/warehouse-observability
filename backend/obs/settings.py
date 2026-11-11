@@ -11,6 +11,8 @@ DEMO_KEY = "local-demo-only-change-before-live-use-32-characters"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     mode: Literal["demo", "live"] = "demo"
+    demo_public: bool = False
+    allow_local_auth_in_live: bool = False
     service_kind: Literal["console", "airflow_worker"] = "console"
     database_url: str = "postgresql://obs:obs_local@127.0.0.1:55432/obs"
     jwt_secret: str = DEMO_KEY
@@ -104,18 +106,31 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_constraints(self) -> "Settings":
+        console = urlsplit(self.console_url)
+        hostname = (console.hostname or "").lower()
+        local_console = hostname in {"localhost", "127.0.0.1", "::1"}
+        if not self.cookie_secure and not local_console:
+            raise ValueError("COOKIE_SECURE=false is allowed only for a localhost CONSOLE_URL")
+
         if self.mode == "live":
+            if self.demo_public:
+                raise ValueError("DEMO_PUBLIC=true cannot be used with MODE=live")
             if self.service_kind == "console":
                 if self.jwt_secret == DEMO_KEY or len(self.jwt_secret) < 32:
                     raise ValueError(
                         "Live mode requires a unique JWT_SECRET of at least 32 characters"
                     )
-                if not self.cookie_secure or urlsplit(self.console_url).scheme != "https":
-                    raise ValueError("Live mode requires HTTPS CONSOLE_URL and Secure cookies")
-                if self.auth_provider != "oidc" or not self.oidc_group_roles:
-                    raise ValueError("Live mode requires OIDC and explicit OIDC_GROUP_ROLES")
-                if not self.oidc_client_id or urlsplit(self.oidc_issuer).scheme != "https":
-                    raise ValueError("OIDC requires an HTTPS issuer and client ID")
+                if console.scheme != "https" and not (local_console and not self.cookie_secure):
+                    raise ValueError("Live mode requires HTTPS CONSOLE_URL outside localhost")
+                if self.auth_provider == "oidc":
+                    if not self.oidc_group_roles:
+                        raise ValueError("Live OIDC requires explicit OIDC_GROUP_ROLES")
+                    if not self.oidc_client_id or urlsplit(self.oidc_issuer).scheme != "https":
+                        raise ValueError("OIDC requires an HTTPS issuer and client ID")
+                elif not self.allow_local_auth_in_live:
+                    raise ValueError(
+                        "Live local authentication requires ALLOW_LOCAL_AUTH_IN_LIVE=true"
+                    )
             elif not self.live_actions_enabled or not self.registry_dags_enabled:
                 raise ValueError(
                     "Airflow workers require explicitly enabled live actions and reviewed registry DAGs"
@@ -141,3 +156,22 @@ def require_demo() -> None:
 def require_live() -> None:
     if settings().mode != "live":
         raise RuntimeError("External integration is disabled in offline demo mode")
+
+
+def assert_no_demo_users() -> None:
+    """Reject a live service startup while seeded demo accounts remain in PostgreSQL."""
+    if settings().mode != "live":
+        return
+
+    from psycopg.errors import UndefinedTable
+
+    from obs.db import one
+
+    try:
+        demo_user = one("SELECT email FROM obs.users WHERE email LIKE '%@demo.local' LIMIT 1")
+    except UndefinedTable as exc:
+        raise RuntimeError("Apply database migrations before starting a live service.") from exc
+    if demo_user:
+        raise RuntimeError(
+            "Live mode cannot start while demo accounts exist; remove seeded demo users first."
+        )

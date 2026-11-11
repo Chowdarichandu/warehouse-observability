@@ -17,6 +17,7 @@ from obs.settings import settings
 @pytest.fixture
 def live(monkeypatch):
     config = settings()
+    monkeypatch.setattr("obs.api.main.assert_no_demo_users", lambda: None)
     for key, value in {
         "mode": "live",
         "live_actions_enabled": True,

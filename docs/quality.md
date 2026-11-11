@@ -40,4 +40,4 @@ Example null-rate definition:
 }
 ```
 
-No production warehouse was contacted during development. Local PostgreSQL verifies actual read-only execution, the sample limit and timeout. Redshift uses the documented [SET LOCAL syntax](https://docs.aws.amazon.com/redshift/latest/dg/r_SET.html); staging remains required for deployed Redshift privileges, workload controls, schemas and costs.
+Local PostgreSQL verifies read-only execution, sample limits and statement timeouts. Redshift uses the documented [SET LOCAL syntax](https://docs.aws.amazon.com/redshift/latest/dg/r_SET.html). Validate the deployed role grants, workload controls, schemas and query cost in staging before enabling scheduled checks.

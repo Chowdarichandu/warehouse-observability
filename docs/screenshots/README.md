@@ -1,6 +1,6 @@
 # Pravah screens
 
-Original Playwright captures of the offline demo. Live integration and EC2/EKS deployment code is included; real staging acceptance remains pending.
+Screen captures from the offline demo. All tenant names and data are fictional.
 
 ## Pipeline overview
 
@@ -56,12 +56,6 @@ Sample-based checks, aggregate evidence, and result history.
 
 [![Data quality](quality.png)](quality.png)
 
-## Warehouse
-
-Schema and table health for the connected warehouse.
-
-[![Warehouse](warehouse.png)](warehouse.png)
-
 ## Activity
 
 A chronological view of run, alert, onboarding, action, and quality events.
@@ -85,10 +79,6 @@ Seven configured DAGs and their source branches.
 Effective permissions, role guide, and account management.
 
 [![Access & roles](access.png)](access.png)
-
-[Metrics-only dashboard](metrics-only.png)
-
-[Metrics-only dashboard · mobile](metrics-only-mobile.png)
 
 ## Account settings
 
@@ -119,10 +109,6 @@ Component history, Airflow pools, collectors, and database health.
 Users, roles, operation outcomes, notification deliveries, and audit history.
 
 [![Administration](admin.png)](admin.png)
-
-[Roles](admin-roles.png) · [Operations](admin-operations.png) · [Activity](admin-activity.png) · [Audit trail](admin-audit.png)
-
-[Role form · mobile](admin-roles-mobile.png)
 
 ## Global search
 

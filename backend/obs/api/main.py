@@ -29,13 +29,14 @@ from obs.demo.seed import DEFAULT_RULES
 from obs.onboarding.api import router as onboarding_workflow_router
 from obs.onboarding.workflow import WorkflowError
 from obs.redact import redact
-from obs.settings import settings
+from obs.settings import assert_no_demo_users, settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if settings().service_kind != "console":
         raise RuntimeError("The console API requires SERVICE_KIND=console.")
+    assert_no_demo_users()
     if settings().mode == "demo":
         with connection() as conn:
             for role in ("admin", "operator", "viewer"):
