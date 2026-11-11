@@ -15,6 +15,7 @@ import {
   ArrowRight,
   BadgeCheck,
   Bell,
+  Mail,
   CalendarDays,
   ChevronDown,
   Command,
@@ -65,6 +66,9 @@ const Freshness = lazy(() =>
 const Alerts = lazy(() => import('./pages/Alerts').then((page) => ({ default: page.Alerts })));
 const Incidents = lazy(() =>
   import('./pages/Incidents').then((page) => ({ default: page.Incidents })),
+);
+const DevMailbox = lazy(() =>
+  import('./pages/DevMailbox').then((page) => ({ default: page.DevMailbox })),
 );
 const Onboarding = lazy(() =>
   import('./pages/Onboarding').then((page) => ({ default: page.Onboarding })),
@@ -122,6 +126,7 @@ const NAV = [
     group: 'MANAGE',
     items: [
       { path: '/platform', label: 'Platform', icon: Server },
+      { path: '/dev/mailbox', label: 'Dev mailbox', icon: Mail },
       { path: '/access', label: 'Access & roles', icon: ShieldCheck },
       { path: '/admin', label: 'Administration', icon: Settings2 },
       { path: '/account', label: 'Settings', icon: Settings2 },
@@ -441,7 +446,8 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                       item.path !== '/admin' ||
                       (permissions ? permissions.includes('manage_users') : user.role === 'admin'),
                   )
-                  .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer');
+                  .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer')
+                  .filter((item) => item.path !== '/dev/mailbox' || user.role === 'admin');
                 return items.length ? (
                   <div className="nav-group" key={group.group}>
                     <span className="nav-label">{metricsOnly ? 'METRICS' : group.group}</span>
@@ -814,6 +820,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                     <Route path="/freshness" element={<Freshness />} />
                     <Route path="/warehouse" element={<Warehouse />} />
                     <Route path="/incidents" element={<Incidents />} />
+                    <Route path="/dev/mailbox" element={<DevMailbox />} />
                     <Route path="/alerts" element={<Alerts />} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/platform" element={<Platform />} />

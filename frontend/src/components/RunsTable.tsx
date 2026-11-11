@@ -22,7 +22,12 @@ export function RunsTable({
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <StatusPill status={row.original.status} />,
+        cell: ({ row }) => (
+          <>
+            <StatusPill status={row.original.status} />
+            {row.original.in_maintenance && <span className="tag">In maintenance</span>}
+          </>
+        ),
       },
       {
         accessorKey: 'tenant_id',

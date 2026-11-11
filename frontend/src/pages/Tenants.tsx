@@ -31,6 +31,7 @@ import {
   Panel,
   Source,
   Time,
+  formatDateTime,
   useFilters,
 } from '../components/ui';
 
@@ -172,6 +173,127 @@ function stageLabel(status: string) {
     default:
       return 'Not started';
   }
+}
+
+function MaintenanceWindowsPanel({ tenantId }: { tenantId: string }) {
+  const { canOperate, notify } = useApp();
+  const client = useQueryClient();
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+  const [reason, setReason] = useState('');
+  const windows = useQuery({
+    queryKey: ['maintenance-windows', tenantId],
+    queryFn: () =>
+      api<Schema<'Page_MaintenanceWindow_'>>(
+        `/tenants/${tenantId}/maintenance-windows?page_size=100`,
+      ),
+  });
+  const refresh = () =>
+    void client.invalidateQueries({ queryKey: ['maintenance-windows', tenantId] });
+  const create = useMutation({
+    mutationFn: () =>
+      api<Schema<'MaintenanceWindow'>>(`/tenants/${tenantId}/maintenance-windows`, {
+        method: 'POST',
+        body: JSON.stringify({
+          starts_at: new Date(startsAt).toISOString(),
+          ends_at: new Date(endsAt).toISOString(),
+          reason: reason.trim(),
+        }),
+      }),
+    onSuccess: () => {
+      notify('Maintenance window added.');
+      setStartsAt('');
+      setEndsAt('');
+      setReason('');
+      refresh();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (windowId: string) =>
+      api<Schema<'Message'>>(`/tenants/${tenantId}/maintenance-windows/${windowId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (result) => {
+      notify(result.message);
+      refresh();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const items = windows.data?.items ?? [];
+  return (
+    <Panel
+      title="Maintenance windows"
+      subtitle="Failures inside a window are tagged in-maintenance: they do not raise alerts and are excluded from SLA."
+      className={windows.isPlaceholderData ? 'is-fetching' : ''}
+    >
+      {windows.isPending ? (
+        <Loading />
+      ) : windows.error ? (
+        <ErrorState error={windows.error} />
+      ) : items.length === 0 ? (
+        <Empty title="No maintenance windows" />
+      ) : (
+        <ul className="mailbox-list">
+          {items.map((window) => (
+            <li key={window.id}>
+              <div className="mailbox-head">
+                <strong>{window.reason}</strong>
+                <span className="muted">
+                  {window.starts_at ? formatDateTime(window.starts_at) : 'Recurring'} →{' '}
+                  {window.ends_at ? formatDateTime(window.ends_at) : ''}
+                  {window.timezone !== 'UTC' ? ` (${window.timezone})` : ''} · by{' '}
+                  {window.created_by}
+                </span>
+                {canOperate && (
+                  <button
+                    className="button small"
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate(window.id)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {canOperate && (
+        <div className="filter-bar">
+          <label>
+            Starts
+            <input
+              type="datetime-local"
+              value={startsAt}
+              onChange={(event) => setStartsAt(event.target.value)}
+            />
+          </label>
+          <label>
+            Ends
+            <input
+              type="datetime-local"
+              value={endsAt}
+              onChange={(event) => setEndsAt(event.target.value)}
+            />
+          </label>
+          <input
+            aria-label="Reason"
+            placeholder="Reason, e.g. Nightly source maintenance"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+          <button
+            className="button small primary"
+            disabled={!startsAt || !endsAt || !reason.trim() || create.isPending}
+            onClick={() => create.mutate()}
+          >
+            {create.isPending ? 'Adding…' : 'Add window'}
+          </button>
+        </div>
+      )}
+    </Panel>
+  );
 }
 
 function WorkflowPanel({ tenantId }: { tenantId: string }) {
@@ -464,6 +586,7 @@ export function TenantDetail() {
         </div>
       )}
       <WorkflowPanel tenantId={id} />
+      <MaintenanceWindowsPanel tenantId={id} />
       {settingsOpen && (
         <Panel title="Tenant settings">
           <form

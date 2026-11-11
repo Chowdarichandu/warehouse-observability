@@ -3,6 +3,7 @@ import json
 import random
 from datetime import UTC, datetime, timedelta
 
+import psycopg
 from psycopg.types.json import Jsonb
 
 from obs.auth import hasher
@@ -258,7 +259,23 @@ def make_run(
         "airbyte_job_id": job_id,
         "airbyte_attempts": 1,
         "collected_at": at,
+        "in_maintenance": False,
     }
+
+
+def _seed_cedar_windows(conn: psycopg.Connection, now: datetime) -> None:
+    """Cedar Foods' recurring nightly maintenance window (SPEC §13), stored
+    as one-off windows because SLA exclusion works on explicit ranges."""
+    for days_ago in range(7, -1, -1):
+        starts = (now - timedelta(days=days_ago)).replace(hour=1, minute=0, second=0, microsecond=0)
+        conn.execute(
+            """INSERT INTO obs.maintenance_windows(tenant_id,starts_at,ends_at,timezone,reason,created_by)
+               SELECT 'cedar_foods',%s,%s,'UTC','Nightly source maintenance window','admin@demo.local'
+                WHERE NOT EXISTS (
+                  SELECT 1 FROM obs.maintenance_windows
+                   WHERE tenant_id='cedar_foods' AND starts_at=%s)""",
+            (starts, starts + timedelta(hours=2), starts),
+        )
 
 
 def seed() -> None:
@@ -295,9 +312,33 @@ def seed() -> None:
                 "INSERT INTO obs.notification_channels(channel_id,kind,target_env) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
                 (channel, kind, env),
             )
+        for recipient, subject, body, age in [
+            (
+                "operator@demo.local",
+                "Your Pravah account is ready",
+                "An account was created for you with the operator role.\n"
+                "Sign in with the workspace demo password, then change it from your profile menu.",
+                "2 days",
+            ),
+            (
+                "viewer@demo.local",
+                "Your Pravah password was reset",
+                "An administrator reset your password.\n"
+                "Sign in with the temporary password from your administrator, then change it from your profile menu.",
+                "1 day",
+            ),
+        ]:
+            conn.execute(
+                """INSERT INTO obs.dev_mailbox(recipient,subject,body,created_at)
+                   SELECT %s,%s,%s,now() - interval %s
+                    WHERE NOT EXISTS (
+                      SELECT 1 FROM obs.dev_mailbox WHERE recipient=%s AND subject=%s)""",
+                (recipient, subject, body, age, recipient, subject),
+            )
         if conn.execute("SELECT count(*) AS n FROM obs.pipeline_runs").fetchone()["n"]:
             from obs.quality.demo import seed_quality
 
+            _seed_cedar_windows(conn, now)
             seed_quality(conn)
             print(
                 "Demo history already present; seed is idempotent. Use make reset for a fresh history."
@@ -346,7 +387,7 @@ def seed() -> None:
                         duration = min(duration, int((now - at).total_seconds()) - 180)
                         fail = rng.random() < 0.033 and at < now - timedelta(hours=24)
                         error = rng.choice(list(MESSAGES))
-                        if tenant == "cedar_foods" and at.hour < 5 and rng.random() < 0.48:
+                        if tenant == "cedar_foods" and 1 <= at.hour < 3 and rng.random() < 0.48:
                             fail, error = True, "SOURCE_UNREACHABLE"
                         if (
                             tenant == "acme_retail"
@@ -383,6 +424,10 @@ def seed() -> None:
                             queued_at=at - timedelta(seconds=delay),
                             airbyte_attempts=3 if fail else 1,
                         )
+                        if tenant == "cedar_foods" and fail and 1 <= at.hour < 3:
+                            # SPEC §13: cedar's nightly failures sit inside its
+                            # 01:00–03:00 maintenance window: tagged, not alerted.
+                            run["in_maintenance"] = True
                         if fail and error == "AIRFLOW_INFRA":
                             run["failed_stage"] = "airflow"
                         upsert_run(conn, run)
@@ -537,6 +582,7 @@ def seed() -> None:
         )
         from obs.quality.demo import seed_quality
 
+        _seed_cedar_windows(conn, now)
         seed_quality(conn)
     from obs.alerter.rules import evaluate
 

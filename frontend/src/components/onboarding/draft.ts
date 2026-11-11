@@ -3,20 +3,20 @@ import type { Schema } from '../../api/client';
 export type OnboardDraft = Schema<'OnboardInput'>;
 export type DraftErrors = Partial<Record<keyof OnboardDraft | 'sources', string>>;
 export const DEMO_DRAFT: OnboardDraft = {
-  tenant_id: 'system_engines',
-  display_name: 'System Engines',
+  tenant_id: 'zenith_pay',
+  display_name: 'Zenith Pay',
   has_mysql: true,
   has_mongo: true,
-  mysql_host: 'mysql.system-engines.internal',
+  mysql_host: 'mysql.zenith-pay.internal',
   mysql_port: 3306,
-  mysql_database: 'operations',
+  mysql_database: 'payments',
   mysql_user: 'replication_reader',
-  mysql_secret_ref: 'demo://system_engines/mysql',
-  mongo_database: 'operations',
-  mongo_secret_ref: 'demo://system_engines/mongo',
-  warehouse_schema: 'system_engines',
+  mysql_secret_ref: 'demo://zenith/mysql',
+  mongo_database: 'payments',
+  mongo_secret_ref: 'demo://zenith/mongo',
+  warehouse_schema: 'zenith_pay',
   freshness_sla_min: 120,
-  owner_email: 'data@systemengines.example',
+  owner_email: 'owner@zenith.example',
   run_initial: true,
 };
 export function initialDraft(mode: 'demo' | 'live'): OnboardDraft {
@@ -121,7 +121,7 @@ export function validateDraft(
         errors.mysql_secret_ref =
           mode === 'live'
             ? 'Use an approved aws:// secret reference.'
-            : 'Enter a secret-manager reference, such as demo://system_engines/mysql.';
+            : 'Enter a secret-manager reference, such as demo://zenith/mysql.';
     }
     if (draft.has_mongo) {
       if (!draft.mongo_database.trim() || draft.mongo_database.length > 100)
@@ -130,7 +130,7 @@ export function validateDraft(
         errors.mongo_secret_ref =
           mode === 'live'
             ? 'Use an approved aws:// secret reference.'
-            : 'Enter a secret-manager reference, such as demo://system_engines/mongo.';
+            : 'Enter a secret-manager reference, such as demo://zenith/mongo.';
     }
   }
   return errors;

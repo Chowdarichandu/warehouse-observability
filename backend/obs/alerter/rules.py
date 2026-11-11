@@ -81,7 +81,7 @@ def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
         n = int(params.get("n", 2))
         found = conn.execute(
             """WITH recent AS(SELECT r.*,row_number() OVER(PARTITION BY r.tenant_id,source_type ORDER BY started_at DESC) AS rn
-            FROM obs.pipeline_runs r JOIN obs.tenants t USING(tenant_id) WHERE t.status='active' AND load_type='cdc')
+            FROM obs.pipeline_runs r JOIN obs.tenants t USING(tenant_id) WHERE t.status='active' AND load_type='cdc' AND NOT r.in_maintenance)
             SELECT tenant_id,source_type,'Consecutive CDC runs failed' AS reason FROM recent
             WHERE rn<=%s GROUP BY 1,2 HAVING count(*)=%s AND bool_and(status='failed')""",
             (n, n),

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from psycopg.types.json import Jsonb
@@ -20,6 +21,7 @@ from obs.auth import (
 from obs.db import connection, notify, one
 from obs.demo.scenarios import upsert_run
 from obs.demo.seed import make_run
+from obs.devmail import record_email
 from obs.onboarding.preflight import preflight as run_preflight
 from obs.onboarding.service import start
 from obs.redact import redact
@@ -91,6 +93,45 @@ def update_tenant(
         audit(conn, user["email"], action, id, changes)
         notify(conn, "run.updated", {"tenant_id": id, "status": data.status or "updated"})
     return {"message": "Tenant settings updated.", "simulated": settings().mode == "demo"}
+
+
+@router.post(
+    "/tenants/{id}/maintenance-windows", response_model=s.MaintenanceWindow, status_code=201
+)
+def create_maintenance_window(
+    id: str,
+    data: s.MaintenanceWindowInput,
+    user: dict = Depends(require_role("operator", "manage_tenants")),
+) -> dict:
+    if data.ends_at <= data.starts_at:
+        fail(422, "window_inverted", "The window must end after it starts.")
+    with connection() as conn:
+        if not conn.execute("SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (id,)).fetchone():
+            fail(404, "tenant_not_found", "Tenant not found.")
+        item = conn.execute(
+            """INSERT INTO obs.maintenance_windows(tenant_id,starts_at,ends_at,timezone,reason,created_by)
+               VALUES(%s,%s,%s,%s,%s,%s) RETURNING *""",
+            (id, data.starts_at, data.ends_at, data.timezone, data.reason.strip(), user["email"]),
+        ).fetchone()
+        audit(conn, user["email"], "create_maintenance_window", f"{id}/{item['id']}")
+    return item
+
+
+@router.delete("/tenants/{id}/maintenance-windows/{window_id}", response_model=s.Message)
+def delete_maintenance_window(
+    id: str,
+    window_id: UUID,
+    user: dict = Depends(require_role("operator", "manage_tenants")),
+) -> dict:
+    with connection() as conn:
+        item = conn.execute(
+            "DELETE FROM obs.maintenance_windows WHERE tenant_id=%s AND id=%s RETURNING id",
+            (id, window_id),
+        ).fetchone()
+        if not item:
+            fail(404, "window_not_found", "Maintenance window not found.")
+        audit(conn, user["email"], "delete_maintenance_window", f"{id}/{window_id}")
+    return {"message": "Maintenance window removed."}
 
 
 @router.post("/tenants/{id}/resync", response_model=s.Message)
@@ -345,6 +386,14 @@ def create_user(
             str(new_id),
             {"role": role, "role_name": role_name, "user": redact(email)},
         )
+        record_email(
+            conn,
+            email,
+            "Your Pravah account is ready",
+            f"An account was created for you with the {role} role.\n"
+            f"Sign in with this temporary password: {secret_value}\n"
+            "You will be asked to change it after signing in.",
+        )
     message = "User created."
     if generated:
         message += " Share the temporary password with them; they can change it after signing in."
@@ -485,6 +534,14 @@ def reset_password(id: int, user: dict = Depends(require_permission("manage_user
             (id,),
         )
         audit(conn, user["email"], "reset_password", str(id), {"user": redact(target["email"])})
+        record_email(
+            conn,
+            target["email"],
+            "Your Pravah password was reset",
+            f"An administrator reset your password.\n"
+            f"Sign in with this temporary password: {temporary}\n"
+            "You will be asked to change it after signing in.",
+        )
     return {
         "message": "Password reset. Share the temporary password with the user; they can change it after signing in.",
         "temporary_password": temporary,

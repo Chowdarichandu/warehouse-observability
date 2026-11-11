@@ -29,14 +29,17 @@ The API serves its OpenAPI contract at `/api/openapi.json` and the interactive r
 | `GET` | `/api/deliveries` | Deliveries |
 | `GET` | `/api/dependencies` | Dependencies |
 | `GET` | `/api/dependencies/tenants` | Dependency Tenants |
+| `GET` | `/api/dev/mailbox` | Dev Mailbox |
 | `GET` | `/api/errors/groups` | Groups |
 | `GET` | `/api/errors/groups/{fingerprint}` | Group |
+| `GET` | `/api/forecast` | Forecast |
 | `GET` | `/api/freshness` | Freshness |
 | `GET` | `/api/health` | Health |
 | `GET` | `/api/health/live` | Liveness |
 | `GET` | `/api/incidents` | Incidents |
 | `GET` | `/api/incidents/{incident_id}` | Incident |
 | `POST` | `/api/incidents/{incident_id}/ack` | Acknowledge |
+| `POST` | `/api/incidents/{incident_id}/assign` | Assign |
 | `POST` | `/api/incidents/{incident_id}/notes` | Note |
 | `POST` | `/api/incidents/{incident_id}/resolve` | Resolve |
 | `GET` | `/api/investigation/timeline` | Timeline |
@@ -78,6 +81,9 @@ The API serves its OpenAPI contract at `/api/openapi.json` and the interactive r
 | `GET` | `/api/tenants` | Tenants |
 | `GET` | `/api/tenants/{id}` | Tenant Detail |
 | `PATCH` | `/api/tenants/{id}` | Update Tenant |
+| `GET` | `/api/tenants/{id}/maintenance-windows` | Maintenance Windows |
+| `POST` | `/api/tenants/{id}/maintenance-windows` | Create Maintenance Window |
+| `DELETE` | `/api/tenants/{id}/maintenance-windows/{window_id}` | Delete Maintenance Window |
 | `GET` | `/api/tenants/{id}/metrics` | Tenant Metrics |
 | `POST` | `/api/tenants/{id}/resync` | Resync |
 | `GET` | `/api/tenants/{id}/timeline` | Timeline |

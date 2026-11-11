@@ -123,6 +123,17 @@ def tenant_detail(id: str) -> dict:
     }
 
 
+@router.get("/tenants/{id}/maintenance-windows", response_model=s.Page[s.MaintenanceWindow])
+def maintenance_windows(id: str, page: PageNumber = 1, page_size: PageSize = 25) -> dict:
+    if not one("SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (id,)):
+        fail(404, "tenant_not_found", "Tenant not found.")
+    items = rows(
+        "SELECT * FROM obs.maintenance_windows WHERE tenant_id=%s ORDER BY starts_at DESC NULLS LAST, created_at DESC",
+        (id,),
+    )
+    return a.page(items, page, page_size)
+
+
 @router.get("/tenants/{id}/timeline", response_model=s.Page[s.Run])
 def timeline(
     id: str,
@@ -428,6 +439,56 @@ def freshness(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
         page,
         page_size,
     )
+
+
+@router.get("/forecast", response_model=s.Page[s.Forecast])
+def forecast(page: PageNumber = 1, page_size: PageSize = 25) -> dict:
+    """SLA breach forecast (SPEC §2): for each active tenant, project when
+    freshness breaches the SLA if no further run succeeds, using the data
+    age, the SLA, and the tenant's observed run interval."""
+    items = rows(
+        """SELECT t.tenant_id, t.display_name, t.freshness_sla_min,
+                  max(f.minutes_stale) AS data_age_min,
+                  CASE WHEN count(r.run_key) > 0
+                       THEN least(240.0, greatest(5.0, 1440.0 / count(r.run_key)))
+                       ELSE 60.0 END AS run_interval_min
+             FROM obs.tenants t
+             JOIN obs.v_freshness f ON f.tenant_id = t.tenant_id
+             LEFT JOIN obs.pipeline_runs r
+               ON r.tenant_id = t.tenant_id AND r.started_at >= now() - interval '24 hours'
+            WHERE t.status = 'active' AND f.minutes_stale IS NOT NULL
+            GROUP BY t.tenant_id, t.display_name, t.freshness_sla_min
+            ORDER BY data_age_min DESC"""
+    )
+    result = []
+    for item in items:
+        age = float(item["data_age_min"])
+        sla = int(item["freshness_sla_min"])
+        interval = float(item["run_interval_min"])
+        breach_in = round(sla - age, 1)
+        state = "breached" if age >= sla else "at_risk" if age + interval >= sla else "safe"
+        result.append(
+            {
+                **item,
+                "data_age_min": round(age, 1),
+                "run_interval_min": round(interval, 1),
+                "breach_in_min": breach_in,
+                "state": state,
+            }
+        )
+    result.sort(key=lambda i: (i["state"] == "safe", i["breach_in_min"]))
+    return a.page(result, page, page_size)
+
+
+@router.get("/dev/mailbox", response_model=s.Page[s.DevMail])
+def dev_mailbox(
+    page: PageNumber = 1,
+    page_size: PageSize = 25,
+    user: dict = Depends(require_role("admin")),
+) -> dict:
+    """SPEC §13 dev mailbox: account emails captured in demo mode."""
+    items = rows("SELECT * FROM obs.dev_mailbox ORDER BY created_at DESC, id DESC")
+    return a.page(items, page, page_size)
 
 
 @router.get("/volume-anomalies", response_model=s.Page[s.Change])

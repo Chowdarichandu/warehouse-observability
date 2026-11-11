@@ -88,6 +88,7 @@ class Run(BaseModel):
     airbyte_attempts: int | None = None
     collected_at: datetime
     error_class: str | None = None
+    in_maintenance: bool = False
 
 
 class StreamStat(BaseModel):
@@ -148,6 +149,43 @@ class Freshness(BaseModel):
     minutes_stale: float | None = None
     sla_7d: float | None = None
     sla_30d: float | None = None
+
+
+class MaintenanceWindow(BaseModel):
+    id: UUID
+    tenant_id: str
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    rrule: str | None = None
+    timezone: str
+    reason: str
+    created_by: str
+    created_at: datetime
+
+
+class MaintenanceWindowInput(BaseModel):
+    starts_at: datetime
+    ends_at: datetime
+    timezone: str = Field(default="UTC", max_length=64)
+    reason: str = Field(min_length=1, max_length=200)
+
+
+class DevMail(BaseModel):
+    id: int
+    recipient: str
+    subject: str
+    body: str
+    created_at: datetime
+
+
+class Forecast(BaseModel):
+    tenant_id: str
+    display_name: str
+    data_age_min: float
+    freshness_sla_min: int
+    run_interval_min: float
+    breach_in_min: float | None = None
+    state: Literal["safe", "at_risk", "breached"]
 
 
 class WarehouseTable(BaseModel):

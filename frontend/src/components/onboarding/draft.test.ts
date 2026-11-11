@@ -7,8 +7,8 @@ afterEach(() => {
 });
 
 describe('tenant onboarding validation', () => {
-  it('starts with the System Engines demonstration and an empty live identity', () => {
-    expect(initialDraft('demo').tenant_id).toBe('system_engines');
+  it('starts with the Zenith Pay demonstration and an empty live identity', () => {
+    expect(initialDraft('demo').tenant_id).toBe('zenith_pay');
     expect(initialDraft('live').tenant_id).toBe('');
     expect(initialDraft('live').mysql_secret_ref).toBe('aws://observability/');
   });
@@ -35,7 +35,7 @@ describe('tenant onboarding validation', () => {
     expect(initialDraft('live').display_name).toBe('');
   });
   it('normalizes a readable slug without changing permanent identifiers', () => {
-    expect(slugify('Café & System Engines')).toBe('cafe_system_engines');
+    expect(slugify('Café & Zenith Pay')).toBe('cafe_zenith_pay');
     expect(slugify('x'.repeat(80))).toHaveLength(48);
     expect(validateDraft({ ...DEMO_DRAFT, tenant_id: '1_bad' }, 1, 'demo').tenant_id).toBeTruthy();
   });

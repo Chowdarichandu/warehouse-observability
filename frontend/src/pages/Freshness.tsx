@@ -33,12 +33,38 @@ export function Freshness() {
     queryKey: ['schema'],
     queryFn: () => api<Schema<'Page_Change_'>>('/schema-changes'),
   });
+  const forecast = useQuery({
+    queryKey: ['forecast'],
+    queryFn: () => api<Schema<'Page_Forecast_'>>('/forecast?page_size=100'),
+  });
+  const atRisk = (forecast.data?.items ?? []).filter((item) => item.state !== 'safe');
   return (
     <>
       <PageHeader
         title="Freshness & volume"
         description="Current data freshness for every source, plus every recorded volume anomaly and schema change. Freshness is a live snapshot — it does not follow the global time range."
       />
+      {atRisk.length > 0 && (
+        <Panel
+          title="SLA breach forecast"
+          subtitle="Projected from data age, the SLA and each tenant's run interval, assuming the next run fails."
+          className={forecast.isPlaceholderData ? 'is-fetching' : ''}
+        >
+          <ul className="forecast-list">
+            {atRisk.map((item) => (
+              <li key={item.tenant_id}>
+                <StatusPill status={item.state === 'breached' ? 'down' : 'degraded'} />
+                <span>
+                  <TenantLink id={item.tenant_id} /> —{' '}
+                  {item.state === 'breached'
+                    ? `SLA already breached: data is ${formatDuration(item.data_age_min * 60)} old against a ${item.freshness_sla_min}m SLA.`
+                    : `will breach SLA in about ${Math.max(1, Math.round(item.breach_in_min ?? 0))} min if the next run fails.`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       <Panel
         title="Data freshness"
         subtitle="Time since the last successful sync, measured against each source’s SLA."

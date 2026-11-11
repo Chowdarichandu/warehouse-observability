@@ -26,6 +26,7 @@ from obs.auth import (
     verify_password,
 )
 from obs.db import connection, one
+from obs.devmail import record_email
 from obs.settings import settings
 
 router = APIRouter(tags=["Authentication"])
@@ -131,6 +132,14 @@ def forgot_password(data: ForgotPasswordIn, request: Request) -> dict:
             (row["user_id"],),
         )
         audit(conn, row["email"], "forgot_password_reset", str(row["user_id"]))
+        record_email(
+            conn,
+            row["email"],
+            "Your Pravah password was reset",
+            f"You requested a password reset.\n"
+            f"Sign in with this temporary password: {temporary}\n"
+            "You will be asked to change it after signing in.",
+        )
     return {
         "message": "Demo workspace: use this temporary password to sign in, then change it from your profile menu.",
         "temporary_password": temporary,

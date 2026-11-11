@@ -4,6 +4,10 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Add maintenance windows: operators can schedule per-tenant windows; runs inside a window are tagged in-maintenance, excluded from SLA buckets, and never raise consecutive-failure alerts. The demo seeds Cedar Foods with a nightly window.
+- Add an SLA breach forecast on the Freshness screen: tenants whose data will cross the freshness SLA before the next scheduled run are listed with the time remaining.
+- Add the demo Dev mailbox (admin only): invite and password-reset emails are captured in the console instead of being sent.
+- Pre-fill the onboarding wizard with the Zenith Pay demonstration tenant, matching the documented scenario.
 - Add the Incidents screen: grouped incidents with a timeline, acknowledge, assign, notes, and resolve with an optional root-cause category.
 - Fix demo tenant-isolation checks raising a critical incident for every shared-source tenant: demo isolation evidence no longer depends on the table catalog, quality checks name tables that exist in each tenant's catalog, and the demo dataset gains the Pinecrest Education tenant with its resolved isolation incident and check history (replacing Luminous Labs).
 - Add recorded contract fixtures for every supported Airflow (2.x, 3.x) and Airbyte endpoint family, replayed through the clients in tests.

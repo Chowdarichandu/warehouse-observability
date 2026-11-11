@@ -121,6 +121,7 @@ RUN_COLUMNS = (
     "airbyte_job_id",
     "airbyte_attempts",
     "collected_at",
+    "in_maintenance",
 )
 
 
