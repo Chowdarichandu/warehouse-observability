@@ -36,6 +36,9 @@ PERMISSIONS = [
     "manage_alerts",
     "manage_users",
     "manage_platform",
+    "view_module_hrms",
+    "view_module_finance",
+    "view_module_sap",
 ]
 SYSTEM_ROLE_PERMISSIONS = {
     "admin": [permission for permission in PERMISSIONS if permission != "metrics_only"],
@@ -52,6 +55,9 @@ PERMISSION_MIN_ROLE = {
     "manage_alerts": "operator",
     "manage_users": "admin",
     "manage_platform": "admin",
+    "view_module_hrms": "viewer",
+    "view_module_finance": "viewer",
+    "view_module_sap": "viewer",
 }
 
 

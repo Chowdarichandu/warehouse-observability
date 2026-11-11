@@ -1,27 +1,7 @@
-import { useEffect, useRef } from 'react';
-import * as echarts from 'echarts/core';
-import { BarChart, LineChart, HeatmapChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  VisualMapComponent,
-  MarkLineComponent,
-} from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
-import type { EChartsCoreOption, EChartsType } from 'echarts/core';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import type { EChartsCoreOption } from 'echarts/core';
 
-echarts.use([
-  BarChart,
-  LineChart,
-  HeatmapChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  VisualMapComponent,
-  MarkLineComponent,
-  CanvasRenderer,
-]);
+const EChart = lazy(() => import('./EChart').then((module) => ({ default: module.EChart })));
 
 export function Chart({
   option,
@@ -32,51 +12,43 @@ export function Chart({
   height?: number;
   label: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const chart = useRef<EChartsType | null>(null);
+  const host = useRef<HTMLDivElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
+
   useEffect(() => {
-    if (!ref.current) return;
-    const instance = echarts.init(ref.current);
-    chart.current = instance;
-    let frame = 0;
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => instance.resize());
-    });
-    observer.observe(ref.current);
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      instance.dispose();
-      chart.current = null;
-    };
-  }, []);
-  useEffect(() => {
-    const pageTooltip =
-      option && typeof option === 'object' && 'tooltip' in option
-        ? (option.tooltip as Record<string, unknown>)
-        : {};
-    chart.current?.setOption(
-      {
-        animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-        animationDuration: 240,
-        animationDurationUpdate: 260,
-        textStyle: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: '#81909f' },
-        grid: { left: 46, right: 24, top: 30, bottom: 36, containLabel: true },
-        ...option,
-        tooltip: {
-          trigger: 'axis',
-          ...pageTooltip,
-          confine: true,
-          backgroundColor: 'rgba(13, 24, 36, 0.96)',
-          borderWidth: 0,
-          textStyle: { color: '#e8eff6', fontSize: 12 },
-          extraCssText:
-            'border-radius: 10px; box-shadow: 0 14px 34px rgba(5, 12, 22, 0.35); padding: 10px 12px;',
-        },
+    const element = host.current;
+    if (!element) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setNearViewport(true);
+          observer.disconnect();
+        }
       },
-      { replaceMerge: ['series'], lazyUpdate: true },
+      { rootMargin: '180px 0px' },
     );
-  }, [option]);
-  return <div ref={ref} style={{ height, width: '100%' }} role="img" aria-label={label} />;
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={host}
+      className="chart-deferred"
+      style={{ height, width: '100%' }}
+      role="img"
+      aria-label={label}
+    >
+      {nearViewport && (
+        <Suspense fallback={<div className="chart-loading-placeholder" aria-hidden="true" />}>
+          <EChart option={option} height={height} />
+        </Suspense>
+      )}
+    </div>
+  );
 }

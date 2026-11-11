@@ -362,7 +362,55 @@ def test_admin_views_user_permissions(clients):
         "manage_alerts",
         "manage_users",
         "manage_platform",
+        "view_module_hrms",
+        "view_module_finance",
+        "view_module_sap",
     }
+
+
+def test_product_module_permissions_are_explicit_and_narrow(monkeypatch):
+    from fastapi import HTTPException
+
+    from obs import auth
+    from obs.api.routers import actions
+
+    monkeypatch.setattr(auth.settings(), "auth_provider", "local")
+    monkeypatch.setattr(
+        auth,
+        "one",
+        lambda *_: {"permissions": ["view_console", "view_module_sap"]},
+    )
+    permissions = auth.user_permissions(
+        {"role": "viewer", "role_name": "sap_analyst", "user_id": None}
+    )
+    assert "view_module_sap" in permissions
+    assert "view_module_hrms" not in permissions
+    assert "view_module_finance" not in permissions
+
+    # Module endpoints can use the same server-side permission dependency.
+    require_sap = auth.require_permission("view_module_sap")
+    require_hrms = auth.require_permission("view_module_hrms")
+    assert (
+        require_sap({"role": "viewer", "permissions": permissions})["role"] == "viewer"
+    )
+    with pytest.raises(HTTPException) as denied:
+        require_hrms({"role": "viewer", "permissions": permissions})
+    assert denied.value.status_code == 403
+
+    restricted_admin = {
+        "role": "admin",
+        "permissions": ["view_console", "manage_users"],
+    }
+    with pytest.raises(HTTPException) as escalation:
+        actions._check_grantable(
+            restricted_admin, "viewer", ["view_console", "view_module_sap"]
+        )
+    assert escalation.value.status_code == 403
+    actions._check_grantable(
+        {"role": "admin", "permissions": auth.SYSTEM_ROLE_PERMISSIONS["admin"]},
+        "viewer",
+        ["view_console", "view_module_sap"],
+    )
 
 
 def test_revoke_removes_permission_from_live_requests(clients, monkeypatch):

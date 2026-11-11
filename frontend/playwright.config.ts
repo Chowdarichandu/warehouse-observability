@@ -8,7 +8,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8080',
     reducedMotion: 'reduce',
     viewport: { width: 1440, height: 1000 },
     screenshot: 'only-on-failure',

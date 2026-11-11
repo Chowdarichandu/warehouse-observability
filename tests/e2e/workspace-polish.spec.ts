@@ -14,7 +14,8 @@ test("search, navigation, typography, and administration work together", async (
     page.getByRole("heading", { name: "Tenant health", exact: true }),
   ).toBeVisible();
   await page.locator(".workspace-switch").click();
-  await page.locator(".product-settings").click();
+  await expect(page.locator("#workspace-product-menu")).toBeVisible();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/account$/);
   await chooseSelectOption(page.getByLabel("Text size"), "Large");
   await expect(page.locator("html")).toHaveCSS("zoom", "1.12");

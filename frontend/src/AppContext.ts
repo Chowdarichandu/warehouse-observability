@@ -20,10 +20,12 @@ export function useApp() {
   const has = (permission: string) =>
     Array.isArray(permissions)
       ? permissions.includes(permission)
-      : value.user.role === 'admin' ||
-        (permission !== 'manage_users' &&
-          permission !== 'manage_platform' &&
-          value.user.role !== 'viewer');
+      : permission.startsWith('view_module_')
+        ? value.user.role === 'admin'
+        : value.user.role === 'admin' ||
+          (permission !== 'manage_users' &&
+            permission !== 'manage_platform' &&
+            value.user.role !== 'viewer');
   const related: Record<string, string> = {
     'workspace.read': 'view_console',
     'investigations.save': 'view_console',

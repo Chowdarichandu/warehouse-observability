@@ -8,7 +8,6 @@ export default defineConfig({
         manualChunks: (id) => {
           if (id.includes('zrender')) return 'chart-renderer';
           if (id.includes('echarts')) return 'charts';
-          if (id.includes('node_modules')) return 'vendor';
         },
       },
     },

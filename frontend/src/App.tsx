@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Select } from './components/Select';
 import {
   NavLink,
@@ -46,20 +46,42 @@ import { APP_NAME, API_POLL_MS } from './config';
 import { ErrorState, Loading, Time } from './components/ui';
 import { StatusPill } from './components/StatusPill';
 import { Login } from './pages/Login';
-import { Overview } from './pages/Overview';
-import { Tenants, TenantDetail } from './pages/Tenants';
-import { Runs, RunDetail } from './pages/Runs';
-import { Errors } from './pages/Errors';
-import { Freshness } from './pages/Freshness';
-import { Alerts } from './pages/Alerts';
-import { Onboarding } from './pages/Onboarding';
-import { Admin, Platform, SearchResults } from './pages/System';
-import { Quality } from './pages/Quality';
-import { Warehouse } from './pages/Warehouse';
-import { Account } from './pages/Account';
-import { Pipelines } from './pages/Pipelines';
-import { Access } from './pages/Access';
-import { Dependencies } from './pages/Dependencies';
+
+// Route screens are fetched as they are opened so the workspace shell stays light.
+const Overview = lazy(() =>
+  import('./pages/Overview').then((page) => ({ default: page.Overview })),
+);
+const Tenants = lazy(() => import('./pages/Tenants').then((page) => ({ default: page.Tenants })));
+const TenantDetail = lazy(() =>
+  import('./pages/Tenants').then((page) => ({ default: page.TenantDetail })),
+);
+const Runs = lazy(() => import('./pages/Runs').then((page) => ({ default: page.Runs })));
+const RunDetail = lazy(() => import('./pages/Runs').then((page) => ({ default: page.RunDetail })));
+const Errors = lazy(() => import('./pages/Errors').then((page) => ({ default: page.Errors })));
+const Freshness = lazy(() =>
+  import('./pages/Freshness').then((page) => ({ default: page.Freshness })),
+);
+const Alerts = lazy(() => import('./pages/Alerts').then((page) => ({ default: page.Alerts })));
+const Onboarding = lazy(() =>
+  import('./pages/Onboarding').then((page) => ({ default: page.Onboarding })),
+);
+const Admin = lazy(() => import('./pages/System').then((page) => ({ default: page.Admin })));
+const Platform = lazy(() => import('./pages/System').then((page) => ({ default: page.Platform })));
+const SearchResults = lazy(() =>
+  import('./pages/System').then((page) => ({ default: page.SearchResults })),
+);
+const Quality = lazy(() => import('./pages/Quality').then((page) => ({ default: page.Quality })));
+const Warehouse = lazy(() =>
+  import('./pages/Warehouse').then((page) => ({ default: page.Warehouse })),
+);
+const Account = lazy(() => import('./pages/Account').then((page) => ({ default: page.Account })));
+const Pipelines = lazy(() =>
+  import('./pages/Pipelines').then((page) => ({ default: page.Pipelines })),
+);
+const Access = lazy(() => import('./pages/Access').then((page) => ({ default: page.Access })));
+const Dependencies = lazy(() =>
+  import('./pages/Dependencies').then((page) => ({ default: page.Dependencies })),
+);
 
 function localInputTime(iso: string | null) {
   if (!iso) return undefined;
@@ -98,6 +120,27 @@ const NAV = [
     ],
   },
 ];
+
+const PRODUCT_MODULES = [
+  {
+    mark: 'H',
+    name: 'HRMS',
+    description: 'People operations',
+    permission: 'view_module_hrms',
+  },
+  {
+    mark: 'F',
+    name: 'Finance',
+    description: 'Finance operations',
+    permission: 'view_module_finance',
+  },
+  {
+    mark: 'S',
+    name: 'SAP',
+    description: 'ERP operations',
+    permission: 'view_module_sap',
+  },
+] as const;
 
 function ActivityRedirect() {
   const [params] = useSearchParams();
@@ -152,7 +195,11 @@ export function App() {
 }
 
 function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'RuntimeConfig'> }) {
-  const metricsOnly = user.permissions.includes('metrics_only');
+  const permissions = Array.isArray(user.permissions) ? user.permissions : undefined;
+  const metricsOnly = permissions?.includes('metrics_only') ?? false;
+  const availableModules = PRODUCT_MODULES.filter((module) =>
+    permissions ? permissions.includes(module.permission) : user.role === 'admin',
+  );
   const searchRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const fetching = useIsFetching({
@@ -293,6 +340,8 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               className="workspace-switch"
               onClick={() => setPanel(panel === 'workspace' ? 'none' : 'workspace')}
               aria-expanded={panel === 'workspace'}
+              aria-controls="workspace-product-menu"
+              aria-haspopup="true"
               title="Product navigation"
             >
               <span className="workspace-avatar">O</span>
@@ -303,43 +352,42 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               <ChevronDown size={14} className="switch-chevron" />
             </button>
             {panel === 'workspace' && (
-              <div className="popover workspace-pop product-menu">
-                <span className="product-menu-label">YOUR PRODUCTS</span>
+              <div
+                className="popover workspace-pop product-menu"
+                id="workspace-product-menu"
+                aria-label="Product modules"
+              >
+                <span className="product-menu-label">YOUR MODULES</span>
                 <NavLink to="/" className="product-active">
                   <span className="workspace-avatar">O</span>
                   <span>
                     <strong>Observability</strong>
                     <small>Monitor data operations</small>
                   </span>
-                  <span className="product-current">Current</span>
+                  <span className="product-current">Open</span>
                 </NavLink>
-                {[
-                  ['P', 'POS', 'Point of sale operations'],
-                  ['I', 'Inventory', 'Stock and supply movement'],
-                  ['F', 'Finance', 'Billing, payments and payouts'],
-                  ['S', 'Support', 'Customer tickets and SLAs'],
-                ].map(([mark, name, blurb]) => (
-                  <div
+                {availableModules.map((module) => (
+                  <button
+                    type="button"
                     className="product-planned"
-                    key={name}
-                    aria-disabled="true"
-                    onClick={() => setToast(`${name} is planned — it isn't available yet.`)}
+                    key={module.permission}
+                    title={`${module.name} module is not available yet`}
+                    onClick={() => {
+                      setPanel('none');
+                      setToast(
+                        `${module.name} access is assigned. This module is not available yet.`,
+                      );
+                    }}
                   >
-                    <span className="workspace-avatar planned">{mark}</span>
+                    <span className="workspace-avatar planned">{module.mark}</span>
                     <span>
-                      <strong>{name}</strong>
-                      <small>{blurb}</small>
+                      <strong>{module.name}</strong>
+                      <small>{module.description}</small>
                     </span>
                     <span className="product-planned-tag">Planned</span>
-                  </div>
+                  </button>
                 ))}
-                <p>
-                  New domains plug into this same workspace — one sign-in, one role model, one
-                  search and one settings surface across every module.
-                </p>
-                <NavLink to="/account" className="product-settings">
-                  Account settings <ArrowRight size={14} />
-                </NavLink>
+                <p className="product-menu-note">Module access is managed by your administrator.</p>
               </div>
             )}
             <nav>
@@ -347,7 +395,9 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 const items = group.items
                   .filter((item) => !metricsOnly || item.path === '/')
                   .filter(
-                    (item) => item.path !== '/admin' || user.permissions.includes('manage_users'),
+                    (item) =>
+                      item.path !== '/admin' ||
+                      (permissions ? permissions.includes('manage_users') : user.role === 'admin'),
                   )
                   .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer');
                 return items.length ? (
@@ -690,41 +740,49 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   </NavLink>
                 </div>
               ) : (
-                <Routes>
-                  <Route path="/" element={<Overview />} />
-                  <Route path="/tenants" element={<Tenants />} />
-                  <Route path="/tenants/:id" element={<TenantDetail />} />
-                  <Route path="/runs" element={<Runs />} />
-                  <Route path="/runs/:key" element={<RunDetail />} />
-                  <Route path="/activity" element={<ActivityRedirect />} />
-                  <Route path="/pipelines" element={<Pipelines />} />
-                  <Route path="/workspace" element={<Navigate to="/" replace />} />
-                  <Route
-                    path="/workspace/pipelines"
-                    element={<Navigate to="/pipelines" replace />}
-                  />
-                  <Route path="/access" element={<Access />} />
-                  <Route path="/account" element={<Account />} />
-                  <Route path="/dependencies" element={<Dependencies />} />
-                  <Route path="/quality" element={<Quality />} />
-                  <Route path="/errors" element={<Errors />} />
-                  <Route path="/freshness" element={<Freshness />} />
-                  <Route path="/warehouse" element={<Warehouse />} />
-                  <Route path="/alerts" element={<Alerts />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/platform" element={<Platform />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/search" element={<SearchResults />} />
-                  <Route
-                    path="*"
-                    element={
-                      <div className="empty">
-                        <h1>Page not found</h1>
-                        <NavLink to="/">Back to overview</NavLink>
-                      </div>
-                    }
-                  />
-                </Routes>
+                <Suspense
+                  fallback={
+                    <div className="route-loading" aria-live="polite">
+                      <Loading />
+                    </div>
+                  }
+                >
+                  <Routes>
+                    <Route path="/" element={<Overview />} />
+                    <Route path="/tenants" element={<Tenants />} />
+                    <Route path="/tenants/:id" element={<TenantDetail />} />
+                    <Route path="/runs" element={<Runs />} />
+                    <Route path="/runs/:key" element={<RunDetail />} />
+                    <Route path="/activity" element={<ActivityRedirect />} />
+                    <Route path="/pipelines" element={<Pipelines />} />
+                    <Route path="/workspace" element={<Navigate to="/" replace />} />
+                    <Route
+                      path="/workspace/pipelines"
+                      element={<Navigate to="/pipelines" replace />}
+                    />
+                    <Route path="/access" element={<Access />} />
+                    <Route path="/account" element={<Account />} />
+                    <Route path="/dependencies" element={<Dependencies />} />
+                    <Route path="/quality" element={<Quality />} />
+                    <Route path="/errors" element={<Errors />} />
+                    <Route path="/freshness" element={<Freshness />} />
+                    <Route path="/warehouse" element={<Warehouse />} />
+                    <Route path="/alerts" element={<Alerts />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/platform" element={<Platform />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/search" element={<SearchResults />} />
+                    <Route
+                      path="*"
+                      element={
+                        <div className="empty">
+                          <h1>Page not found</h1>
+                          <NavLink to="/">Back to overview</NavLink>
+                        </div>
+                      }
+                    />
+                  </Routes>
+                </Suspense>
               )}
             </div>
           </main>

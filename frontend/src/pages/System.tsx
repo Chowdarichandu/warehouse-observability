@@ -50,7 +50,7 @@ export function Platform() {
     <>
       <PageHeader
         title="Platform health"
-        description="The systems behind your pipelines, observed independently of Airflow."
+        description="Airflow, Airbyte and platform checks are collected server-side; this view refreshes every 30 seconds."
         actions={
           <StatusPill
             status={components.every((c) => c.status === 'up') ? 'healthy' : 'degraded'}
@@ -204,6 +204,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   manage_alerts: 'Acknowledge & resolve alerts',
   manage_users: 'Manage users & roles',
   manage_platform: 'Platform operations',
+  view_module_hrms: 'HRMS module access',
+  view_module_finance: 'Finance module access',
+  view_module_sap: 'SAP module access',
 };
 
 function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
@@ -260,7 +263,7 @@ function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
   return (
     <Panel
       title="Roles & permissions"
-      subtitle="A role is a named bundle: pick who it is for, choose an access level, then tick what it can do. Assign it to people in the user table above."
+      subtitle="Create a named role, choose its access level and product modules, then assign it from the user table above."
     >
       <div className="roles-list">
         {roles.map((role) => (

@@ -3208,6 +3208,44 @@ th:first-child {
   animation: route-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.route-loading {
+  min-height: min(56vh, 540px);
+  padding-top: 4px;
+}
+
+.chart-deferred {
+  position: relative;
+  min-width: 0;
+}
+
+.chart-loading-placeholder {
+  position: absolute;
+  inset: 8px 12px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(
+    100deg,
+    transparent 28%,
+    color-mix(in srgb, var(--line) 55%, transparent) 44%,
+    transparent 60%
+  );
+  background-size: 220% 100%;
+  animation: chart-loading-sheen 1.35s ease-in-out infinite;
+}
+
+@keyframes chart-loading-sheen {
+  to {
+    background-position-x: -220%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-loading-placeholder {
+    animation: none;
+    background: color-mix(in srgb, var(--line) 36%, transparent);
+  }
+}
+
 @keyframes route-enter {
   from {
     opacity: 0;
@@ -4976,9 +5014,11 @@ table td {
   display: none;
 }
 .product-menu {
-  padding: 14px;
+  padding: 10px;
 }
 .product-menu-label {
+  display: block;
+  padding: 3px 8px 4px;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -4987,9 +5027,9 @@ table td {
 .product-menu .product-active {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 10px 0;
-  padding: 10px;
+  gap: 9px;
+  margin: 6px 0;
+  padding: 8px 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--title);
@@ -5016,13 +5056,24 @@ table td {
 .product-menu .product-planned {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 6px 0;
-  padding: 10px;
-  border: 1px dashed var(--line);
+  gap: 9px;
+  width: 100%;
+  margin: 3px 0;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--title);
-  opacity: 0.75;
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.product-menu .product-planned:hover {
+  background: var(--subtle);
+  border-color: color-mix(in srgb, var(--green) 38%, var(--line));
 }
 .product-menu .product-planned > span:nth-child(2) {
   flex: 1;
@@ -5034,7 +5085,7 @@ table td {
 }
 .product-menu .product-planned small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 .product-menu .workspace-avatar.planned {
   background: var(--subtle);
@@ -5042,19 +5093,18 @@ table td {
 }
 .product-planned-tag {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  white-space: nowrap;
 }
-.product-menu .product-settings {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  color: var(--green);
-  font-size: 12px;
-  font-weight: 700;
+.product-menu .product-menu-note {
+  margin: 8px 3px 0;
+  padding: 8px 5px 2px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.4;
 }
 .admin-intro {
   display: flex;
@@ -5427,11 +5477,13 @@ tr.row-selected td {
   background: var(--accent-soft);
   color: var(--green);
 }
-/* Product popover gets room to breathe instead of squeezing text. */
+/* Keep the product picker compact and within the sidebar. */
 .workspace-pop {
-  width: 300px;
+  width: 248px;
   right: auto;
   max-width: calc(100vw - 24px);
+  max-height: min(72vh, 420px);
+  overflow-y: auto;
 }
 /* KPI cards never let a long value spill outside the card. */
 .kpi-card {

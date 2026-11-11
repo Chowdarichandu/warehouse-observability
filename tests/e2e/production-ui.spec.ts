@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Route } from "@playwright/test";
 
 test("unexpected API responses have an actionable message on mobile browsers", async ({
   page,
@@ -88,4 +88,42 @@ test("navigation, keyboard search and reduced motion remain accessible", async (
   await expect(
     page.getByRole("link", { name: "Skip to content" }),
   ).toHaveAttribute("href", "#main-content");
+});
+
+test("product navigation only shows modules granted to the signed-in user", async ({
+  page,
+}) => {
+  const sapOnlyIdentity = async (route: Route) => {
+    const response = await route.fetch();
+    if (!response.ok()) return route.fulfill({ response });
+    const user = await response.json();
+    user.permissions = (Array.isArray(user.permissions) ? user.permissions : [])
+      .filter((permission: string) => !permission.startsWith("view_module_"))
+      .concat("view_module_sap");
+    await route.fulfill({ response, json: user });
+  };
+  await page.route("**/api/me", sapOnlyIdentity);
+  await page.route("**/api/auth/login", sapOnlyIdentity);
+  await page.goto("/");
+  await page.getByLabel("Email address").fill("admin@demo.local");
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill(process.env.DEMO_PASSWORD || "demo");
+  await page.getByRole("button", { name: "Sign in to workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Tenant health", exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: /Observability/ }).click();
+  const menu = page.locator("#workspace-product-menu");
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveCSS("width", "248px");
+  await expect(menu.getByRole("button", { name: /SAP/ })).toBeVisible();
+  await expect(menu.getByText("HRMS", { exact: true })).toHaveCount(0);
+  await expect(menu.getByText("Finance", { exact: true })).toHaveCount(0);
+  await menu.getByRole("button", { name: /SAP/ }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText(
+    "SAP access is assigned. This module is not available yet.",
+  );
 });

@@ -505,6 +505,46 @@ def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
         assert deleted.status_code == 200, deleted.text
 
 
+def test_module_role_grant_is_scoped_to_the_assigned_module(clients: dict) -> None:
+    admin = clients["admin"]
+    viewer = clients["viewer"]
+    role_name = f"sap_only_{uuid4().hex[:8]}"
+    created = admin.post(
+        "/api/roles",
+        json={
+            "name": role_name,
+            "base_level": "viewer",
+            "permissions": ["view_module_sap"],
+            "description": "SAP module access only",
+        },
+    )
+    assert created.status_code == 201, created.text
+    assert set(created.json()["permissions"]) == {"view_console", "view_module_sap"}
+
+    viewer_id = one(
+        "SELECT user_id FROM obs.users WHERE email=%s", ("viewer@demo.local",)
+    )["user_id"]
+    assigned = admin.patch(f"/api/users/{viewer_id}", json={"role_name": role_name})
+    assert assigned.status_code == 200, assigned.text
+    try:
+        identity = viewer.get("/api/me")
+        assert identity.status_code == 200, identity.text
+        assert identity.json()["role_name"] == role_name
+        permissions = set(identity.json()["permissions"])
+        assert "view_module_sap" in permissions
+        assert "view_module_hrms" not in permissions
+        assert "view_module_finance" not in permissions
+
+        detail = admin.get(f"/api/users/{viewer_id}/permissions")
+        assert detail.status_code == 200, detail.text
+        assert "view_module_sap" in detail.json()["effective"]
+    finally:
+        restored = admin.patch(f"/api/users/{viewer_id}", json={"role": "viewer"})
+        assert restored.status_code == 200, restored.text
+        deleted = admin.delete(f"/api/roles/{role_name}")
+        assert deleted.status_code == 200, deleted.text
+
+
 def test_admin_password_reset(clients: dict, temporary_local_user) -> None:
     account = temporary_local_user("operator")
     reset = clients["admin"].post(f"/api/users/{account['user_id']}/reset-password")
