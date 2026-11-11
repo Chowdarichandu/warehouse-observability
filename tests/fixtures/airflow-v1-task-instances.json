@@ -1,0 +1,17 @@
+{
+  "task_instances": [
+    {
+      "dag_id": "mysql_cdc",
+      "dag_run_id": "scheduled__2026-11-09T01:00:00+00:00",
+      "task_id": "sync_acme_retail",
+      "map_index": -1,
+      "state": "failed",
+      "try_number": 2,
+      "queued_when": "2026-11-09T01:00:00Z",
+      "start_date": "2026-11-09T01:00:30Z",
+      "end_date": "2026-11-09T01:04:30Z",
+      "operator": "AirbyteTriggerSyncOperator"
+    }
+  ],
+  "total_entries": 1
+}

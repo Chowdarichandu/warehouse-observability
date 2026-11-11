@@ -35,9 +35,14 @@ class Settings(BaseSettings):
     aws_secret_prefix: str = "observability/"
     airflow_transport: Literal["http", "mwaa"] = "http"
     airflow_api_version: Literal["v1", "v2"] = "v1"
+    airflow_auth_method: Literal["bearer", "basic"] = "bearer"
     airflow_url: str = ""
     airflow_read_token: str = ""
     airflow_write_token: str = ""
+    airflow_read_username: str = ""
+    airflow_read_password: str = ""
+    airflow_write_username: str = ""
+    airflow_write_password: str = ""
     mwaa_environment: str = ""
     mwaa_write_role_arn: str = ""
     airflow_dags: dict[str, str] = {
@@ -59,8 +64,16 @@ class Settings(BaseSettings):
     airbyte_config_url: str = ""
     airbyte_workspace_id: str = ""
     airbyte_destination_id: str = ""
-    warehouse_engine: Literal["postgres", "redshift"] = "postgres"
+    warehouse_engine: Literal["postgres", "redshift", "snowflake", "bigquery"] = "postgres"
     warehouse_url: str = ""
+    warehouse_account: str = ""
+    warehouse_user: str = ""
+    warehouse_password: str = ""
+    warehouse_database: str = ""
+    warehouse_role: str = ""
+    warehouse_name: str = ""
+    warehouse_project: str = ""
+    warehouse_dataset: str = ""
     warehouse_load_column: str = "_airbyte_extracted_at"
     warehouse_statement_timeout_ms: int = Field(default=10000, ge=1000, le=60000)
     quality_enabled: bool = False
@@ -143,6 +156,43 @@ class Settings(BaseSettings):
             for url in (self.airflow_url, self.airbyte_url, self.airbyte_config_url):
                 if url and urlsplit(url).scheme != "https":
                     raise ValueError("Live upstream HTTP APIs require HTTPS")
+            if self.airflow_transport == "http":
+                read_configured = bool(self.airflow_url)
+                write_required = self.live_actions_enabled
+                if self.airflow_auth_method == "basic":
+                    read_pair = bool(self.airflow_read_username) == bool(
+                        self.airflow_read_password
+                    )
+                    write_pair = bool(self.airflow_write_username) == bool(
+                        self.airflow_write_password
+                    )
+                    if not read_pair or not write_pair:
+                        raise ValueError(
+                            "Airflow Basic read/write username and password must be configured as pairs"
+                        )
+                    if read_configured and not (
+                        self.airflow_read_username and self.airflow_read_password
+                    ):
+                        raise ValueError(
+                            "AIRFLOW_URL requires a complete Airflow Basic read credential pair"
+                        )
+                    if write_required and not (
+                        self.airflow_write_username and self.airflow_write_password
+                    ):
+                        raise ValueError(
+                            "LIVE_ACTIONS_ENABLED requires a separate Airflow Basic write credential pair"
+                        )
+                else:
+                    if self.airflow_write_token and not self.airflow_read_token:
+                        raise ValueError(
+                            "AIRFLOW_WRITE_TOKEN requires AIRFLOW_READ_TOKEN"
+                        )
+                    if read_configured and not self.airflow_read_token:
+                        raise ValueError("AIRFLOW_URL requires AIRFLOW_READ_TOKEN")
+                    if write_required and not self.airflow_write_token:
+                        raise ValueError(
+                            "LIVE_ACTIONS_ENABLED requires AIRFLOW_WRITE_TOKEN"
+                        )
         return self
 
 

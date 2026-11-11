@@ -91,10 +91,13 @@ def sample_query(schema: str, table: str, columns: list[str]) -> sql.Composed:
 
 def live_evidence(check: dict, schema: str) -> tuple[list[dict], dict[str, str]]:
     with warehouse.connect() as source:
-        source.execute("SET TRANSACTION READ ONLY")
-        # Keep even a misconfigured warehouse timeout bounded for interactive checks.
-        timeout = min(settings().warehouse_statement_timeout_ms, 10000)
-        source.execute(sql.SQL("SET LOCAL statement_timeout TO {}").format(sql.Literal(timeout)))
+        if settings().warehouse_engine in {"postgres", "redshift"}:
+            source.execute("SET TRANSACTION READ ONLY")
+            # Keep even a misconfigured warehouse timeout bounded for interactive checks.
+            timeout = min(settings().warehouse_statement_timeout_ms, 10000)
+            source.execute(
+                sql.SQL("SET LOCAL statement_timeout TO {}").format(sql.Literal(timeout))
+            )
         columns = {
             row["column_name"]: row["data_type"]
             for row in source.execute(

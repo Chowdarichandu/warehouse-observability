@@ -25,9 +25,14 @@ Every application setting is listed below. Live integrations never run in demo m
 - `AWS_SECRET_PREFIX`: <class 'str'>. Default: `observability/`.
 - `AIRFLOW_TRANSPORT`: typing.Literal['http', 'mwaa']. Default: `http`.
 - `AIRFLOW_API_VERSION`: typing.Literal['v1', 'v2']. Default: `v1`.
+- `AIRFLOW_AUTH_METHOD`: typing.Literal['bearer', 'basic']. Default: `bearer`. HTTP authentication used for self-hosted Airflow.
 - `AIRFLOW_URL`: <class 'str'>. Default: ``.
 - `AIRFLOW_READ_TOKEN`: <class 'str'>. Default: ``.
 - `AIRFLOW_WRITE_TOKEN`: <class 'str'>. Default: ``.
+- `AIRFLOW_READ_USERNAME`: <class 'str'>. Default: ``. Read-only Airflow BasicAuth username when `AIRFLOW_AUTH_METHOD=basic`.
+- `AIRFLOW_READ_PASSWORD`: <class 'str'>. Default: ``. Read-only Airflow BasicAuth password when `AIRFLOW_AUTH_METHOD=basic`.
+- `AIRFLOW_WRITE_USERNAME`: <class 'str'>. Default: ``. Airflow BasicAuth username for reviewed writes when `AIRFLOW_AUTH_METHOD=basic`.
+- `AIRFLOW_WRITE_PASSWORD`: <class 'str'>. Default: ``. Airflow BasicAuth password for reviewed writes when `AIRFLOW_AUTH_METHOD=basic`.
 - `MWAA_ENVIRONMENT`: <class 'str'>. Default: ``.
 - `MWAA_WRITE_ROLE_ARN`: <class 'str'>. Default: ``.
 - `AIRFLOW_DAGS`: dict[str, str]. Default: `{'mysql_initial': 'mysql_initial_load', 'mysql_cdc': 'mysql_cdc', 'mongo_initial': 'mongo_initial_load', 'mongo_cdc': 'mongo_cdc'}`.
@@ -43,8 +48,16 @@ Every application setting is listed below. Live integrations never run in demo m
 - `AIRBYTE_CONFIG_URL`: <class 'str'>. Default: ``.
 - `AIRBYTE_WORKSPACE_ID`: <class 'str'>. Default: ``.
 - `AIRBYTE_DESTINATION_ID`: <class 'str'>. Default: ``.
-- `WAREHOUSE_ENGINE`: typing.Literal['postgres', 'redshift']. Default: `postgres`.
+- `WAREHOUSE_ENGINE`: typing.Literal['postgres', 'redshift', 'snowflake', 'bigquery']. Default: `postgres`. Snowflake and BigQuery use the read-only adapter boundary.
 - `WAREHOUSE_URL`: <class 'str'>. Default: ``.
+- `WAREHOUSE_ACCOUNT`: <class 'str'>. Snowflake account identifier.
+- `WAREHOUSE_USER`: <class 'str'>. Snowflake read-only user.
+- `WAREHOUSE_PASSWORD`: <class 'str'>. Snowflake password from the service secret.
+- `WAREHOUSE_DATABASE`: <class 'str'>. Snowflake database.
+- `WAREHOUSE_ROLE`: <class 'str'>. Snowflake read-only role.
+- `WAREHOUSE_NAME`: <class 'str'>. Snowflake warehouse.
+- `WAREHOUSE_PROJECT`: <class 'str'>. BigQuery project id.
+- `WAREHOUSE_DATASET`: <class 'str'>. BigQuery dataset or Snowflake schema.
 - `WAREHOUSE_LOAD_COLUMN`: <class 'str'>. Default: `_airbyte_extracted_at`.
 - `WAREHOUSE_STATEMENT_TIMEOUT_MS`: <class 'int'>. Default: `10000`.
 - `SOURCE_ALLOWED_CIDRS`: list[str]. Default: `[]`.

@@ -1,0 +1,15 @@
+{
+  "dag_runs": [
+    {
+      "dag_id": "mysql_cdc",
+      "dag_run_id": "scheduled__2026-11-09T01:00:00+00:00",
+      "execution_date": "2026-11-09T01:00:00Z",
+      "logical_date": "2026-11-09T01:00:00Z",
+      "state": "failed",
+      "start_date": "2026-11-09T01:00:30Z",
+      "end_date": "2026-11-09T01:04:30Z",
+      "conf": {"tenant_id": "acme_retail"}
+    }
+  ],
+  "total_entries": 1
+}

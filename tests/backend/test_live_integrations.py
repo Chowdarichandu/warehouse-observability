@@ -98,6 +98,60 @@ def test_live_configuration_fails_closed():
         )
 
 
+def test_live_airflow_basic_auth_requires_complete_read_and_write_pairs():
+    base = {
+        "mode": "live",
+        "jwt_secret": "a-secure-random-production-signing-key-123",
+        "console_url": "https://obs.example.test",
+        "database_url": "postgresql://user:password@db/obs?sslmode=verify-full",
+        "auth_provider": "oidc",
+        "oidc_issuer": "https://id.example.test",
+        "oidc_client_id": "client",
+        "oidc_group_roles": {"ops": "operator"},
+        "airflow_url": "https://airflow.example.test",
+        "airflow_auth_method": "basic",
+    }
+    with pytest.raises(ValidationError, match="complete Airflow Basic read"):
+        Settings(_env_file=None, **base)
+    read_ready = base | {
+        "airflow_read_username": "collector",
+        "airflow_read_password": "read-secret",
+    }
+    assert Settings(_env_file=None, **read_ready).airflow_auth_method == "basic"
+    with pytest.raises(ValidationError, match="Basic.*pairs"):
+        Settings(
+            _env_file=None, **(read_ready | {"airflow_write_username": "operator"})
+        )
+    with pytest.raises(ValidationError, match="write credential pair"):
+        Settings(
+            _env_file=None,
+            **(read_ready | {"live_actions_enabled": True}),
+        )
+    write_ready = read_ready | {
+        "live_actions_enabled": True,
+        "airflow_write_username": "operator",
+        "airflow_write_password": "write-secret",
+    }
+    assert Settings(_env_file=None, **write_ready).live_actions_enabled is True
+
+
+def test_live_airflow_bearer_write_token_cannot_be_configured_without_read_token():
+    base = {
+        "mode": "live",
+        "jwt_secret": "a-secure-random-production-signing-key-123",
+        "console_url": "https://obs.example.test",
+        "database_url": "postgresql://user:password@db/obs?sslmode=verify-full",
+        "auth_provider": "oidc",
+        "oidc_issuer": "https://id.example.test",
+        "oidc_client_id": "client",
+        "oidc_group_roles": {"ops": "operator"},
+        "airflow_url": "https://airflow.example.test",
+        "airflow_write_token": "writer",
+    }
+    with pytest.raises(ValidationError, match="AIRFLOW_WRITE_TOKEN"):
+        Settings(_env_file=None, **base)
+
+
 def test_live_startup_refuses_seeded_demo_users(monkeypatch):
     config = Settings(
         _env_file=None,
@@ -193,6 +247,40 @@ def test_airflow_version_auth_pagination_and_scoped_retry(live, monkeypatch, ver
         with pytest.raises(ValueError, match="map index"):
             Airflow(write=True).retry(task | {"map_index": 4})
     assert len(calls) == 2
+
+
+def test_airflow_basic_auth_uses_separate_read_and_write_credentials(live, monkeypatch):
+    monkeypatch.setattr(live, "airflow_auth_method", "basic")
+    monkeypatch.setattr(live, "airflow_read_username", "collector")
+    monkeypatch.setattr(live, "airflow_read_password", "read-secret")
+    monkeypatch.setattr(live, "airflow_write_username", "operator")
+    monkeypatch.setattr(live, "airflow_write_password", "write-secret")
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if request.method == "POST":
+            assert (
+                request.headers["authorization"] == "Basic b3BlcmF0b3I6d3JpdGUtc2VjcmV0"
+            )
+        else:
+            assert (
+                request.headers["authorization"] == "Basic Y29sbGVjdG9yOnJlYWQtc2VjcmV0"
+            )
+        return httpx.Response(200, json={"task_instances": []})
+
+    transport(monkeypatch, handler)
+    assert Airflow().tasks("mysql_cdc", "run") == []
+    Airflow(write=True).call("POST", "/dags/mysql_cdc/dagRuns", body={})
+    assert [request.method for request in calls] == ["GET", "POST"]
+
+
+def test_airflow_basic_auth_requires_the_matching_credential_pair(live, monkeypatch):
+    monkeypatch.setattr(live, "airflow_auth_method", "basic")
+    monkeypatch.setattr(live, "airflow_read_username", "collector")
+    monkeypatch.setattr(live, "airflow_read_password", "")
+    with pytest.raises(ValueError, match="Basic credentials"):
+        Airflow().health()
 
 
 @pytest.mark.parametrize(

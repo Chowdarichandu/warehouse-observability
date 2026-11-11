@@ -1,3 +1,4 @@
+import base64
 import json
 from datetime import datetime
 from urllib.parse import quote
@@ -44,6 +45,27 @@ class Airflow:
             return json.loads(result) if isinstance(result, str) else result
         if not self.config.airflow_url:
             raise ValueError("AIRFLOW_URL is required")
+        if self.config.airflow_auth_method == "basic":
+            username = (
+                self.config.airflow_write_username
+                if self.write
+                else self.config.airflow_read_username
+            )
+            password = (
+                self.config.airflow_write_password
+                if self.write
+                else self.config.airflow_read_password
+            )
+            if not username or not password:
+                raise ValueError("Separate Airflow read/write Basic credentials are required")
+            credential = base64.b64encode(f"{username}:{password}".encode()).decode()
+            return http.request(
+                method,
+                f"{self.config.airflow_url.rstrip('/')}/api/{self.config.airflow_api_version}{path}",
+                headers={"Authorization": f"Basic {credential}"},
+                params=params,
+                json=body,
+            )
         token = self.config.airflow_write_token if self.write else self.config.airflow_read_token
         if not token:
             raise ValueError("Separate Airflow read/write bearer credentials are required")

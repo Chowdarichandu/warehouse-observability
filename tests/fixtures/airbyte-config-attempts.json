@@ -1,0 +1,18 @@
+{
+  "attempts": [
+    {
+      "attempt": {
+        "id": 0,
+        "status": "succeeded",
+        "failureSummary": {"failures": []},
+        "streamStats": [
+          {
+            "streamName": "patients",
+            "stats": {"recordsCommitted": 120, "bytesEmitted": 24000}
+          }
+        ]
+      },
+      "logs": {"logLines": ["INFO sync completed"]}
+    }
+  ]
+}

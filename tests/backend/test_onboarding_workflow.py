@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -35,6 +36,7 @@ def tracked_tenant():
             "DELETE FROM obs.onboarding_workflows WHERE workflow_id=%s", (workflow_id,)
         )
         for table in (
+            "quality_results",
             "onboarding_requests",
             "provisioning_resources",
             "pipeline_runs",
@@ -44,6 +46,11 @@ def tracked_tenant():
             "demo_jobs",
         ):
             conn.execute(f"DELETE FROM obs.{table} WHERE tenant_id=%s", (tenant,))
+        conn.execute(
+            "DELETE FROM obs.quality_checks WHERE tenant_id=%s",
+            (tenant,),
+        )
+        conn.execute("DELETE FROM obs.incidents WHERE tenant_id=%s", (tenant,))
         conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant,))
 
 
@@ -54,6 +61,120 @@ def tick(tenant, data, step):
             {"tenant_id": tenant, "payload": data.model_dump(), "step": step},
             datetime.now(UTC) + timedelta(seconds=step),
         )
+
+
+def mark_workflow_ready(tenant: str, workflow_id: str, *, shared_mongo: bool) -> None:
+    """Make the DAG side complete so activation tests isolate the quality gate."""
+    with connection() as conn:
+        conn.execute(
+            "UPDATE obs.tenants SET sources=%s,has_mongo=%s WHERE tenant_id=%s",
+            (
+                Jsonb(
+                    {"mongo": {"shared": True, "tenant_field": "tenant_id"}}
+                    if shared_mongo
+                    else {"mysql": {"database_per_tenant": True}}
+                ),
+                shared_mongo,
+                tenant,
+            ),
+        )
+        for node in workflow.latest(conn, workflow_id):
+            if node["node_id"] != "coordinator":
+                workflow.update_node(
+                    conn,
+                    workflow_id,
+                    node["node_id"],
+                    "success",
+                    reason="Isolation gate test fixture",
+                )
+
+
+def isolation_check(tenant: str) -> int:
+    with connection() as conn:
+        return conn.execute(
+            """INSERT INTO obs.quality_checks
+            (tenant_id,name,table_name,kind,params,sample_limit)
+            VALUES(%s,%s,'orders','tenant_isolation',%s,100) RETURNING id""",
+            (
+                tenant,
+                "Isolation gate " + uuid4().hex,
+                Jsonb({"tenant_field": "tenant_id"}),
+            ),
+        ).fetchone()["id"]
+
+
+def add_isolation_result(
+    check_id: int, tenant: str, status: str, checked_at=None
+) -> None:
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO obs.quality_results
+            (check_id,tenant_id,status,sampled_rows,details,simulated,checked_at)
+            VALUES(%s,%s,%s,0,%s,false,coalesce(%s,now()))""",
+            (check_id, tenant, status, Jsonb({"foreign_rows": 0}), checked_at),
+        )
+
+
+def test_live_activation_requires_current_workflow_isolation_pass(
+    tracked_tenant, monkeypatch
+):
+    tenant, workflow_id, _ = tracked_tenant
+    monkeypatch.setattr(workflow, "settings", lambda: SimpleNamespace(mode="live"))
+    mark_workflow_ready(tenant, workflow_id, shared_mongo=True)
+    check_id = isolation_check(tenant)
+
+    assert workflow.activate(tenant, actor="test") is False
+    assert (
+        one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant,))["status"]
+        == "onboarding"
+    )
+
+    add_isolation_result(check_id, tenant, "fail")
+    assert workflow.activate(tenant, actor="test") is False
+    assert (
+        one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant,))["status"]
+        == "onboarding"
+    )
+
+    add_isolation_result(check_id, tenant, "pass")
+    assert workflow.activate(tenant, actor="test") is True
+    assert (
+        one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant,))["status"]
+        == "active"
+    )
+
+
+def test_live_activation_rejects_stale_isolation_evidence(tracked_tenant, monkeypatch):
+    tenant, workflow_id, _ = tracked_tenant
+    monkeypatch.setattr(workflow, "settings", lambda: SimpleNamespace(mode="live"))
+    mark_workflow_ready(tenant, workflow_id, shared_mongo=True)
+    check_id = isolation_check(tenant)
+    add_isolation_result(
+        check_id,
+        tenant,
+        "pass",
+        checked_at=datetime.now(UTC) - timedelta(hours=1),
+    )
+
+    assert workflow.activate(tenant, actor="test") is False
+    assert (
+        one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant,))["status"]
+        == "onboarding"
+    )
+
+
+def test_live_sql_only_activation_does_not_require_mongo_isolation(
+    tracked_tenant, monkeypatch
+):
+    tenant, workflow_id, _ = tracked_tenant
+    monkeypatch.setattr(workflow, "settings", lambda: SimpleNamespace(mode="live"))
+    mark_workflow_ready(tenant, workflow_id, shared_mongo=False)
+
+    assert workflow.activate(tenant, actor="test") is True
+    assert (
+        one("SELECT status FROM obs.tenants WHERE tenant_id=%s", (tenant,))["status"]
+        == "active"
+    )
 
 
 def test_demo_tracks_seven_dags_parallel_branches_and_first_cdc(tracked_tenant):

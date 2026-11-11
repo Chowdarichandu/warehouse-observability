@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
 from pydantic import ValidationError
 
@@ -274,6 +275,52 @@ def test_live_tenant_isolation_uses_full_table_aggregate(monkeypatch):
     finally:
         with connection() as conn:
             conn.execute(f'DROP SCHEMA "{schema}" CASCADE')
+
+
+def test_tenant_isolation_failure_is_idempotent_for_open_incidents(monkeypatch):
+    tenant = "isolation_" + uuid4().hex[:10]
+    check = None
+    monkeypatch.setattr(engine, "settings", lambda: SimpleNamespace(mode="demo"))
+
+    def failing_evidence(conn, definition):
+        return [{"foreign_rows": 2, "total_rows": 10}], {"tenant_id": "text"}
+
+    monkeypatch.setattr(engine, "demo_evidence", failing_evidence)
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO obs.tenants(tenant_id,display_name,status,sources)
+            VALUES(%s,%s,'active',%s)""",
+            (
+                tenant,
+                "Isolation Fixture",
+                Jsonb({"mongo": {"shared": True, "tenant_field": "tenant_id"}}),
+            ),
+        )
+        check = conn.execute(
+            """INSERT INTO obs.quality_checks
+            (tenant_id,name,table_name,kind,params,sample_limit)
+            VALUES(%s,%s,'orders','tenant_isolation',%s,100) RETURNING *""",
+            (tenant, "Isolation check", Jsonb({"tenant_field": "tenant_id"})),
+        ).fetchone()
+    try:
+        with connection() as conn:
+            assert engine.execute(conn, check)["status"] == "fail"
+        with connection() as conn:
+            assert engine.execute(conn, check)["status"] == "fail"
+            incidents = conn.execute(
+                """SELECT count(*) AS count FROM obs.incidents
+                WHERE tenant_id=%s AND cause_rule='tenant_isolation' AND state='open'""",
+                (tenant,),
+            ).fetchone()["count"]
+            assert incidents == 1
+    finally:
+        with connection() as conn:
+            conn.execute(
+                "DELETE FROM obs.quality_results WHERE tenant_id=%s", (tenant,)
+            )
+            conn.execute("DELETE FROM obs.quality_checks WHERE tenant_id=%s", (tenant,))
+            conn.execute("DELETE FROM obs.incidents WHERE tenant_id=%s", (tenant,))
+            conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant,))
 
 
 def test_live_error_never_persists_driver_values(monkeypatch):
