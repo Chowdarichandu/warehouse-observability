@@ -7,6 +7,7 @@ and group mapping remain in obs.oidc; the database role is authoritative per req
 from dataclasses import dataclass
 from typing import Literal
 
+from obs.db import rows
 from obs.settings import Settings
 
 Role = Literal["viewer", "operator", "admin"]
@@ -216,3 +217,56 @@ def permissions(
             }
         )
     return result
+
+
+def module_access(user: dict) -> list[dict]:
+    """Return only product modules the signed-in identity may open."""
+    registry = rows(
+        """SELECT module_id,display_name,enabled,sort_order
+        FROM obs.modules WHERE enabled=true ORDER BY sort_order,module_id"""
+    )
+    if not registry:
+        return []
+    role_names = [name for name in (user.get("role"), user.get("role_name")) if name]
+    role_grants = {
+        item["module_id"]
+        for item in rows(
+            "SELECT module_id FROM obs.role_modules WHERE role_name=ANY(%s)",
+            (role_names,),
+        )
+    }
+    overrides = {
+        item["module_id"]: item["effect"]
+        for item in rows(
+            "SELECT module_id,effect FROM obs.user_module_overrides WHERE user_id=%s",
+            (user.get("user_id"),),
+        )
+    }
+    permissions_set = set(user.get("permissions") or [])
+    result = []
+    for item in registry:
+        module_id = item["module_id"]
+        legacy_permission = f"view_module_{module_id}"
+        allowed = module_id == "pravah" and "view_console" in permissions_set
+        allowed = allowed or module_id in role_grants or legacy_permission in permissions_set
+        allowed = allowed or role_at_least(user.get("role", ""), "admin")
+        if overrides.get(module_id) == "grant":
+            allowed = True
+        elif overrides.get(module_id) == "revoke":
+            allowed = False
+        if allowed:
+            result.append(
+                {
+                    "module_id": module_id,
+                    "display_name": item["display_name"],
+                    "enabled": True,
+                    "access": "admin"
+                    if role_at_least(user.get("role", ""), "admin")
+                    else "granted",
+                }
+            )
+    return result
+
+
+def module_is_allowed(module_id: str, user: dict) -> bool:
+    return any(item["module_id"] == module_id for item in module_access(user))

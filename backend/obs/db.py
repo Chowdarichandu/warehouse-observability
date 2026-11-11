@@ -10,7 +10,7 @@ from obs.settings import settings
 
 
 @contextmanager
-def connection() -> Iterator[psycopg.Connection]:
+def connection() -> Iterator[psycopg.Connection[dict[str, Any]]]:
     with psycopg.connect(
         settings().database_url,
         row_factory=dict_row,
@@ -22,17 +22,17 @@ def connection() -> Iterator[psycopg.Connection]:
         yield conn
 
 
-def rows(sql: str, params: Any = None) -> list[dict]:
+def rows(sql: str, params: Any = None) -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(sql, params).fetchall()
 
 
-def one(sql: str, params: Any = None) -> dict:
+def one(sql: str, params: Any = None) -> dict[str, Any]:
     with connection() as conn:
         return conn.execute(sql, params).fetchone() or {}
 
 
-def notify(conn: psycopg.Connection, event: str, payload: dict) -> None:
+def notify(conn: psycopg.Connection[dict[str, Any]], event: str, payload: dict[str, Any]) -> None:
     message = json.dumps({"event": event, "data": payload}, default=str)
     if len(message.encode()) >= 8000:
         raise ValueError("Event exceeds PostgreSQL NOTIFY limit")

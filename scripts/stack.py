@@ -12,10 +12,39 @@ import time
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME = (
+DEFAULT_RUNTIME = (
     Path("/tmp")
     / f"obs-console-{os.getuid()}-{hashlib.sha1(str(ROOT).encode()).hexdigest()[:8]}"
 )
+
+
+def runtime_dir() -> Path:
+    configured = os.environ.get("OBS_RUNTIME_DIR")
+    if not configured:
+        return DEFAULT_RUNTIME
+    path = Path(configured).expanduser()
+    if (
+        not path.is_absolute()
+        or path.parent != Path("/tmp")
+        or not path.name.startswith("obs-console-")
+    ):
+        raise ValueError(
+            "OBS_RUNTIME_DIR must be a dedicated directory directly under /tmp"
+        )
+    return path
+
+
+def port(name: str, default: int) -> int:
+    value = int(os.environ.get(name, str(default)))
+    if not 1 <= value <= 65535:
+        raise ValueError(f"{name} must be a valid TCP port")
+    return value
+
+
+RUNTIME = runtime_dir()
+PG_PORT = port("OBS_PG_PORT", 55432)
+API_PORT = port("OBS_API_PORT", 8000)
+WEB_PORT = port("OBS_WEB_PORT", 8080)
 PG = Path("/usr/lib/postgresql/16/bin")
 PYTHON = ROOT / ".venv/bin/python"
 
@@ -26,14 +55,17 @@ def run(args: list[str | Path], **kwargs) -> subprocess.CompletedProcess:
 
 def environment() -> dict[str, str]:
     env = os.environ.copy()
-    env.setdefault("DATABASE_URL", "postgresql://obs:obs_local@127.0.0.1:55432/obs")
+    env.setdefault(
+        "DATABASE_URL", f"postgresql://obs:obs_local@127.0.0.1:{PG_PORT}/obs"
+    )
+    env.setdefault("OBS_API_PROXY_TARGET", f"http://127.0.0.1:{API_PORT}")
     return env
 
 
 def database() -> None:
     RUNTIME.mkdir(mode=0o700, parents=True, exist_ok=True)
     link = ROOT / ".runtime"
-    if not link.exists():
+    if "OBS_RUNTIME_DIR" not in os.environ and not link.exists():
         link.symlink_to(RUNTIME, target_is_directory=True)
     data = RUNTIME / "postgres"
     if not data.exists():
@@ -63,7 +95,7 @@ def database() -> None:
                 "-l",
                 RUNTIME / "postgres.log",
                 "-o",
-                f"-p 55432 -h 127.0.0.1 -k {RUNTIME}",
+                f"-p {PG_PORT} -h 127.0.0.1 -k {RUNTIME}",
                 "-w",
                 "start",
             ]
@@ -71,7 +103,7 @@ def database() -> None:
     import psycopg
 
     with psycopg.connect(
-        "postgresql://obs@127.0.0.1:55432/postgres", autocommit=True
+        f"postgresql://obs@127.0.0.1:{PG_PORT}/postgres", autocommit=True
     ) as conn:
         if not conn.execute("SELECT 1 FROM pg_database WHERE datname='obs'").fetchone():
             conn.execute("CREATE DATABASE obs")
@@ -132,7 +164,9 @@ def down(reset: bool = False) -> None:
         )
     if reset and RUNTIME.exists():
         shutil.rmtree(RUNTIME)
-        (ROOT / ".runtime").unlink(missing_ok=True)
+        link = ROOT / ".runtime"
+        if link.is_symlink() and link.resolve() == RUNTIME.resolve():
+            link.unlink(missing_ok=True)
 
 
 def main() -> None:
@@ -215,12 +249,12 @@ def main() -> None:
             "--host",
             "127.0.0.1",
             "--port",
-            "8000",
+            str(API_PORT),
         ],
     )
     for _ in range(600):
         try:
-            urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=1)
+            urllib.request.urlopen(f"http://127.0.0.1:{API_PORT}/api/health", timeout=1)
             break
         except Exception:
             time.sleep(0.2)
@@ -229,9 +263,13 @@ def main() -> None:
     if args.action == "demo":
         spawn("collector", [PYTHON, "-m", "obs.collector"])
         spawn("alerter", [PYTHON, "-m", "obs.alerter"])
-    spawn("web", ["npm", "run", "dev"], ROOT / "frontend")
+    spawn(
+        "web",
+        ["npm", "run", "dev", "--", "--port", str(WEB_PORT), "--strictPort"],
+        ROOT / "frontend",
+    )
     print(
-        "Console: http://localhost:8080  |  Logs: .runtime/  |  Demo password: DEMO_PASSWORD (default demo)"
+        f"Console: http://localhost:{WEB_PORT}  |  Logs: {RUNTIME}  |  Demo password: DEMO_PASSWORD (default demo)"
     )
 
 

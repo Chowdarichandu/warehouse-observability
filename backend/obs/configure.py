@@ -42,7 +42,7 @@ class Tenant(BaseModel):
 class Channel(BaseModel):
     model_config = ConfigDict(extra="forbid")
     channel_id: str = Field(pattern=r"^[a-z0-9_-]+$")
-    kind: str = Field(pattern="^(slack|teams|email|ses|sns)$")
+    kind: str = Field(pattern="^(slack|teams|email|smtp|ses|sns)$")
     target_env: str = Field(pattern=r"^[A-Z][A-Z0-9_]+$")
     enabled: bool = True
 
@@ -84,17 +84,27 @@ def apply(config: Configuration, actor: str = "deployment") -> None:
         if any(c in reserved for t in config.tenants for c in t.airbyte_connections.values()):
             raise ValueError("Connection already assigned to another tenant")
         for tenant in config.tenants:
+            sources = {
+                **({"mysql": {"database_per_tenant": True}} if tenant.has_mysql else {}),
+                **(
+                    {"mongo": {"shared": True, "tenant_field": "tenant_id"}}
+                    if tenant.has_mongo
+                    else {}
+                ),
+            }
             conn.execute(
-                """INSERT INTO obs.tenants(tenant_id,display_name,status,has_mysql,has_mongo,warehouse_schema,freshness_sla_min,airbyte_connections)
-                VALUES(%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id) DO UPDATE SET display_name=excluded.display_name,status=excluded.status,
+                """INSERT INTO obs.tenants(tenant_id,display_name,status,has_mysql,has_mongo,sources,warehouse_schema,freshness_sla_min,airbyte_connections)
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id) DO UPDATE SET display_name=excluded.display_name,status=excluded.status,
                 has_mysql=excluded.has_mysql,has_mongo=excluded.has_mongo,warehouse_schema=excluded.warehouse_schema,
-                freshness_sla_min=excluded.freshness_sla_min,airbyte_connections=excluded.airbyte_connections,updated_at=now()""",
+                sources=excluded.sources,freshness_sla_min=excluded.freshness_sla_min,
+                airbyte_connections=excluded.airbyte_connections,updated_at=now()""",
                 (
                     tenant.tenant_id,
                     tenant.display_name,
                     tenant.status,
                     tenant.has_mysql,
                     tenant.has_mongo,
+                    Jsonb(sources),
                     tenant.warehouse_schema,
                     tenant.freshness_sla_min,
                     Jsonb(tenant.airbyte_connections),
@@ -102,9 +112,17 @@ def apply(config: Configuration, actor: str = "deployment") -> None:
             )
         for channel in config.channels:
             conn.execute(
-                """INSERT INTO obs.notification_channels(channel_id,kind,target_env,enabled) VALUES(%s,%s,%s,%s)
-                ON CONFLICT(channel_id) DO UPDATE SET kind=excluded.kind,target_env=excluded.target_env,enabled=excluded.enabled""",
-                (channel.channel_id, channel.kind, channel.target_env, channel.enabled),
+                """INSERT INTO obs.notification_channels(channel_id,kind,target_env,target_secret_ref,enabled)
+                VALUES(%s,%s,%s,%s,%s)
+                ON CONFLICT(channel_id) DO UPDATE SET kind=excluded.kind,target_env=excluded.target_env,
+                    target_secret_ref=excluded.target_secret_ref,enabled=excluded.enabled""",
+                (
+                    channel.channel_id,
+                    channel.kind,
+                    channel.target_env,
+                    f"env:{channel.target_env}",
+                    channel.enabled,
+                ),
             )
         for key, rule in config.rules.items():
             for channel in rule.channels:

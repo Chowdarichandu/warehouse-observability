@@ -162,14 +162,21 @@ def verify_password(password: str, encoded: str) -> bool:
 
 def token(user: dict, csrf: str) -> str:
     sid = str(uuid4())
-    expires = datetime.now(UTC) + timedelta(hours=settings().session_hours)
+    issued_at = datetime.now(UTC)
+    expires = issued_at + timedelta(days=settings().session_absolute_days)
     with connection() as conn:
         conn.execute(
             "INSERT INTO obs.sessions(id,user_id,expires_at) VALUES(%s,%s,%s)",
             (sid, user["user_id"], expires),
         )
     return jwt.encode(
-        {"sub": str(user["user_id"]), "csrf": csrf, "jti": sid, "exp": expires},
+        {
+            "sub": str(user["user_id"]),
+            "csrf": csrf,
+            "jti": sid,
+            "iat": issued_at,
+            "exp": expires,
+        },
         settings().jwt_secret,
         algorithm="HS256",
     )
@@ -180,10 +187,35 @@ def current_user(request: Request) -> dict:
         claims = jwt.decode(
             request.cookies.get("obs_session", ""), settings().jwt_secret, algorithms=["HS256"]
         )
-        user = one(
-            "SELECT u.user_id,u.email,u.display_name,u.role,u.role_name FROM obs.users u JOIN obs.sessions s USING(user_id) WHERE u.user_id=%s AND s.id=%s AND s.revoked_at IS NULL AND s.expires_at>now()",
-            (int(claims["sub"]), claims["jti"]),
-        )
+        # Check account status and both session bounds together. last_seen_at
+        # is refreshed only after this gate succeeds, so stale clients cannot
+        # keep an idle session alive by sending requests.
+        with connection() as conn:
+            user = conn.execute(
+                """
+                SELECT u.user_id,u.email,u.display_name,u.role,u.role_name
+                FROM obs.users u
+                JOIN obs.sessions s USING(user_id)
+                WHERE u.user_id=%s
+                  AND u.status='active'
+                  AND s.id=%s
+                  AND s.revoked_at IS NULL
+                  AND s.expires_at>now()
+                  AND s.created_at > now() - (%s * interval '1 day')
+                  AND s.last_seen_at > now() - (%s * interval '1 hour')
+                """,
+                (
+                    int(claims["sub"]),
+                    claims["jti"],
+                    settings().session_absolute_days,
+                    settings().session_idle_hours,
+                ),
+            ).fetchone()
+            if user:
+                conn.execute(
+                    "UPDATE obs.sessions SET last_seen_at=now() WHERE id=%s",
+                    (claims["jti"],),
+                )
         if not user:
             fail(401, "unauthenticated", "Please sign in.")
     except (jwt.InvalidTokenError, ValueError, KeyError):

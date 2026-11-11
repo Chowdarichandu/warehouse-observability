@@ -207,6 +207,7 @@ DEFAULT_RULES = [
     ("dag_import_errors", "DAG import errors", "high", {}),
     ("platform_down", "Platform component down", "critical", {}),
     ("collector_silent", "Collector heartbeat missing", "critical", {"minutes": 10}),
+    ("tenant_isolation", "Tenant isolation breach", "critical", {}),
 ]
 
 
@@ -261,9 +262,7 @@ def seed() -> None:
     rng = random.Random(271828)
     now = datetime.now(UTC).replace(microsecond=0)
     anchor = now.replace(minute=0, second=0)
-    outage = now.replace(hour=2, minute=0, second=0)
-    if now - outage < timedelta(hours=3):
-        outage -= timedelta(days=1)
+    outage = now - timedelta(hours=8)
     with connection() as conn:
         conn.execute("SELECT pg_advisory_xact_lock(110528)")
         for role in ("admin", "operator", "viewer"):
@@ -307,14 +306,23 @@ def seed() -> None:
                 for load_kind in ("initial", "cdc")
             }
             conn.execute(
-                """INSERT INTO obs.tenants(tenant_id,display_name,status,airbyte_connections,warehouse_schema,owner_email,created_at)
-                VALUES(%s,%s,'active',%s,%s,%s,%s) ON CONFLICT(tenant_id) DO NOTHING""",
+                """INSERT INTO obs.tenants(
+                    tenant_id,display_name,status,airbyte_connections,sources,
+                    warehouse_schema,owner_email,created_at,registered_at
+                ) VALUES(%s,%s,'active',%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id) DO NOTHING""",
                 (
                     tenant,
                     name,
                     Jsonb(mapping),
+                    Jsonb(
+                        {
+                            "mysql": {"database_per_tenant": True},
+                            "mongo": {"shared": True, "tenant_field": "tenant_id"},
+                        }
+                    ),
                     tenant,
                     f"data@{tenant}.example",
+                    now - timedelta(days=45),
                     now - timedelta(days=45),
                 ),
             )
@@ -336,7 +344,12 @@ def seed() -> None:
                         error = rng.choice(list(MESSAGES))
                         if tenant == "cedar_foods" and at.hour < 5 and rng.random() < 0.48:
                             fail, error = True, "SOURCE_UNREACHABLE"
-                        if tenant == "acme_retail" and source == "mysql" and at >= outage:
+                        if (
+                            tenant == "acme_retail"
+                            and source == "mysql"
+                            and load == "cdc"
+                            and at >= outage
+                        ):
                             fail, error = True, "MYSQL_BINLOG_PURGED"
                         if (
                             tenant == "bluefin_health"
@@ -399,7 +412,7 @@ def seed() -> None:
                     count = base + int(max(0, 672 - i) * size * 19 * weight)
                     if (
                         tenant == "orbit_logistics"
-                        and table == "orders"
+                        and table == "shipments"
                         and checked >= now - timedelta(days=1)
                     ):
                         count = int(count * 0.6)
@@ -456,7 +469,7 @@ def seed() -> None:
             )
             upsert_run(conn, recovery)
         stuck = make_run(
-            "northwind", "mysql", "cdc", now - timedelta(minutes=58), 0, 99001, "running"
+            "northwind", "mysql", "cdc", now - timedelta(minutes=180), 0, 99001, "running"
         )
         upsert_run(conn, stuck)
         for tenant, _, _ in TENANTS[3:]:

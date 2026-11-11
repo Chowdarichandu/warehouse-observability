@@ -1,6 +1,7 @@
 import hashlib
 import json
 from datetime import UTC, datetime
+from typing import Any
 
 import psycopg
 from psycopg import sql
@@ -20,7 +21,7 @@ ON s.schema=t.table_schema AND s.table=t.table_name
 WHERE t.table_schema=%s AND t.table_type='BASE TABLE' ORDER BY t.table_name"""
 
 
-def connect() -> psycopg.Connection:
+def connect() -> psycopg.Connection[dict[str, Any]]:
     require_live()
     if "sslmode=verify-full" not in settings().warehouse_url:
         raise ValueError("WAREHOUSE_URL must use sslmode=verify-full")
@@ -32,7 +33,7 @@ def connect() -> psycopg.Connection:
     )
 
 
-def collect(conn: psycopg.Connection, tenant: dict) -> None:
+def collect(conn: psycopg.Connection[dict[str, Any]], tenant: dict[str, Any]) -> None:
     schema = tenant.get("warehouse_schema")
     if not schema:
         return

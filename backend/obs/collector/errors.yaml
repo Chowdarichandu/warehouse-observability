@@ -30,6 +30,10 @@
   severity: error
   patterns: ['zombie', 'Executor reports task instance', 'SIGTERM', 'SIGKILL']
   hint: Airflow killed the task. Check workers and the scheduler.
+- class: TENANT_ISOLATION
+  severity: critical
+  patterns: ['tenant isolation', 'cross-tenant', 'foreign tenant rows', 'tenant_id mismatch']
+  hint: The warehouse contains rows for another tenant. Pause activation and investigate the tenant discriminator.
 - class: UNKNOWN
   severity: error
   patterns: ['.*']

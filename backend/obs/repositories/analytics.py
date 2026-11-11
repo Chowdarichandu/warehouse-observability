@@ -44,19 +44,30 @@ def sla(hours: int = 168, end: datetime | None = None, start: datetime | None = 
         return cached[1]
     result = rows(
         """WITH sources AS (
-        SELECT t.tenant_id,s.source_type,t.freshness_sla_min,t.created_at FROM obs.tenants t
-        CROSS JOIN(VALUES('mysql'),('mongo')) s(source_type)
-        WHERE t.status='active' AND ((s.source_type='mysql' AND t.has_mysql) OR(s.source_type='mongo' AND t.has_mongo))
+        SELECT tenant_id,source_type,freshness_sla_min,registered_at,last_success_at
+        FROM obs.v_freshness
       ) SELECT s.tenant_id,s.source_type,
        count(*) AS buckets,
-       sum(CASE WHEN b.at-r.last_success <= s.freshness_sla_min*interval '1 minute' THEN 1 ELSE 0 END) AS good_buckets,
-       round(100*avg(CASE WHEN b.at-r.last_success <= s.freshness_sla_min*interval '1 minute' THEN 1 ELSE 0 END),2) AS compliance
-      FROM sources s CROSS JOIN LATERAL generate_series(greatest(%s::timestamptz,s.created_at),%s::timestamptz-interval '1 microsecond',interval '5 minutes') b(at)
-      LEFT JOIN LATERAL(SELECT ended_at AS last_success FROM obs.pipeline_runs
-        WHERE tenant_id=s.tenant_id AND source_type=s.source_type AND status='success' AND ended_at<=b.at
-        ORDER BY ended_at DESC LIMIT 1) r ON true
+       count(*) FILTER(WHERE obs.metric_is_fresh(b.at,r.last_success_at,s.freshness_sla_min)) AS good_buckets,
+       round(100.0*count(*) FILTER(WHERE obs.metric_is_fresh(b.at,r.last_success_at,s.freshness_sla_min))
+           /nullif(count(*),0),2) AS compliance
+      FROM sources s CROSS JOIN LATERAL generate_series(
+          date_bin('5 minutes',greatest(%s::timestamptz,s.registered_at),timestamptz '2000-01-01')
+            + CASE WHEN date_bin('5 minutes',greatest(%s::timestamptz,s.registered_at),timestamptz '2000-01-01')
+                         < greatest(%s::timestamptz,s.registered_at)
+                   THEN interval '5 minutes' ELSE interval '0' END,
+          %s::timestamptz-interval '1 microsecond',interval '5 minutes') b(at)
+      LEFT JOIN LATERAL(SELECT max(ended_at) AS last_success_at FROM obs.pipeline_runs
+        WHERE tenant_id=s.tenant_id AND source_type=s.source_type AND load_type='cdc'
+          AND status='success' AND ended_at<=b.at) r ON true
+      WHERE b.at>=s.registered_at
+        AND NOT EXISTS (
+            SELECT 1 FROM obs.maintenance_windows w
+            WHERE w.tenant_id=s.tenant_id AND w.rrule IS NULL
+              AND b.at>=w.starts_at AND b.at<w.ends_at
+        )
       GROUP BY s.tenant_id,s.source_type""",
-        (start, end),
+        (start, start, start, end),
     )
     if len(_sla_cache) > 30:
         _sla_cache.clear()
@@ -77,8 +88,8 @@ def tenants() -> list[dict]:
     compliance = sla()
     result = rows("""SELECT h.*,a.avg_duration_min,a.last_success_at FROM obs.v_tenant_health h
         LEFT JOIN LATERAL(SELECT round((avg(duration_s) FILTER(WHERE status='success')/60)::numeric,2) AS avg_duration_min,
-        max(ended_at) FILTER(WHERE status='success') AS last_success_at
-        FROM obs.pipeline_runs WHERE tenant_id=h.tenant_id AND started_at>now()-interval '7 days') a ON true
+        max(ended_at) FILTER(WHERE status='success' AND load_type='cdc') AS last_success_at
+        FROM obs.v_metric_runs WHERE tenant_id=h.tenant_id AND started_at>now()-interval '7 days') a ON true
         ORDER BY CASE h.health WHEN 'down' THEN 0 WHEN 'degraded' THEN 1 WHEN 'onboarding' THEN 2 ELSE 3 END,h.display_name""")
     latest = rows("SELECT * FROM obs.v_latest_runs")
     eligible = {
@@ -105,9 +116,9 @@ def duration_metrics(start: datetime, end: datetime, group_by: str = "pipeline")
       round((avg(duration_s) FILTER(WHERE status='success')/60)::numeric,2) AS avg_min,
       round((percentile_cont(.5) WITHIN GROUP(ORDER BY duration_s) FILTER(WHERE status='success')/60)::numeric,2) AS p50_min,
       round((percentile_cont(.95) WITHIN GROUP(ORDER BY duration_s) FILTER(WHERE status='success')/60)::numeric,2) AS p95_min,
-      round((avg(queue_delay_s)/60)::numeric,2) AS queue_avg_min,
-      round((percentile_cont(.95) WITHIN GROUP(ORDER BY queue_delay_s)/60)::numeric,2) AS queue_p95_min
-      FROM obs.pipeline_runs WHERE started_at>=%s AND started_at<%s GROUP BY 1 ORDER BY 1""",
+      round((avg(metric_queue_delay_s)/60)::numeric,2) AS queue_avg_min,
+      round((percentile_cont(.95) WITHIN GROUP(ORDER BY metric_queue_delay_s)/60)::numeric,2) AS queue_p95_min
+      FROM obs.v_metric_runs WHERE started_at>=%s AND started_at<%s GROUP BY 1 ORDER BY 1""",
         (start, end),
     )
 
@@ -127,16 +138,16 @@ def platform() -> dict:
 def overview(start: datetime, end: datetime, include_detail: bool = True) -> dict:
     aggregate = one(
         """SELECT count(*) AS total_runs,count(*) FILTER(WHERE status='failed') AS failed_runs,
-      round(100.0*count(*) FILTER(WHERE status='success')/nullif(count(*) FILTER(WHERE status IN('success','failed')),0),2) AS success_rate,
+      obs.metric_success_rate(count(*) FILTER(WHERE status='success'),count(*) FILTER(WHERE status='failed')) AS success_rate,
       round((avg(duration_s) FILTER(WHERE status='success' AND load_type='cdc')/60)::numeric,2) AS cdc_avg_min,
       round((percentile_cont(.95) WITHIN GROUP(ORDER BY duration_s) FILTER(WHERE status='success' AND load_type='cdc')/60)::numeric,2) AS cdc_p95_min
-      FROM obs.pipeline_runs WHERE started_at>=%s AND started_at<%s""",
+      FROM obs.v_metric_runs WHERE started_at>=%s AND started_at<%s""",
         (start, end),
     )
     counts = one("""SELECT count(*) FILTER(WHERE health='healthy') AS healthy,count(*) FILTER(WHERE health='degraded') AS degraded,
       count(*) FILTER(WHERE health='down') AS down FROM obs.v_tenant_health""")
     counts.update(
-        one("SELECT count(*) AS running_now FROM obs.pipeline_runs WHERE status='running'")
+        one("SELECT count(*) AS running_now FROM obs.v_metric_runs WHERE status='running'")
     )
     counts.update(one("SELECT count(*) AS open_alerts FROM obs.alerts WHERE state<>'resolved'"))
     compliance = sla(start=start, end=end)
@@ -149,7 +160,7 @@ def overview(start: datetime, end: datetime, include_detail: bool = True) -> dic
       round((avg(duration_s) FILTER(WHERE status='success' AND source_type='mongo' AND load_type='cdc')/60)::numeric,2) AS mongo_cdc,
       round((avg(duration_s) FILTER(WHERE status='success' AND source_type='mysql' AND load_type='initial')/60)::numeric,2) AS mysql_initial,
       round((avg(duration_s) FILTER(WHERE status='success' AND source_type='mongo' AND load_type='initial')/60)::numeric,2) AS mongo_initial
-      FROM obs.pipeline_runs WHERE started_at>=%s AND started_at<%s GROUP BY 1 ORDER BY 1""",
+      FROM obs.v_metric_runs WHERE started_at>=%s AND started_at<%s GROUP BY 1 ORDER BY 1""",
         (start, end),
     )
     recent = (
@@ -182,7 +193,11 @@ def anomalies() -> list[dict]:
       ) SELECT tenant_id,table_name,row_count,previous_count,checked_at,
         round(100.0*(row_count-previous_count)/nullif(previous_count,0),1) AS change_pct
       FROM baseline WHERE checked_at>now()-interval '7 days' AND previous_count>0
-      AND (row_count<previous_count*.7 OR(delta>5*avg_delta AND avg_delta>0)) ORDER BY checked_at DESC""")
+      AND (row_count<previous_count*.7 OR(
+          row_count>previous_count*1.05 AND delta>5*avg_delta AND avg_delta>0
+      ))
+      ORDER BY CASE WHEN row_count<previous_count*.7 THEN 0 ELSE 1 END,
+          change_pct ASC,checked_at DESC""")
 
 
 def schema_changes() -> list[dict]:

@@ -5,7 +5,9 @@ import time
 from obs.alerter.notify import dispatch
 from obs.alerter.rules import evaluate
 from obs.redact import redact
-from obs.settings import settings
+from obs.settings import assert_no_demo_users, settings
+
+assert_no_demo_users()
 
 stopping = False
 

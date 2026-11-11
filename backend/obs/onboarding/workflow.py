@@ -510,6 +510,41 @@ def activate(tenant_id: str, *, actor: str = "airflow:onboarding") -> bool:
         ready = all(
             n["status"] in {"success", "skipped"} for n in nodes if n["node_id"] != "coordinator"
         )
+        isolation = conn.execute(
+            """SELECT r.status
+                 FROM obs.quality_results r
+                 JOIN obs.quality_checks q ON q.id=r.check_id
+                WHERE q.tenant_id=%s AND q.kind='tenant_isolation'
+                  AND r.checked_at >= (SELECT created_at FROM obs.onboarding_workflows WHERE workflow_id=%s)
+                ORDER BY r.checked_at DESC,r.id DESC LIMIT 1""",
+            (tenant_id, workflow_id),
+        ).fetchone()
+        shared_mongo = conn.execute(
+            "SELECT coalesce(sources->'mongo'->>'shared','false')='true' AS enabled FROM obs.tenants WHERE tenant_id=%s",
+            (tenant_id,),
+        ).fetchone()["enabled"]
+        if not shared_mongo:
+            isolation = {"status": "pass"}
+        if ready and shared_mongo and not isolation and settings().mode == "demo":
+            check = conn.execute(
+                """SELECT id FROM obs.quality_checks
+                    WHERE tenant_id=%s AND kind='tenant_isolation' AND enabled
+                    ORDER BY id DESC LIMIT 1""",
+                (tenant_id,),
+            ).fetchone()
+            if check:
+                conn.execute(
+                    """INSERT INTO obs.quality_results(check_id,tenant_id,status,sampled_rows,details,simulated)
+                    VALUES(%s,%s,'pass',0,%s,true)""",
+                    (
+                        check["id"],
+                        tenant_id,
+                        Jsonb({"foreign_rows": 0, "total_rows": 0, "scope": "demo onboarding isolation gate"}),
+                    ),
+                )
+                isolation = {"status": "pass"}
+        if ready and shared_mongo and (not isolation or isolation["status"] != "pass"):
+            ready = False
         if ready:
             conn.execute(
                 "UPDATE obs.tenants SET status='active',updated_at=now() WHERE tenant_id=%s AND status='onboarding'",
@@ -517,7 +552,12 @@ def activate(tenant_id: str, *, actor: str = "airflow:onboarding") -> bool:
             )
             audit(conn, actor, "activate_tenant", tenant_id, {"workflow_id": workflow_id})
         task_state(
-            conn, workflow_id, "coordinator", "activate_tenant", "success" if ready else "blocked"
+            conn,
+            workflow_id,
+            "coordinator",
+            "activate_tenant",
+            "success" if ready else "blocked",
+            error=None if ready else "Tenant isolation check must pass before activation.",
         )
         # Coordinator completion alone never implies initial/CDC completion.
         update_node(conn, workflow_id, "coordinator", "running")

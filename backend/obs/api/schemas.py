@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Generic, Literal, TypeVar
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -184,6 +185,41 @@ class Alert(BaseModel):
     acked_by: str | None = None
     acked_at: datetime | None = None
     resolved_at: datetime | None = None
+
+
+class Incident(BaseModel):
+    id: UUID
+    tenant_id: str | None = None
+    source_type: Literal["mysql", "mongo"] | None = None
+    severity: Literal["critical", "high", "medium", "low"]
+    state: Literal["open", "acknowledged", "resolved"]
+    title: str
+    cause_rule: str | None = None
+    opened_at: datetime
+    acknowledged_by: str | None = None
+    acknowledged_at: datetime | None = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    assignee: str | None = None
+    root_cause_category: str | None = None
+    updated_at: datetime
+
+
+class IncidentNote(BaseModel):
+    id: int
+    incident_id: UUID
+    author: str
+    body: str
+    created_at: datetime
+
+
+class IncidentDetail(Incident):
+    alerts: list[Alert] = []
+    notes: list[IncidentNote] = []
+
+
+class IncidentNoteInput(BaseModel):
+    body: str = Field(min_length=1, max_length=10000)
 
 
 class TenantEvent(BaseModel):

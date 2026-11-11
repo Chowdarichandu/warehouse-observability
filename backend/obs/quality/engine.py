@@ -7,6 +7,7 @@ import psycopg
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
+from obs.audit import audit
 from obs.auth import fail
 from obs.db import connection, notify, rows
 from obs.integrations import warehouse
@@ -30,6 +31,23 @@ def assess(check: dict, samples: list[dict], columns: dict[str, str]) -> tuple[s
             "type_mismatches": changed,
             "unexpected_columns": extra,
             "scope": "catalog schema contract",
+        }
+    if kind == "tenant_isolation":
+        if check["params"]["tenant_field"] not in columns:
+            return "error", {
+                "message": "The configured tenant field is absent from the table catalog."
+            }
+        if not samples:
+            return "error", {
+                "message": "No aggregate result; tenant isolation cannot be established."
+            }
+        evidence = samples[0]
+        foreign_rows = int(evidence.get("foreign_rows") or 0)
+        total_rows = int(evidence.get("total_rows") or 0)
+        return ("fail" if foreign_rows else "pass"), {
+            "foreign_rows": foreign_rows,
+            "total_rows": total_rows,
+            "scope": "full-table tenant field aggregate",
         }
     required = params.get("columns", [params.get("column")])
     if any(name not in columns for name in required):
@@ -90,6 +108,19 @@ def live_evidence(check: dict, schema: str) -> tuple[list[dict], dict[str, str]]
             raise ValueError("Table is not visible in the registered warehouse schema")
         if check["kind"] == "schema_contract":
             return [], columns
+        if check["kind"] == "tenant_isolation":
+            tenant_field = identifier(check["params"]["tenant_field"])
+            aggregate = source.execute(
+                sql.SQL(
+                    "SELECT COUNT(*) FILTER (WHERE {} IS DISTINCT FROM %s) AS foreign_rows, COUNT(*) AS total_rows FROM {}.{}"
+                ).format(
+                    sql.Identifier(tenant_field),
+                    sql.Identifier(identifier(schema)),
+                    sql.Identifier(identifier(check["table_name"])),
+                ),
+                (check["tenant_id"],),
+            ).fetchone()
+            return [dict(aggregate)], columns
         selected = check["params"].get("columns", [check["params"].get("column")])
         if any(name not in columns for name in selected):
             return [], columns
@@ -107,6 +138,8 @@ def demo_evidence(conn: psycopg.Connection, check: dict) -> tuple[list[dict], di
     columns = {item["name"]: item["type"] for item in snapshot["columns"]} if snapshot else {}
     if not columns:
         raise ValueError("No demo catalog for this table")
+    if check["kind"] == "tenant_isolation":
+        return [{"foreign_rows": 0, "total_rows": 100}], columns
     samples = []
     for index in range(min(100, check["sample_limit"])):
         row: dict[str, Any] = {name: index for name in columns}
@@ -141,7 +174,13 @@ def execute(conn: psycopg.Connection, check: dict) -> dict:
                 raise ValueError("Tenant warehouse schema is not configured")
             samples, columns = live_evidence(check, identifier(schema))
         status, details = assess(check, samples, columns)
-        sampled = len(samples) if check["kind"] != "schema_contract" else 0
+        sampled = (
+            int(details.get("total_rows", 0))
+            if check["kind"] == "tenant_isolation"
+            else len(samples)
+            if check["kind"] != "schema_contract"
+            else 0
+        )
     except Exception as exc:
         # Driver exceptions can contain sampled row values or credentials: persist only class.
         status, sampled = "error", 0
@@ -161,6 +200,53 @@ def execute(conn: psycopg.Connection, check: dict) -> dict:
         ),
     ).fetchone()
     conn.execute("UPDATE obs.quality_checks SET last_checked_at=now() WHERE id=%s", (check["id"],))
+    if check["kind"] == "tenant_isolation" and status in {"fail", "error"}:
+        # Isolation failures are security incidents, even when the quality
+        # worker cannot associate them with a pipeline run key.
+        title = "Tenant isolation check failed"
+        incident = conn.execute(
+            """INSERT INTO obs.incidents(tenant_id,source_type,severity,title,cause_rule)
+               SELECT %s, 'mongo',
+                      'critical', %s, 'tenant_isolation'
+                FROM obs.tenants t
+               WHERE t.tenant_id=%s AND t.sources->'mongo'->>'shared'='true'
+                 AND NOT EXISTS (
+                  SELECT 1 FROM obs.incidents
+                   WHERE tenant_id=%s AND cause_rule='tenant_isolation'
+                     AND state IN ('open','acknowledged'))""",
+            (check["tenant_id"], title, check["tenant_id"], check["tenant_id"]),
+        )
+        if incident.rowcount:
+            notify(conn, "incident.created", {"tenant_id": check["tenant_id"], "severity": "critical", "rule_id": "tenant_isolation"})
+    if (
+        check["kind"] == "tenant_isolation"
+        and status == "fail"
+        and int(details.get("foreign_rows", 0)) > 0
+        and settings().mode == "live"
+        and settings().live_actions_enabled
+    ):
+        tenant = conn.execute(
+            "SELECT tenant_id,sources,status FROM obs.tenants WHERE tenant_id=%s FOR UPDATE",
+            (check["tenant_id"],),
+        ).fetchone()
+        mongo = (tenant or {}).get("sources", {}).get("mongo", {})
+        if tenant and mongo.get("shared") and tenant["status"] == "active":
+            conn.execute(
+                "UPDATE obs.tenants SET status='paused',updated_at=now() WHERE tenant_id=%s",
+                (check["tenant_id"],),
+            )
+            audit(
+                conn,
+                "quality:worker",
+                "tenant_paused_isolation_breach",
+                check["tenant_id"],
+                {"check_id": check["id"], "foreign_rows": int(details["foreign_rows"])},
+            )
+            notify(
+                conn,
+                "tenant.paused",
+                {"tenant_id": check["tenant_id"], "reason": "tenant_isolation"},
+            )
     notify(conn, "quality.updated", {"tenant_id": check["tenant_id"], "status": status})
     return result
 

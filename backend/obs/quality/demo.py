@@ -9,6 +9,12 @@ def seed_quality(conn: psycopg.Connection) -> None:
     require_demo()
     definitions = [
         (
+            "__all__",
+            "Tenant isolation",
+            "tenant_isolation",
+            {"tenant_field": "tenant_id"},
+        ),
+        (
             "acme_retail",
             "Order amounts present",
             "null_rate",
@@ -41,14 +47,21 @@ def seed_quality(conn: psycopg.Connection) -> None:
         ),
     ]
     for tenant_id, name, kind, params in definitions:
-        if not conn.execute(
-            "SELECT 1 FROM obs.tenants WHERE tenant_id=%s", (tenant_id,)
-        ).fetchone():
-            continue
-        item = conn.execute(
-            """INSERT INTO obs.quality_checks(tenant_id,name,table_name,kind,params,sample_limit)
-            VALUES(%s,%s,'orders',%s,%s,100) ON CONFLICT(tenant_id,name) DO NOTHING RETURNING *""",
-            (tenant_id, name, kind, Jsonb(params)),
-        ).fetchone()
-        if item:
-            execute(conn, item)
+        tenant_ids = (
+            [
+                row["tenant_id"]
+                for row in conn.execute(
+                    "SELECT tenant_id FROM obs.tenants WHERE sources->'mongo'->>'shared'='true'"
+                ).fetchall()
+            ]
+            if tenant_id == "__all__"
+            else [tenant_id]
+        )
+        for current_tenant in tenant_ids:
+            item = conn.execute(
+                """INSERT INTO obs.quality_checks(tenant_id,name,table_name,kind,params,sample_limit)
+                VALUES(%s,%s,'orders',%s,%s,100) ON CONFLICT(tenant_id,name) DO NOTHING RETURNING *""",
+                (current_tenant, name, kind, Jsonb(params)),
+            ).fetchone()
+            if item:
+                execute(conn, item)

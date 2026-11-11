@@ -18,7 +18,48 @@ PARAMS = {
     "dag_import_errors": set(),
     "platform_down": set(),
     "collector_silent": {"minutes"},
+    "tenant_isolation": set(),
 }
+
+_SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+
+
+def _incident(
+    conn: psycopg.Connection,
+    *,
+    tenant_id: str | None,
+    source_type: str | None,
+    severity: str,
+    title: str,
+    rule_id: str,
+) -> dict:
+    """Return the open incident for a tenant/source, creating one atomically."""
+    # Incidents intentionally use source_type only for the two source systems.
+    # Platform rules are grouped at workspace scope with a NULL source.
+    source = source_type if source_type in {"mysql", "mongo"} else None
+    incident = conn.execute(
+        """SELECT * FROM obs.incidents
+        WHERE tenant_id IS NOT DISTINCT FROM %s
+          AND source_type IS NOT DISTINCT FROM %s
+          AND state IN ('open','acknowledged')
+        ORDER BY opened_at DESC LIMIT 1 FOR UPDATE""",
+        (tenant_id, source),
+    ).fetchone()
+    if incident:
+        if _SEVERITY_RANK.get(severity, 0) > _SEVERITY_RANK.get(incident["severity"], 0):
+            incident = conn.execute(
+                """UPDATE obs.incidents SET severity=%s,title=%s,cause_rule=%s,updated_at=now()
+                WHERE id=%s RETURNING *""",
+                (severity, title, rule_id, incident["id"]),
+            ).fetchone()
+        else:
+            conn.execute("UPDATE obs.incidents SET updated_at=now() WHERE id=%s", (incident["id"],))
+        return incident
+    return conn.execute(
+        """INSERT INTO obs.incidents(tenant_id,source_type,severity,title,cause_rule)
+        VALUES(%s,%s,%s,%s,%s) RETURNING *""",
+        (tenant_id, source, severity, title, rule_id),
+    ).fetchone()
 
 
 def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
@@ -48,19 +89,18 @@ def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
     elif key == "freshness_breach":
         found = conn.execute(
             """SELECT tenant_id,source_type,'Freshness SLA exceeded' AS reason FROM obs.v_freshness
-            WHERE minutes_stale IS NULL OR minutes_stale>freshness_sla_min*%s/100.0""",
+            WHERE last_success_at IS NULL OR now() - last_success_at >
+                freshness_sla_min * (%s / 100.0) * interval '1 minute'""",
             (params.get("pct", 100),),
         ).fetchall()
     elif key == "stuck_run":
         found = conn.execute(
-            """WITH baseline AS(SELECT tenant_id,source_type,load_type,
-            percentile_cont(.5) WITHIN GROUP(ORDER BY duration_s) AS median FROM obs.pipeline_runs
-            WHERE status='success' AND started_at>now()-interval '7 days' GROUP BY 1,2,3)
-            SELECT r.tenant_id,r.source_type,'Run is taking longer than its 7-day baseline' AS reason,r.run_key
-            FROM obs.pipeline_runs r JOIN baseline b USING(tenant_id,source_type,load_type)
-            JOIN obs.tenants t USING(tenant_id) WHERE t.status='active' AND r.status='running'
-            AND extract(epoch FROM now()-r.started_at)>%s*b.median""",
-            (params.get("multiplier", 3),),
+            """SELECT tenant_id,source_type,
+                'Run is taking longer than its robust duration baseline' AS reason,run_key
+            FROM obs.v_stuck_runs
+            WHERE extract(epoch FROM now()-started_at) >
+                greatest(threshold_s,baseline_median_s*%s)""",
+            (max(3, float(params.get("multiplier", 3))),),
         ).fetchall()
     elif key == "volume_anomaly":
         found = [
@@ -103,6 +143,17 @@ def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
             FROM obs.collector_state WHERE last_success_at IS NULL OR last_success_at<now()-%s*interval '1 minute'""",
             (params.get("minutes", 10),),
         ).fetchall()
+    elif key == "tenant_isolation":
+        found = conn.execute(
+            """SELECT q.tenant_id, 'mongo' AS source_type,
+                      'Tenant isolation check failed' AS reason, r.details
+               FROM obs.quality_results r
+               JOIN obs.quality_checks q ON q.id=r.check_id
+               JOIN obs.tenants t ON t.tenant_id=q.tenant_id
+              WHERE q.kind='tenant_isolation' AND r.status IN ('fail','error')
+                AND t.sources->'mongo'->>'shared'='true'
+                AND r.checked_at=(SELECT max(r2.checked_at) FROM obs.quality_results r2 WHERE r2.check_id=r.check_id)"""
+        ).fetchall()
     return found
 
 
@@ -126,14 +177,23 @@ def evaluate() -> None:
                             for k, v in item.items()
                         }
                         title = f"{rule['name']} · {tenant or item.get('source_type', 'platform')}"
+                        incident = _incident(
+                            conn,
+                            tenant_id=tenant,
+                            source_type=item.get("source_type"),
+                            severity=rule["severity"],
+                            title=title,
+                            rule_id=rule["rule_id"],
+                        )
                         alert = conn.execute(
                             "SELECT * FROM obs.alerts WHERE fingerprint=%s AND state<>'resolved' FOR UPDATE",
                             (fp,),
                         ).fetchone()
                         if not alert:
                             alert = conn.execute(
-                                """INSERT INTO obs.alerts(rule_id,fingerprint,tenant_id,severity,state,title,details)
-                                VALUES(%s,%s,%s,%s,'firing',%s,%s) RETURNING *""",
+                                """INSERT INTO obs.alerts(
+                                    rule_id,fingerprint,tenant_id,severity,state,title,details,incident_id
+                                ) VALUES(%s,%s,%s,%s,'firing',%s,%s,%s) RETURNING *""",
                                 (
                                     rule["rule_id"],
                                     fp,
@@ -141,6 +201,7 @@ def evaluate() -> None:
                                     rule["severity"],
                                     title,
                                     Jsonb(details),
+                                    incident["id"],
                                 ),
                             ).fetchone()
                             notify(
@@ -155,8 +216,15 @@ def evaluate() -> None:
                             )
                         else:
                             conn.execute(
-                                "UPDATE obs.alerts SET last_seen_at=%s,details=%s,severity=%s WHERE id=%s",
-                                (now, Jsonb(details), rule["severity"], alert["id"]),
+                                """UPDATE obs.alerts SET last_seen_at=%s,details=%s,severity=%s,
+                                incident_id=coalesce(incident_id,%s) WHERE id=%s""",
+                                (
+                                    now,
+                                    Jsonb(details),
+                                    rule["severity"],
+                                    incident["id"],
+                                    alert["id"],
+                                ),
                             )
                         if alert["state"] != "acked" and (
                             not alert["last_notified_at"]
@@ -184,6 +252,14 @@ def evaluate() -> None:
                                 "UPDATE obs.alerts SET state='resolved',resolved_at=%s WHERE id=%s",
                                 (now, alert["id"]),
                             )
+                            if alert.get("incident_id"):
+                                conn.execute(
+                                    """UPDATE obs.incidents SET state='resolved',resolved_at=%s,updated_at=now()
+                                    WHERE id=%s AND NOT EXISTS(
+                                        SELECT 1 FROM obs.alerts WHERE incident_id=%s AND state<>'resolved'
+                                    )""",
+                                    (now, alert["incident_id"], alert["incident_id"]),
+                                )
                             for channel in rule["channels"]:
                                 deliver(conn, channel, "resolved", alert["title"], alert["id"])
                             notify(

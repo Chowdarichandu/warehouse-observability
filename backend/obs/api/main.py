@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from time import monotonic
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from psycopg.types.json import Jsonb
@@ -16,6 +16,7 @@ from obs.api.routers import (
     actions,
     auth,
     dependencies,
+    incidents,
     investigation,
     pipelines,
     quality,
@@ -29,13 +30,14 @@ from obs.demo.seed import DEFAULT_RULES
 from obs.onboarding.api import router as onboarding_workflow_router
 from obs.onboarding.workflow import WorkflowError
 from obs.redact import redact
-from obs.settings import settings
+from obs.settings import assert_no_demo_users, settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if settings().service_kind != "console":
         raise RuntimeError("The console API requires SERVICE_KIND=console.")
+    assert_no_demo_users()
     if settings().mode == "demo":
         with connection() as conn:
             for role in ("admin", "operator", "viewer"):
@@ -181,14 +183,21 @@ for router in (
     stream.router,
     dependencies.router,
     investigation.router,
+    incidents.router,
     quality.router,
     access.router,
     pipelines.router,
     onboarding_workflow_router,
 ):
+    module_dependencies = (
+        []
+        if router in (auth.router, access.router)
+        else [Depends(access.require_module("pravah"))]
+    )
     app.include_router(
         router,
         prefix="/api",
+        dependencies=module_dependencies,
         responses={
             code: {"model": ErrorEnvelope} for code in (400, 401, 403, 404, 409, 422, 429, 500)
         },
