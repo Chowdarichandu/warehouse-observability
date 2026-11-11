@@ -82,6 +82,9 @@ const Access = lazy(() => import('./pages/Access').then((page) => ({ default: pa
 const Dependencies = lazy(() =>
   import('./pages/Dependencies').then((page) => ({ default: page.Dependencies })),
 );
+const Styleguide = lazy(() =>
+  import('./pages/Styleguide').then((page) => ({ default: page.Styleguide })),
+);
 
 function localInputTime(iso: string | null) {
   if (!iso) return undefined;
@@ -126,43 +129,43 @@ const PRODUCT_MODULES = [
     mark: 'H',
     name: 'HRMS',
     description: 'People operations',
-    permission: 'view_module_hrms',
+    moduleId: 'hrms',
   },
   {
     mark: 'F',
     name: 'Finance',
     description: 'Finance operations',
-    permission: 'view_module_finance',
+    moduleId: 'finance',
   },
   {
     mark: 'S',
     name: 'SAP',
     description: 'ERP operations',
-    permission: 'view_module_sap',
+    moduleId: 'sap',
   },
   {
     mark: 'P',
     name: 'POS',
     description: 'Point-of-sale operations',
-    permission: 'view_module_pos',
+    moduleId: 'pos',
   },
   {
     mark: 'I',
     name: 'Inventory',
     description: 'Inventory operations',
-    permission: 'view_module_inventory',
+    moduleId: 'inventory',
   },
   {
     mark: 'S',
     name: 'Support',
     description: 'Customer support',
-    permission: 'view_module_support',
+    moduleId: 'support',
   },
   {
     mark: 'H',
     name: 'Hospitality',
     description: 'Hospitality operations',
-    permission: 'view_module_hospitality',
+    moduleId: 'hospitality',
   },
 ] as const;
 
@@ -221,8 +224,13 @@ export function App() {
 function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'RuntimeConfig'> }) {
   const permissions = Array.isArray(user.permissions) ? user.permissions : undefined;
   const metricsOnly = permissions?.includes('metrics_only') ?? false;
+  const access = useQuery({
+    queryKey: ['access'],
+    queryFn: () => api<Schema<'AccessContext'>>('/access'),
+  });
+  const allowedModuleIds = new Set(access.data?.modules?.map((module) => module.module_id) ?? []);
   const availableModules = PRODUCT_MODULES.filter((module) =>
-    permissions ? permissions.includes(module.permission) : user.role === 'admin',
+    allowedModuleIds.has(module.moduleId),
   );
   const searchRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -230,10 +238,6 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     predicate: (query) => !['me', 'config'].includes(String(query.queryKey[0])),
   });
   const live = useLiveEvents();
-  const access = useQuery({
-    queryKey: ['access'],
-    queryFn: () => api<Schema<'AccessContext'>>('/access'),
-  });
   const [theme, setTheme] = useState(() => localStorage.getItem('obs-theme') || 'light');
   const [textSize, setTextSize] = useState(() =>
     localStorage.getItem('obs-text-size') === 'large' ? 'large' : 'standard',
@@ -266,6 +270,15 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
   const client = useQueryClient();
   const tv = params.get('tv') === '1';
   const range = params.get('range') || '24h';
+  const rangeLabel =
+    {
+      '1h': 'Last hour',
+      '6h': 'Last 6 hours',
+      '24h': 'Last 24 hours',
+      '7d': 'Last 7 days',
+      '30d': 'Last 30 days',
+      custom: 'Custom range',
+    }[range] || 'Last 24 hours';
   const logout = useMutation({
     mutationFn: () => api('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
@@ -394,7 +407,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   <button
                     type="button"
                     className="product-planned"
-                    key={module.permission}
+                    key={module.moduleId}
                     title={`${module.name} module is not available yet`}
                     onClick={() => {
                       setPanel('none');
@@ -610,7 +623,11 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   <button
                     className="theme-toggle"
                     title="Notifications"
-                    aria-label="Notifications"
+                    aria-label={
+                      firing.data && firing.data.total > 0
+                        ? `Notifications, ${firing.data.total} firing`
+                        : 'Notifications'
+                    }
                     aria-expanded={panel === 'bell'}
                     onClick={() => setPanel(panel === 'bell' ? 'none' : 'bell')}
                   >
@@ -679,7 +696,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               <label className="range-picker">
                 <CalendarDays size={14} />
                 <Select
-                  aria-label="Global time range"
+                  aria-label={`Global time range ${rangeLabel}`}
                   value={range}
                   onChange={(event) => {
                     const next = new URLSearchParams(params);
@@ -796,6 +813,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                     <Route path="/platform" element={<Platform />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/search" element={<SearchResults />} />
+                    <Route path="/styleguide" element={<Styleguide />} />
                     <Route
                       path="*"
                       element={

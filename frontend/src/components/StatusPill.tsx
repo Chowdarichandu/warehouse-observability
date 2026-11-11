@@ -1,4 +1,12 @@
-import { STATUS_COLORS } from './statusColors';
+function statusTone(status: string): 'ok' | 'warn' | 'bad' | 'run' | 'idle' {
+  if (['healthy', 'success', 'pass', 'enabled', 'up', 'resolved'].includes(status)) return 'ok';
+  if (['degraded', 'warning', 'acked', 'medium'].includes(status)) return 'warn';
+  if (['down', 'failed', 'fail', 'error', 'critical', 'high', 'firing'].includes(status))
+    return 'bad';
+  if (['running', 'started', 'queued'].includes(status)) return 'run';
+  return 'idle';
+}
+
 export function StatusPill({
   status,
   dot = true,
@@ -12,10 +20,7 @@ export function StatusPill({
     <span
       data-tip={tip}
       className={`status-pill${tip ? ' has-tip tip-below' : ''}`}
-      style={{
-        color: STATUS_COLORS[status] || '#83909e',
-        background: `${STATUS_COLORS[status] || '#83909e'}13`,
-      }}
+      data-tone={statusTone(status)}
     >
       {dot && <span className="status-dot" style={{ background: 'currentColor' }} />}
       {status === 'acked' ? 'acknowledged' : status.replaceAll('_', ' ')}
