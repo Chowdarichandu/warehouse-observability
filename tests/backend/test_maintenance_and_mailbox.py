@@ -109,7 +109,7 @@ def test_maintenance_failures_do_not_raise_consecutive_failure_alerts(scratch_te
         "SELECT 1 AS x FROM obs.alerts WHERE tenant_id=%s AND rule_id='cdc_consecutive_failures' AND state<>'resolved'",
         (TENANT,),
     )
-    assert alert is None
+    assert not alert  # one() returns {} when no alert row exists
 
 
 def test_dev_mailbox_records_invites_and_is_admin_only(clients):

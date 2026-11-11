@@ -126,6 +126,9 @@ RUN_COLUMNS = (
 
 
 def upsert_run(conn: psycopg.Connection, run: dict) -> None:
+    # Ingest paths (the collector) do not model maintenance windows; a run
+    # that does not say otherwise is not in maintenance.
+    run = {**run, "in_maintenance": bool(run.get("in_maintenance"))}
     cols = ",".join(RUN_COLUMNS)
     placeholders = ",".join(["%s"] * len(RUN_COLUMNS))
     updates = ",".join(f"{c}=excluded.{c}" for c in RUN_COLUMNS if c != "run_key")
