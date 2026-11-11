@@ -1,0 +1,3 @@
+# Historical synthetic AWS access-key example in tests/backend/test_redact.py.
+# The test assembles the fake value at runtime; this permits only the old commit finding.
+0dad7f786e81aeaf5665f87864be129576ef8caf:tests/backend/test_redact.py:aws-access-token:15

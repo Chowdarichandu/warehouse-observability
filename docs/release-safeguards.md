@@ -6,6 +6,8 @@ Pull requests and pushes to `main` run verification and release-safeguard workfl
 
 Gitleaks scans the full Git history for each pull request and main push. The scan fails the job when it finds a secret. Do not add real credentials to source, fixtures, screenshots, workflow artifacts or documentation. If a credential was committed, revoke it and remove it from Git history using the repository's incident process; deleting the current file is not enough.
 
+One fingerprint is allowlisted for the legacy redaction test's synthetic AWS key example. The test now assembles that fake value at runtime; every other finding fails CI.
+
 ## Dependencies and images
 
 - `pip-audit` checks the pinned Python requirements.
