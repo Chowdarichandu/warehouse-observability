@@ -330,7 +330,7 @@ def seed() -> None:
         ]:
             conn.execute(
                 """INSERT INTO obs.dev_mailbox(recipient,subject,body,created_at)
-                   SELECT %s,%s,%s,now() - interval %s
+                   SELECT %s,%s,%s,now() - %s::interval
                     WHERE NOT EXISTS (
                       SELECT 1 FROM obs.dev_mailbox WHERE recipient=%s AND subject=%s)""",
                 (recipient, subject, body, age, recipient, subject),
