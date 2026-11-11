@@ -222,6 +222,14 @@ class IncidentNoteInput(BaseModel):
     body: str = Field(min_length=1, max_length=10000)
 
 
+class IncidentResolveInput(BaseModel):
+    root_cause_category: str | None = Field(default=None, max_length=80)
+
+
+class IncidentAssignInput(BaseModel):
+    assignee: str | None = Field(default=None, max_length=254)
+
+
 class TenantEvent(BaseModel):
     id: int
     tenant_id: str

@@ -30,6 +30,7 @@ import {
   Server,
   Settings2,
   ShieldCheck,
+  Siren,
   Sun,
   Timer,
   TriangleAlert,
@@ -62,6 +63,9 @@ const Freshness = lazy(() =>
   import('./pages/Freshness').then((page) => ({ default: page.Freshness })),
 );
 const Alerts = lazy(() => import('./pages/Alerts').then((page) => ({ default: page.Alerts })));
+const Incidents = lazy(() =>
+  import('./pages/Incidents').then((page) => ({ default: page.Incidents })),
+);
 const Onboarding = lazy(() =>
   import('./pages/Onboarding').then((page) => ({ default: page.Onboarding })),
 );
@@ -110,6 +114,7 @@ const NAV = [
       { path: '/warehouse', label: 'Warehouse', icon: WarehouseIcon },
       { path: '/dependencies', label: 'Dependencies', icon: Network },
       { path: '/quality', label: 'Data quality', icon: BadgeCheck },
+      { path: '/incidents', label: 'Incidents', icon: Siren },
       { path: '/alerts', label: 'Alerts', icon: Bell },
     ],
   },
@@ -808,6 +813,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                     <Route path="/errors" element={<Errors />} />
                     <Route path="/freshness" element={<Freshness />} />
                     <Route path="/warehouse" element={<Warehouse />} />
+                    <Route path="/incidents" element={<Incidents />} />
                     <Route path="/alerts" element={<Alerts />} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/platform" element={<Platform />} />

@@ -88,8 +88,11 @@ def acknowledge(
 
 @router.post("/incidents/{incident_id}/resolve", response_model=s.Message)
 def resolve(
-    incident_id: UUID, user: dict = Depends(require_role("operator", "manage_alerts"))
+    incident_id: UUID,
+    data: s.IncidentResolveInput | None = None,
+    user: dict = Depends(require_role("operator", "manage_alerts")),
 ) -> dict:
+    category = (data.root_cause_category or "").strip() if data else ""
     with connection() as conn:
         item = conn.execute(
             "SELECT * FROM obs.incidents WHERE id=%s FOR UPDATE", (incident_id,)
@@ -102,10 +105,16 @@ def resolve(
             "SELECT * FROM obs.alerts WHERE incident_id=%s AND state<>'resolved' FOR UPDATE",
             (incident_id,),
         ).fetchall()
-        conn.execute(
-            "UPDATE obs.incidents SET state='resolved',resolved_by=%s,resolved_at=now(),updated_at=now() WHERE id=%s",
-            (user["email"], incident_id),
-        )
+        if category:
+            conn.execute(
+                "UPDATE obs.incidents SET state='resolved',resolved_by=%s,resolved_at=now(),root_cause_category=%s,updated_at=now() WHERE id=%s",
+                (user["email"], category, incident_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE obs.incidents SET state='resolved',resolved_by=%s,resolved_at=now(),updated_at=now() WHERE id=%s",
+                (user["email"], incident_id),
+            )
         for alert in alerts:
             conn.execute(
                 "UPDATE obs.alerts SET state='resolved',resolved_by=%s,resolved_at=now() WHERE id=%s",
@@ -116,8 +125,39 @@ def resolve(
             ).fetchone()
             for channel in rule["channels"] if rule else []:
                 deliver(conn, channel, "resolved", alert["title"], alert["id"])
-        audit(conn, user["email"], "resolve_incident", str(incident_id))
+        audit(
+            conn,
+            user["email"],
+            "resolve_incident",
+            str(incident_id),
+            {"root_cause_category": category} if category else {},
+        )
     return {"message": "Incident resolved."}
+
+
+@router.post("/incidents/{incident_id}/assign", response_model=s.Message)
+def assign(
+    incident_id: UUID,
+    data: s.IncidentAssignInput,
+    user: dict = Depends(require_role("operator", "manage_alerts")),
+) -> dict:
+    assignee = (data.assignee or "").strip() or None
+    with connection() as conn:
+        item = conn.execute(
+            "SELECT * FROM obs.incidents WHERE id=%s FOR UPDATE", (incident_id,)
+        ).fetchone()
+        if not item:
+            fail(404, "incident_not_found", "Incident not found.")
+        if item["state"] == "resolved":
+            fail(409, "incident_resolved", "A resolved incident cannot be reassigned.")
+        conn.execute(
+            "UPDATE obs.incidents SET assignee=%s,updated_at=now() WHERE id=%s",
+            (assignee, incident_id),
+        )
+        audit(conn, user["email"], "assign_incident", str(incident_id), {"assignee": assignee})
+    if assignee:
+        return {"message": f"Incident assigned to {assignee}."}
+    return {"message": "Incident unassigned."}
 
 
 @router.post("/incidents/{incident_id}/notes", response_model=s.IncidentNote)
