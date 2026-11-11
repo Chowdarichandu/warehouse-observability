@@ -78,7 +78,19 @@ def test_v3_schema_entities_and_module_registry() -> None:
         for item in rows("SELECT module_id,enabled FROM obs.modules")
     }
     assert modules["pravah"]["enabled"] is True
-    assert all(not modules[name]["enabled"] for name in ("hrms", "finance", "sap"))
+    # Migration 017 enables the planned modules so they show in the picker.
+    assert all(
+        modules[name]["enabled"]
+        for name in (
+            "hrms",
+            "finance",
+            "sap",
+            "pos",
+            "inventory",
+            "support",
+            "hospitality",
+        )
+    )
 
 
 def test_metric_functions_follow_the_shared_contract() -> None:

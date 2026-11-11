@@ -4,6 +4,13 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Show the planned product modules (HRMS, Finance, SAP, POS, Inventory, Support, Hospitality) in the product picker: migration 017 enables them in the registry, so admins see them and access is still gated per role and per user.
+- Move the sidebar Collapse control to the top of the sidebar, next to the brand.
+- Give account Settings its own (gear) icon; it previously shared the Administration sliders icon.
+- Animate theme switching: surfaces now fade between light and dark instead of snapping.
+- Open dependency details in view: clicking a node in the dependency map scrolls its detail panel into view.
+- Clarify saved views on Pipeline runs: the block is labelled "Saved views" and explains that a view stores the current filters and time range.
+- Spacing pass: the top search box gets real padding, side-by-side panels stack instead of squeezing at laptop widths, and stacked panels get more air.
 - Fix demo onboarding stalling for MySQL-only tenants: the simulated seven-DAG progression job is now created for every demo onboarding, not only when MongoDB is enabled.
 - Fix dialogs overflowing small viewports: modals now cap at the viewport height and scroll internally, so the title and close control stay reachable (the User permissions dialog outgrew the screen as the permission catalog grew).
 - Fix incident responses masking console usernames: acknowledged-by, resolved-by, assignee and note-author fields are no longer redacted as if they were secrets (free text such as note bodies still is).

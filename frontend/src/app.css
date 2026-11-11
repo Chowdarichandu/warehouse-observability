@@ -351,7 +351,9 @@ strong {
   flex: 1;
   min-width: 0;
   margin-left: 214px;
-  transition: margin-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    margin-left 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 250ms ease;
 }
 .topbar {
   height: 65px;
@@ -590,7 +592,7 @@ strong {
   border-radius: 8px;
   box-shadow: var(--shadow);
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   min-width: 0;
 }
 .panel-heading {
@@ -2729,8 +2731,8 @@ th:first-child {
     padding-right: 9px;
   }
   .two-column {
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
   .duration-row {
     grid-template-columns: 90px 1fr 55px;
@@ -3476,16 +3478,39 @@ input {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.sidebar > .brand,
+.sidebar > .sidebar-head,
 .sidebar > .workspace-switch,
 .sidebar-bottom {
   flex-shrink: 0;
+}
+.sidebar-head {
+  display: flex;
+  align-items: center;
+}
+.sidebar-head .brand {
+  flex: 1;
+  min-width: 0;
+}
+.collapse-toggle-top {
+  width: auto;
+  margin: 0 12px 0 0;
+  padding: 7px;
+}
+.sidebar.collapsed .sidebar-head {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 8px;
+}
+.sidebar.collapsed .collapse-toggle-top {
+  margin: 0;
 }
 /* ---- TenantScope shell additions: workspace menu, bell, profile, collapse ---- */
 .sidebar {
   transition:
     width 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    min-width 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    min-width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 250ms ease;
 }
 button.workspace-switch {
   width: calc(100% - 30px);
@@ -4477,6 +4502,7 @@ input[type='radio'] {
   border-radius: 7px;
   background: var(--subtle);
   border: 1px solid var(--line);
+  padding: 8px 12px;
 }
 .status-pill {
   border-radius: 5px;
@@ -6065,4 +6091,20 @@ tr.row-selected td {
   white-space: pre-wrap;
   margin: 6px 0 0;
   color: var(--muted);
+}
+
+/* Smooth theme switching: surfaces fade between light and dark. */
+body,
+.topbar,
+.panel,
+.kpi-card,
+.modal,
+.popover,
+.health-card,
+td,
+th {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease;
 }

@@ -78,7 +78,7 @@ export function SavedRunViews() {
     <div className="saved-views">
       <div className="inline-flex">
         <Bookmark size={15} />
-        <strong>Your views</strong>
+        <strong>Saved views</strong>
         <Select
           aria-label="Saved investigation views"
           value={selected}
@@ -114,7 +114,7 @@ export function SavedRunViews() {
       >
         <input
           aria-label="New saved view name"
-          placeholder="Name these filters…"
+          placeholder="Name this view…"
           maxLength={80}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -131,7 +131,7 @@ export function SavedRunViews() {
       <span className="muted">
         {views.error
           ? views.error.message
-          : 'Save your current filters and time range to reopen this investigation later. Private to your account.'}
+          : 'A view saves the filters and time range above, so you can reopen the same run list later. Only you can see your views.'}
       </span>
       {confirmDelete && (
         <div className="modal-scrim" role="presentation" onClick={() => setConfirmDelete(false)}>

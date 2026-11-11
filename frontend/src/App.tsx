@@ -18,6 +18,7 @@ import {
   Mail,
   CalendarDays,
   ChevronDown,
+  Cog,
   Command,
   KeyRound,
   LayoutDashboard,
@@ -129,7 +130,7 @@ const NAV = [
       { path: '/dev/mailbox', label: 'Dev mailbox', icon: Mail },
       { path: '/access', label: 'Access & roles', icon: ShieldCheck },
       { path: '/admin', label: 'Administration', icon: Settings2 },
-      { path: '/account', label: 'Settings', icon: Settings2 },
+      { path: '/account', label: 'Settings', icon: Cog },
     ],
   },
 ];
@@ -374,15 +375,25 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
           <aside
             className={`sidebar ${menu ? 'mobile-open' : ''} ${collapsed ? 'collapsed' : ''} ${panel === 'workspace' || panel === 'profile' ? 'panel-open' : ''}`}
           >
-            <NavLink to="/" className="brand">
-              <span className="brand-icon">
-                <Workflow size={23} />
-              </span>
-              <span>
-                {APP_NAME}
-                <small>OPERATIONS PLATFORM</small>
-              </span>
-            </NavLink>
+            <div className="sidebar-head">
+              <NavLink to="/" className="brand">
+                <span className="brand-icon">
+                  <Workflow size={23} />
+                </span>
+                <span>
+                  {APP_NAME}
+                  <small>OPERATIONS PLATFORM</small>
+                </span>
+              </NavLink>
+              <button
+                className="collapse-toggle collapse-toggle-top"
+                onClick={() => setCollapsed(!collapsed)}
+                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <PanelLeft size={15} />
+              </button>
+            </div>
             <button
               className="workspace-switch"
               onClick={() => setPanel(panel === 'workspace' ? 'none' : 'workspace')}
@@ -462,15 +473,6 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               })}
             </nav>
             <div className="sidebar-bottom">
-              <button
-                className="collapse-toggle"
-                onClick={() => setCollapsed(!collapsed)}
-                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                <PanelLeft size={15} />
-                <span>Collapse</span>
-              </button>
               <div className="profile">
                 <button
                   className="profile-main"

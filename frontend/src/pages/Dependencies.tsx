@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Select } from '../components/Select';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Database, GitBranch, Link2, Workflow } from 'lucide-react';
@@ -41,6 +41,14 @@ export function Dependencies() {
     ? requestedNode || ''
     : graph.data?.nodes[0]?.id || '';
   const selected = graph.data?.nodes.find((node) => node.id === selectedId);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  // Clicking a node opens its details below the map; bring them into view so
+  // the click visibly does something at any zoom level.
+  useEffect(() => {
+    if (requestedNode && detailsRef.current) {
+      detailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [requestedNode]);
   const impact = useMemo(() => {
     const found = new Set<string>();
     const queue = selected ? [selected.id] : [];
@@ -252,7 +260,7 @@ export function Dependencies() {
           </Panel>
           <p className="dependency-note">{graph.data.note}</p>
           {selected && (
-            <div className="dependency-details">
+            <div className="dependency-details" ref={detailsRef}>
               <Panel
                 title={selected.label}
                 subtitle={`${selected.kind} · ${selected.evidence} metadata`}
