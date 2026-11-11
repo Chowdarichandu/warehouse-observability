@@ -69,10 +69,16 @@ test("capture all console screens from the running workspace", async ({
   ];
   const ready = async () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("status", { name: "Loading" })).toHaveCount(0);
-    await expect(
-      page.getByText("Unable to load this view", { exact: true }),
-    ).toHaveCount(0);
+    // The styleguide intentionally renders loading and error specimens as
+    // component examples; they do not indicate that the route is still busy.
+    if (new URL(page.url()).pathname !== "/styleguide") {
+      await expect(page.getByRole("status", { name: "Loading" })).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByText("Unable to load this view", { exact: true }),
+      ).toHaveCount(0);
+    }
     const charts = page.locator(".chart-deferred");
     for (let index = 0; index < (await charts.count()); index += 1) {
       const chart = charts.nth(index);
@@ -114,7 +120,9 @@ test("capture all console screens from the running workspace", async ({
   await page.goto("/tenants");
   await ready();
   await expect(page.locator(".health-grid-mobile")).toBeVisible();
-  await expect(page.locator(".health-grid-mobile .health-card").first()).toBeVisible();
+  await expect(
+    page.locator(".health-grid-mobile .health-card").first(),
+  ).toBeVisible();
   await expect(page.locator(".health-grid-desktop")).toBeHidden();
   await page.screenshot({
     path: path.join(directory, "mobile.png"),
