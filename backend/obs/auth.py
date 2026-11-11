@@ -39,6 +39,10 @@ PERMISSIONS = [
     "view_module_hrms",
     "view_module_finance",
     "view_module_sap",
+    "view_module_pos",
+    "view_module_inventory",
+    "view_module_support",
+    "view_module_hospitality",
 ]
 SYSTEM_ROLE_PERMISSIONS = {
     "admin": [permission for permission in PERMISSIONS if permission != "metrics_only"],
@@ -58,6 +62,10 @@ PERMISSION_MIN_ROLE = {
     "view_module_hrms": "viewer",
     "view_module_finance": "viewer",
     "view_module_sap": "viewer",
+    "view_module_pos": "viewer",
+    "view_module_inventory": "viewer",
+    "view_module_support": "viewer",
+    "view_module_hospitality": "viewer",
 }
 
 

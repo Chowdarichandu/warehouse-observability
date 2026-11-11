@@ -140,6 +140,30 @@ const PRODUCT_MODULES = [
     description: 'ERP operations',
     permission: 'view_module_sap',
   },
+  {
+    mark: 'P',
+    name: 'POS',
+    description: 'Point-of-sale operations',
+    permission: 'view_module_pos',
+  },
+  {
+    mark: 'I',
+    name: 'Inventory',
+    description: 'Inventory operations',
+    permission: 'view_module_inventory',
+  },
+  {
+    mark: 'S',
+    name: 'Support',
+    description: 'Customer support',
+    permission: 'view_module_support',
+  },
+  {
+    mark: 'H',
+    name: 'Hospitality',
+    description: 'Hospitality operations',
+    permission: 'view_module_hospitality',
+  },
 ] as const;
 
 function ActivityRedirect() {

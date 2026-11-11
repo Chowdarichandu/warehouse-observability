@@ -207,6 +207,10 @@ const PERMISSION_LABELS: Record<string, string> = {
   view_module_hrms: 'HRMS module access',
   view_module_finance: 'Finance module access',
   view_module_sap: 'SAP module access',
+  view_module_pos: 'POS module access',
+  view_module_inventory: 'Inventory module access',
+  view_module_support: 'Support module access',
+  view_module_hospitality: 'Hospitality module access',
 };
 
 function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {

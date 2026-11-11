@@ -365,6 +365,10 @@ def test_admin_views_user_permissions(clients):
         "view_module_hrms",
         "view_module_finance",
         "view_module_sap",
+        "view_module_pos",
+        "view_module_inventory",
+        "view_module_support",
+        "view_module_hospitality",
     }
 
 
