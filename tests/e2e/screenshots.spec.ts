@@ -64,14 +64,28 @@ test("capture all console screens from the running workspace", async ({
     { url: "/admin?section=activity", file: "admin-activity.png" },
     { url: "/admin?section=audit", file: "admin-audit.png" },
     { url: "/search?q=binlog", file: "search.png" },
+    { url: "/styleguide", file: "styleguide.png" },
     { url: "/?tv=1", file: "tv-mode.png" },
   ];
   const ready = async () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("status", { name: "Loading" })).toHaveCount(0);
-    await expect(
-      page.getByText("Unable to load this view", { exact: true }),
-    ).toHaveCount(0);
+    // The styleguide intentionally renders loading and error specimens as
+    // component examples; they do not indicate that the route is still busy.
+    if (new URL(page.url()).pathname !== "/styleguide") {
+      await expect(page.getByRole("status", { name: "Loading" })).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByText("Unable to load this view", { exact: true }),
+      ).toHaveCount(0);
+    }
+    const charts = page.locator(".chart-deferred");
+    for (let index = 0; index < (await charts.count()); index += 1) {
+      const chart = charts.nth(index);
+      await chart.scrollIntoViewIfNeeded();
+      await expect(chart.locator("canvas").first()).toBeAttached();
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
   };
   for (const screen of screens) {
     await page.goto(screen.url);
@@ -92,9 +106,24 @@ test("capture all console screens from the running workspace", async ({
     animations: "disabled",
   });
   await page.getByLabel("Toggle color theme").click();
+  await page.goto("/styleguide");
+  await ready();
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({
+    path: path.join(directory, "styleguide-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/tenants");
   await ready();
+  await expect(page.locator(".health-grid-mobile")).toBeVisible();
+  await expect(
+    page.locator(".health-grid-mobile .health-card").first(),
+  ).toBeVisible();
+  await expect(page.locator(".health-grid-desktop")).toBeHidden();
   await page.screenshot({
     path: path.join(directory, "mobile.png"),
     fullPage: true,

@@ -1,4 +1,4 @@
-.PHONY: install up demo live down reset seed types test e2e lint build load-test recovery-drill
+.PHONY: install up demo live down reset seed types test e2e lint build verify load-test recovery-drill
 PY := .venv/bin/python
 
 install:
@@ -24,6 +24,12 @@ lint:
 	.venv/bin/ruff check backend/obs tests/backend scripts
 	.venv/bin/ruff format --check backend/obs tests/backend scripts
 	cd frontend && npm run lint
+
+# Offline release gate used before opening a promotion record. It deliberately
+# excludes AWS and staging-only checks; those remain explicit checklist items.
+verify: lint test build
+	$(PY) scripts/openapi.py
+	git diff --exit-code -- backend/openapi.json frontend/src/api/generated.ts docs/api.md
 
 build:
 	cd frontend && npm run build

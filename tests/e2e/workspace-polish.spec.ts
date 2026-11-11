@@ -26,7 +26,7 @@ test("search, navigation, typography, and administration work together", async (
   await page.getByLabel("Search tenants, logs, pages").fill("acme");
   await page.getByRole("button", { name: "Submit global search" }).click();
   await expect(
-    page.getByRole("heading", { name: "Tenants", exact: true }),
+    page.getByRole("heading", { name: "Search", exact: true }),
   ).toBeVisible();
   await expect(
     page

@@ -1,103 +1,121 @@
-AGENTS.md: Observability Console
-Read SPEC.md first; it is the source of truth. This file explains how to work in the repo.
+# AGENTS.md
 
-This is a fully in-house product. Don't introduce Grafana, Metabase, Superset, Kibana or any
-other off-the-shelf dashboard tool. We build the UI, the API, the collectors and the alerting
-ourselves.
+How to work in this repository. It applies to every contributor, human or coding agent.
 
+## Read first
 
-Priorities
- 1. Demo mode must always work offline. make demo should serve the console at
-   http://localhost:8080 with seeded, live-updating data and no external network calls.
-   Never break this.
- 2. Build milestones in order (SPEC §17). After M4, stop and summarize what you built,
-   what you assumed, and what's left.
- 3. Never call production systems. Live mode connects only through env vars a human
-   sets. Tests use recorded JSON fixtures.
+1. [`SPEC.md`](SPEC.md): what the product does and how it's built. It is the source of truth.
+2. [`docs/DESIGN.md`](docs/DESIGN.md): the design system and every screen. It is part of the spec.
 
+When the code and the spec disagree, the spec wins. When the spec is unclear, make the smallest reasonable assumption, state it in the pull request, and keep going.
 
-Backend conventions (Python 3.11)
-   Libraries: FastAPI, psycopg 3 (plain SQL in small repository modules, no ORM), pydantic
-   and pydantic-settings, httpx, APScheduler, sse-starlette, PyYAML, passlib[bcrypt] or
-   argon2, PyJWT.
-   Type hints everywhere. Use ruff for lint and format, and pytest for tests.
-   Migrations are numbered SQL files in sql/migrations/ , applied by python -m
-   obs.migrate . Never edit an applied migration; add a new one.
+## Current program: the v3 rebuild
 
-   All collector writes are upserts on natural keys, so every process is safe to restart.
-   Store timestamptz in UTC, and return ISO-8601 UTC from the API.
-   All error text and logs go through redact.py before they are stored and before they are
-   returned.
-   One failing tenant or API call must never crash a loop. Record it in
-    collector_state.last_error or platform_health and continue.
+- Work through SPEC §17 milestones R0 to R8, in order. Open one pull request per milestone; in R5, open one per screen.
+- **Rebuild in place.** Start each milestone by reviewing the existing code in that area. Keep what meets the spec and passes its tests; replace the rest. Record each keep-or-replace decision in the pull request description.
+- **The frontend is rebuilt on the design system.** Delete each old component once its screen has migrated, and leave nothing unused behind.
+- Repository cleanup (below) is part of R0.
 
-   Every mutating endpoint checks the role and writes audit_log .
+## Non-negotiables
 
+1. `make demo` works offline at every commit.
+2. Code and tests never contact external or production systems. Tests use recorded, sanitized fixtures.
+3. The server enforces RBAC on every endpoint. Every write is role-checked, idempotent and audited.
+4. Secrets never appear in the repository, logs, the database or the browser.
+5. UI code uses design tokens only. Lint enforces this.
+6. Never weaken or delete a test to make a build pass. Fix the code, or update the spec first.
 
-Frontend conventions
-  React + TypeScript (strict), Vite, Tailwind, TanStack Query and Table, Apache ECharts,
-  React Router.
-  API types are generated from OpenAPI ( make types ). Never hand-write API response
-  types.
-  Status colors and labels live in one place ( components/StatusPill.tsx plus a shared
-  color map). Use the same colors on every page.
-  Every page supports light and dark mode, shareable URL state (filters and range in the
-  query string), loading skeletons, and a useful empty state.
-  Live updates go through useLiveEvents (SSE), which invalidates TanStack Query
-  caches. Keep 30-second polling as a fallback.
-  Use ESLint and Prettier, Vitest for component tests, and Playwright for e2e.
+## Stack and conventions
 
+**Backend**
 
-Commands
+- Python 3.12.
+- Libraries: FastAPI, psycopg 3 (plain SQL in repository modules, no ORM), pydantic v2 with pydantic-settings, httpx, APScheduler, argon2-cffi, and an OIDC client library. Libraries already in the repository for these concerns can stay.
+- Type hints everywhere. ruff for lint and format; mypy strict for `backend/obs`; pytest.
+- Migrations are numbered, forward-only SQL files in `sql/migrations/`. Never edit a migration that has already been applied.
+- Timestamps are `timestamptz` in UTC. The API returns ISO-8601 UTC.
+- Logs are structured JSON with request ids, and all error and log text passes through redaction.
+- Domain exceptions map to the API error shape in SPEC §9.1.
 
- Command            What it does
+**Frontend**
 
- make up            Start the stack in the current MODE
+- React and TypeScript in strict mode, built with Vite.
+- Libraries: Radix UI primitives, TanStack Query and TanStack Table, one chart library, and IBM Plex fonts from `@fontsource`.
+- API types are generated from OpenAPI (`make types`). Never hand-write API response types.
+- Server state lives in TanStack Query. Filters and tabs live in the URL. Add a global store only for real cross-screen client state.
+- Tooling: ESLint and Prettier, Vitest for unit and component tests, Playwright for end-to-end tests.
+- Every interactive element is reachable by keyboard and passes axe.
 
- make demo          MODE=demo, start the stack, seed data, ticker on
+## Commands
 
- make live          MODE=live using .env
+| Command | What it does |
+|---|---|
+| `make install` | Install backend and frontend dependencies |
+| `make up` | Start the stack in the current `MODE` |
+| `make demo` | Seed the demo dataset and start the stack with live simulation |
+| `make down` / `make reset` | Stop the stack / stop it and delete local data |
+| `make seed` | Re-apply the demo seed |
+| `make types` | Regenerate the OpenAPI schema and frontend types |
+| `make lint` | ruff, mypy, ESLint, tsc, Prettier check, token lint |
+| `make test` | Backend unit, contract and integration tests, plus frontend tests |
+| `make e2e` | Playwright walkthrough, visual regression and axe, against a running demo |
+| `make build` | Production frontend build and container images |
+| `make gallery` | Regenerate `docs/screenshots/` from demo mode |
+| `make loadtest` | Capacity test against the scaled demo dataset |
 
- make down          Stop the stack
+## Branches, commits and pull requests
 
- make reset         Stop the stack and drop volumes
+- Name branches `r<milestone>-<topic>` during the rebuild, and `feat/…` or `fix/…` after it.
+- Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`).
+- Every pull request description has these sections:
+  - **Summary**
+  - **Spec references:** SPEC and DESIGN sections.
+  - **Keep or replace decisions:** during the rebuild only.
+  - **How it was verified:** the commands and tests run.
+  - **Screenshots:** for UI changes, in light and dark at 1440 and 390 px.
+  - **Follow-ups**
+- Add a `CHANGELOG.md` entry under **Unreleased** for every change a user would notice.
 
- make seed          Re-run the demo seed
+## Definition of done (every pull request)
 
- make types         Regenerate the frontend TS types from the API's OpenAPI
+- `make lint`, `make test` and `make e2e` pass.
+- `make reset && make demo` shows every SPEC §13 scenario.
+- New endpoints appear in OpenAPI, and the frontend types are regenerated.
+- New endpoints have RBAC tests for every role, and every new write produces an audit entry.
+- New configuration is added to `.env.example` and `.env.live.example`, and to `docs/configuration.md`.
+- UI changes meet the DESIGN §12 definition of done.
+- Documentation affected by the change is updated in the same pull request.
 
- make test          Backend pytest plus frontend Vitest
+## Writing in this repository
 
- make e2e           Playwright smoke test against a running demo
+Documentation is part of the product. Follow these rules in docs, code comments, commit messages and UI copy:
 
- make lint          ruff, ESLint, Prettier check, tsc
+- **Use the product voice.** Describe what the product does and how to use it, in the present tense and plain language.
+- **Keep internal context out of the repository.**
+  - Don't refer to specific people, job titles, internal meetings, or conversations.
+  - Don't mention which tools were used to write the code.
+  - Don't write progress narration or session notes in docs ("implemented X today", "as requested"). Progress belongs in pull requests and `CHANGELOG.md`.
+- **Write constraints as product behavior or requirements**, not as disclaimers. For example: "Live actions are off until `LIVE_ACTIONS_ENABLED=true`." Release requirements live in `docs/release-checklist.md`.
+- **Use fictional examples only.**
+  - Hosts use `example.com`, and tenants are fictional.
+  - No real hostnames, account ids, client names or customer data anywhere.
+- **UI text** follows the copy rules in DESIGN §10.
 
+## Repository cleanup (part of R0)
 
+- Remove `SPEC.original.pdf` and `AGENTS.original.pdf`.
+- Replace `MILESTONES.md` with `CHANGELOG.md` (summarize the earlier work as 0.x entries) and `docs/release-checklist.md`.
+- Replace `README.md` with the product README.
+- Fold anything still relevant from `docs/repository-vision.md` into `SPEC.md`, then delete the file.
+- Remove session notes and internal references from every doc, following the writing rules above.
+- Move the screenshot gallery to `docs/screenshots/`. Stop tracking generated output (`output/`) and add it to `.gitignore`.
+- Add secret scanning (gitleaks) to CI, and fail the build on any finding.
 
-Definition of done (every change)
-  make lint , make test and make e2e pass.
+## Don't
 
-  make reset && make demo works from scratch.
-  Every SPEC §16 scenario is visible in the UI. No page shows an error or an unexpected
-  empty state in demo mode.
-  The Playwright smoke test covers: log in → overview renders → click the red tenant →
-  open the failed run → log is visible → retry → the new run appears.
-  New env vars are added to .env.example and mentioned in SPEC.
-  New error patterns come with a test in test_classify.py .
-
-
-Don't
-  Don't add Prometheus, Loki, Kafka, Redis or any other infrastructure in phase 1.
-  Postgres LISTEN / NOTIFY covers live events.
-  Don't let the browser talk to Airflow, Airbyte or the warehouse directly; everything goes
-  through /api .
-  Don't store raw passwords from the onboarding wizard. Store secret references only.
-  Don't store free-form SQL in alert rules. Rule types are code; only parameters are
-  editable.
-  Don't run count(*) on warehouse tables in live mode. Use catalog statistics.
-  Don't modify the team's existing DAGs from this repo. Ship airflow/dags/README.md
-  with the migration steps instead.
-
-Current authorized scope (2026-11-09): the user explicitly requested the missing live/production pieces, EC2/EKS integration, DAGs/alerts, smoother UI transitions, and a GitHub push. That request supersedes the original M4 review stop. Continue to preserve offline demo mode, avoid production calls, and report staging/deployment checks honestly. The actual team's DAGs remain untouched; templates ship under airflow/dags/templates.
-
-Additional authorized scope (2026-11-09/10): implement recommendations 4–7 with subagents: evidence-based dependencies, bounded built-in data-quality checks, operator investigation tools and release safeguards. Preserve the separately added Vercel/Railway hosting changes. The user also reported a mobile hosted-page error; verify compatibility and API/proxy behavior without calling production data integrations.
+- Don't add infrastructure the spec doesn't name (Redis, Kafka, Elasticsearch and so on) without changing the spec first.
+- Don't let the browser call Airflow, Airbyte or the warehouse directly. Everything goes through `/api/v1`.
+- Don't store free-form SQL in alert rules or quality checks. Both use built-in types with parameters.
+- Don't run `count(*)` on warehouse tables. Use catalog statistics.
+- Don't modify existing pipeline DAGs from this repository. Ship the adoption guide in `airflow/dags/` instead.
+- Don't accept raw credentials in any form or API. Secret-manager references only.

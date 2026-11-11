@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -17,7 +18,7 @@ from obs.db import connection, one
 from obs.integrations import aws, http, warehouse
 from obs.integrations.airbyte import Airbyte, duration_seconds
 from obs.integrations.airflow import Airflow
-from obs.settings import Settings, settings
+from obs.settings import Settings, assert_no_demo_users, settings
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 
@@ -79,9 +80,43 @@ def test_live_configuration_fails_closed():
         {"oidc_group_roles": {}},
         {"database_url": "postgresql://db/obs"},
         {"airflow_url": "http://airflow"},
+        {"demo_public": True},
     ]:
         with pytest.raises(ValidationError):
             Settings(_env_file=None, **(base | change))
+
+    local_auth = base | {"auth_provider": "local", "allow_local_auth_in_live": True}
+    assert Settings(_env_file=None, **local_auth).auth_provider == "local"
+    local_http = local_auth | {
+        "console_url": "http://localhost:8080",
+        "cookie_secure": False,
+    }
+    assert Settings(_env_file=None, **local_http).mode == "live"
+    with pytest.raises(ValidationError, match="COOKIE_SECURE"):
+        Settings(
+            _env_file=None, **(local_http | {"console_url": "https://obs.example.test"})
+        )
+
+
+def test_live_startup_refuses_seeded_demo_users(monkeypatch):
+    config = Settings(
+        _env_file=None,
+        mode="live",
+        jwt_secret="a-secure-random-production-signing-key-123",
+        console_url="https://obs.example.test",
+        database_url="postgresql://user:password@db/obs?sslmode=verify-full",
+        auth_provider="oidc",
+        oidc_issuer="https://id.example.test",
+        oidc_client_id="client",
+        oidc_group_roles={"ops": "operator"},
+    )
+    monkeypatch.setattr("obs.settings.settings", lambda: config)
+    monkeypatch.setattr("obs.db.one", lambda *_: {"email": "admin@demo.local"})
+    with pytest.raises(RuntimeError, match="demo accounts exist"):
+        assert_no_demo_users()
+
+    monkeypatch.setattr("obs.db.one", lambda *_: {})
+    assert_no_demo_users()
 
 
 def test_demo_blocks_all_live_entry_points():
@@ -158,6 +193,39 @@ def test_airflow_version_auth_pagination_and_scoped_retry(live, monkeypatch, ver
         with pytest.raises(ValueError, match="map index"):
             Airflow(write=True).retry(task | {"map_index": 4})
     assert len(calls) == 2
+
+
+@pytest.mark.parametrize(
+    "version,watermarks",
+    [
+        ("v1", {"execution_date_gte", "start_date_gte", "end_date_gte"}),
+        ("v2", {"run_after_gte", "start_date_gte", "end_date_gte"}),
+    ],
+)
+def test_airflow_runs_use_documented_watermark_filters(
+    live, monkeypatch, version, watermarks
+):
+    monkeypatch.setattr(live, "airflow_api_version", version)
+    seen = []
+
+    def handler(request):
+        seen.append(dict(request.url.params))
+        return httpx.Response(
+            200,
+            json={
+                "dag_runs": [
+                    {"dag_run_id": "scheduled__one", "state": "success"},
+                ],
+                "total_entries": 1,
+            },
+        )
+
+    transport(monkeypatch, handler)
+    runs = Airflow().runs("mysql_cdc", datetime(2026, 11, 9, tzinfo=UTC))
+    assert [run["dag_run_id"] for run in runs] == ["scheduled__one"]
+    assert len(seen) == 3
+    assert {next(iter(watermarks & set(params))) for params in seen} == watermarks
+    assert all("updated_at_gte" not in params for params in seen)
 
 
 def test_mwaa_uses_iam_request_contract(live, monkeypatch):

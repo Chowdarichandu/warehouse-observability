@@ -104,6 +104,18 @@ test("product navigation only shows modules granted to the signed-in user", asyn
   };
   await page.route("**/api/me", sapOnlyIdentity);
   await page.route("**/api/auth/login", sapOnlyIdentity);
+  await page.route("**/api/access", async (route) => {
+    const response = await route.fetch();
+    if (!response.ok()) return route.fulfill({ response });
+    const access = await response.json();
+    access.modules = [
+      ...access.modules.filter(
+        (module: { module_id: string }) => module.module_id === "pravah",
+      ),
+      { module_id: "sap", display_name: "SAP", enabled: true, access: "granted" },
+    ];
+    await route.fulfill({ response, json: access });
+  });
   await page.goto("/");
   await page.getByLabel("Email address").fill("admin@demo.local");
   await page

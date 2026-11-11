@@ -1,12 +1,50 @@
-# Warehouse Observability
+# Pravah
 
-An in-house console for MySQL and MongoDB → Airbyte → Airflow → warehouse pipelines, with tenant health, run investigation, freshness, schema/volume changes, alerts, onboarding and audit history.
+**Warehouse observability for multi-tenant Airbyte and Airflow pipelines.**
 
-The offline demo works without cloud access. Live integration code, EC2 deployment configuration, and an EKS Helm chart are included. **Production release requires staging validation against your actual service versions and AWS account.** No production systems have been contacted or deployed from this workspace.
+![Pravah overview](docs/screenshots/overview.png)
 
-[Screen gallery](output/screenshots/README.md) · [Deployment guide](docs/deployment.md) · [Airflow/DAG setup](airflow/dags/README.md) · [Configuration reference](docs/environment.md) · [Vercel/Railway demo](docs/hosting.md) · [Implementation status](MILESTONES.md)
+Pravah follows every sync from source to warehouse:
 
-## Run the offline demo
+- It shows which tenants are healthy and which aren't.
+- It explains why a sync failed, in plain language.
+- It tracks how fresh each tenant's data is against its SLA.
+- It raises one clear incident when something needs attention.
+
+Your team can retry, resync and onboard tenants from the same screen, without logging in to production systems.
+
+## What it does
+
+- **Tenant health at a glance.** A live board of every tenant and pipeline (MySQL and MongoDB, initial load and CDC), with freshness against each tenant's SLA and a one-sentence status at the top.
+- **Failures explained.** Every failure is classified, grouped by root cause and paired with the fix. Redacted logs, attempt history and run comparison sit next to it.
+- **Incidents, not alert noise.** Related alerts become one incident, routed to Slack, Teams or email, with acknowledgement, escalation, maintenance windows and a daily digest.
+- **Safe operator actions.** Retry, resync, pause and bulk retry are role-gated, confirmed, idempotent and fully audited.
+- **Guided tenant onboarding.** Pre-flight checks for CDC readiness, automated provisioning of the Airbyte sources and connections, and a tenant isolation check before go-live.
+- **Freshness, volume and schema.** SLA compliance, breach forecasts, row-count anomalies and schema drift, per table.
+- **Data quality and dependencies.** Built-in checks, including tenant isolation for shared sources, and a map of what's affected downstream when something breaks.
+- **Built for every screen.** Light and dark themes, a TV mode for the office display, and a mobile layout for on-call.
+
+## How it works
+
+```mermaid
+flowchart LR
+  AF[Airflow] --> C[Collector]
+  AB[Airbyte] --> C
+  WH[(Warehouse)] --> C
+  C --> DB[(PostgreSQL)]
+  DB --> API[API]
+  API --> WEB[Console]
+  W[Worker] --> DB
+  W --> N[Slack / Teams / Email]
+```
+
+- **The collector** reads Airflow, Airbyte and warehouse metadata with read-only credentials. It links each Airflow task to its Airbyte job, classifies and redacts failures, and stores everything in PostgreSQL.
+- **The API** serves the console and streams live updates.
+- **The worker** evaluates alert rules, groups alerts into incidents, delivers notifications, and runs quality checks.
+
+Full details are in [`SPEC.md`](SPEC.md).
+
+## Try it
 
 ```bash
 cp .env.example .env
@@ -14,55 +52,61 @@ make install
 make demo
 ```
 
-Open **http://localhost:8080**. Sign in with `admin@demo.local`, `operator@demo.local`, or `viewer@demo.local`; password `demo` (override with `DEMO_PASSWORD`). Use localhost for the HTTP demo's Secure cookies. HTTPS is required in live deployments.
+Open <http://localhost:8080> and choose **Explore the demo**. The demo runs entirely offline on a seeded, live-updating dataset that covers these scenarios:
 
-Docker Compose starts Postgres 16, FastAPI, collector, alerter and the web proxy. Once images/dependencies are cached, demo operation makes no external calls. Without Docker, the native runner uses Python 3.11+, Node 22+, npm and PostgreSQL 16 binaries at `/usr/lib/postgresql/16/bin`. It creates an isolated loopback database on 55432, API on 8000 and Vite server on 8080. The machine's existing database is untouched; `.runtime` links to a private `/tmp` directory.
+- A lost CDC position and its resync.
+- A stuck sync.
+- A volume drop and a schema change.
+- Failures inside a maintenance window.
+- A complete tenant onboarding.
 
-```bash
-make up          # Empty local workspace with demo accounts
-make demo        # Idempotent seven-day seed and live simulator
-make down        # Stop this project's local services
-make reset       # Delete this project's local demo data
-make seed        # Reapply the seed if empty
-make types       # Regenerate OpenAPI and frontend types
-make lint        # Python/TypeScript lint, formatting and type checks
-make test        # Backend integration/security tests and frontend tests
-make e2e         # Browser walkthrough against a running demo
-make build       # Frontend production build
-```
+The demo accounts for each role are listed in [`docs/configuration.md`](docs/configuration.md#demo-mode).
 
-Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to an installed Chromium, or run `npx playwright install chromium` once in `frontend`. Run `python scripts/gallery.py` in the project virtual environment to rebuild the offline screen gallery and ZIP.
+## Deploy
 
-## Live operation
+| Target | Guide |
+|---|---|
+| EC2 (Docker Compose) | [`docs/deployment.md#ec2`](docs/deployment.md#ec2) |
+| Kubernetes (Helm on EKS) | [`docs/deployment.md#eks`](docs/deployment.md#eks) |
+| Static frontend with an API proxy | [`docs/hosting.md`](docs/hosting.md) |
 
-The [deployment guide](docs/deployment.md) covers EC2 and EKS, private RDS, ECR image digests, HTTPS/ACM, scoped IAM roles, Secrets Manager, OIDC groups, notification channels, backups, probes and rollback. Use `.env.live.example` and `config/live.example.yaml` as reviewed templates; example IDs are not working credentials.
+Requirements:
 
-- Airflow 2/3 REST clients use separate read/write credentials. MWAA uses IAM/SigV4. DAG IDs, API prefixes and tenant connection mappings are explicit configuration. Airflow 2 BasicAuth alone does not accept the bearer-token transport; configure the deployed auth manager/gateway accordingly.
-- The collector has overlapping watermarks, bounded pagination, unfinished-run revisits, isolated per-task failures, redacted logs and natural-key upserts. Linked Airbyte jobs are not inserted a second time. PostgreSQL and Redshift use catalog row estimates rather than full-table counts.
-- Live writes are disabled until `LIVE_ACTIONS_ENABLED=true`; registry pause/resume/onboarding also requires reviewed runtime-driven DAGs. Unsafe mapped retries on Airflow 2 are rejected. Every requested/confirmed/failed operation is audited; ambiguous writes require review before replay.
-- Onboarding validates source TLS/connectivity/CDC permissions and a pre-created destination namespace, resolves only approved AWS secret paths, then invokes a durable provisioning DAG. Connector configurations and streams must match the deployed Airbyte version. The source-check step currently targets the OSS config API; validate/extend it before using Cloud.
-- Slack, Teams, TLS SMTP, SES and SNS use a database outbox with bounded retries, lease recovery and delivery diagnostics. Demo messages remain simulated. Actual deliveries are at least once; provider-side duplicates remain possible after a process crash.
-- OIDC uses authorization code + PKCE, one-use state, nonce, signature/issuer/audience checks, verified email and explicit group-role mapping. Live mode creates no demo users and disables password login. Sessions are stored server-side and revoked on logout; administrators can revoke a user's sessions.
-- Scheduled retention preserves daily run aggregates; failed logs are kept 90 days, runs 13 months and raw snapshots/platform history 30 days. Encrypted S3 backups use `pg_dump`; restore refuses a database that already contains user tables. Use RDS PITR as the primary recovery mechanism.
+- PostgreSQL 16.
+- Airflow 2.x, 3.x or Amazon MWAA.
+- Airbyte OSS or Cloud.
+- A Redshift or PostgreSQL warehouse (Snowflake and BigQuery through adapters).
+- An OIDC identity provider for single sign-on.
 
-## Investigation and release upgrades
+## Security
 
-- **Dependencies:** explore source, DAG/task, Airbyte connection and warehouse assets, inspect relationship evidence, and identify potentially affected downstream assets. Configured dependencies are distinguished from observed links; this is not verified SQL lineage.
-- **Data quality:** configure null-rate, duplicate-key, accepted-value and schema-contract checks. See aggregate results and history, edit schedules, and run an individual check. Demo evidence is synthetic; live reads require `QUALITY_ENABLED=true`, reviewed permissions and enabled live actions for operator requests.
-- **Investigation:** save private run filters to your account, compare runs and stream counts, navigate matching log lines, and follow runs/alerts/onboarding/actions/checks in the Activity timeline.
-- **Release safeguards:** scheduled dependency/container audits, isolated PostgreSQL restore drills, a bounded viewer load test, and exact-digest image signing/verification. See [the release guide](docs/release-safeguards.md), [dependency evidence](docs/dependencies.md), and [quality configuration](docs/quality.md).
+- Single sign-on with OIDC and role-based access: Viewer, Operator, Admin.
+- Server-side sessions, CSRF protection, a strict Content Security Policy, and rate-limited authentication.
+- Read-only collector credentials, with write credentials kept separate and used only for audited operations.
+- Secrets are read from AWS Secrets Manager or Vault and never stored or shown.
+- Logs and error text are redacted before storage, and an append-only audit log covers every action.
 
-## Demo walkthrough
+More in [`docs/security.md`](docs/security.md).
 
-Start at the overview and open Acme Retail's failed MySQL CDC run to inspect its binlog diagnosis and redacted log. A simulated retry completes in roughly 30 seconds; only the demo resync repairs the missing replication position. Bluefin is near its freshness SLA, Northwind has a stuck CDC run, Orbit has a volume drop/schema change, and Cedar has nighttime failures. Explore the alert lifecycle, then onboard `zenith_pay` in about a minute. Platform, Administration, dark theme, TV and mobile views are included.
+## Documentation
 
-Metrics follow SPEC §7: successful runs only for duration percentiles; success/(success+failed) for success rate; source freshness against each tenant's SLA; compliance in five-minute buckets excluding time before registration and weighting total observed buckets. The demo's Bluefin recovery resolves the spec's conflicting latest-failure/degraded scenario without changing the health formula.
+| Document | Contents |
+|---|---|
+| [`SPEC.md`](SPEC.md) | Product specification |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Design system and screens |
+| [`docs/architecture.md`](docs/architecture.md) | Components and data flow |
+| [`docs/configuration.md`](docs/configuration.md) | Runtime settings and demo mode |
+| [`docs/deployment.md`](docs/deployment.md) | Deployment targets and upgrades |
+| [`docs/operations.md`](docs/operations.md) | Running the console: monitoring, backups, restore |
+| [`docs/security.md`](docs/security.md) | Authentication, access and data protection |
+| [`docs/api.md`](docs/api.md) | API reference and OpenAPI schema |
+| [`airflow/dags/README.md`](airflow/dags/README.md) | Onboarding DAGs and registry-driven scheduling |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release history |
 
-## Verification limits
+## Development
 
-Contract fixtures are synthetic and sanitized, not staging recordings. Local tests cover offline workflows, session revocation, signed OIDC login, IAM request shapes, client versions, redaction, ingest deduplication, notification retries, durable actions, catalog snapshots and a real local PostgreSQL backup/restore roundtrip. Helm templates are linted/rendered. See `output/verification.json` for the most recent recorded run.
+See [`AGENTS.md`](AGENTS.md) for conventions, commands and the definition of done. Run `make lint`, `make test` and `make e2e` before opening a pull request.
 
-Before release, complete SPEC's 20 staging run comparisons, one staging onboarding/retry, real chosen alert/SSO providers, a container/deployment run, and recovery/rollback acceptance. [The repository's original broader vision](docs/repository-vision.md) is preserved. Configured/observed dependency maps and built-in sampled quality checks are now implemented; verified SQL/column/dashboard lineage, arbitrary SQL checks and per-tenant cost remain future scope.
+## License
 
-
-Seven-DAG onboarding is currently available in the offline demo. Live onboarding and resume are deliberately disabled until staging verifies DAG recovery and enforces filtering on the shared MongoDB document field `tenant_id`. The deployed connector must prove the field's value maps to the correct tenant and cannot sync documents belonging to another tenant. Existing unrelated pipeline monitoring remains available.
+Proprietary. All rights reserved.

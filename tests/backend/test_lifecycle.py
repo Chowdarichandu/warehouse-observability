@@ -15,6 +15,7 @@ def cleanup(tenant: str) -> None:
             (tenant,),
         )
         conn.execute("DELETE FROM obs.alerts WHERE tenant_id=%s", (tenant,))
+        conn.execute("DELETE FROM obs.incidents WHERE tenant_id=%s", (tenant,))
         conn.execute("DELETE FROM obs.pipeline_runs WHERE tenant_id=%s", (tenant,))
         conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant,))
         conn.execute(
@@ -25,13 +26,14 @@ def cleanup(tenant: str) -> None:
 
 def test_sla_uses_five_minute_buckets_and_includes_a_missing_initial_success() -> None:
     tenant = "test_" + uuid4().hex[:8]
-    end = datetime.now(UTC).replace(microsecond=0)
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    end = now.replace(minute=now.minute - now.minute % 5)
     start = end - timedelta(minutes=20)
     try:
         with connection() as conn:
             conn.execute(
-                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at) VALUES(%s,'Test','active',false,5,%s)",
-                (tenant, start),
+                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at,registered_at) VALUES(%s,'Test','active',false,5,%s,%s)",
+                (tenant, start, start),
             )
             run = make_run(
                 tenant, "mysql", "cdc", start + timedelta(minutes=4), 60, 991
@@ -48,13 +50,14 @@ def test_sla_uses_five_minute_buckets_and_includes_a_missing_initial_success() -
 
 def test_new_tenants_are_not_charged_for_buckets_before_registration() -> None:
     tenant = "test_" + uuid4().hex[:8]
-    end = datetime.now(UTC).replace(microsecond=0)
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    end = now.replace(minute=now.minute - now.minute % 5)
     created = end - timedelta(minutes=10)
     try:
         with connection() as conn:
             conn.execute(
-                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at) VALUES(%s,'Test','active',false,5,%s)",
-                (tenant, created),
+                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at,registered_at) VALUES(%s,'Test','active',false,5,%s,%s)",
+                (tenant, created, created),
             )
             upsert_run(conn, make_run(tenant, "mysql", "cdc", created, 0, 999))
         _sla_cache.clear()
@@ -105,6 +108,17 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
             (tenant,),
         )
         assert alert["severity"] == "critical"
+        incident = one(
+            "SELECT * FROM obs.incidents WHERE tenant_id=%s AND state<>'resolved'",
+            (tenant,),
+        )
+        assert incident["source_type"] == "mysql"
+        assert (
+            one("SELECT incident_id FROM obs.alerts WHERE id=%s", (alert["id"],))[
+                "incident_id"
+            ]
+            == incident["id"]
+        )
         assert (
             one(
                 "SELECT count(*) AS n FROM obs.alerts WHERE tenant_id=%s AND rule_id='cdc_position_lost'",
@@ -162,6 +176,12 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
             == "resolved"
         )
         assert (
+            one("SELECT state FROM obs.incidents WHERE id=%s", (incident["id"],))[
+                "state"
+            ]
+            == "resolved"
+        )
+        assert (
             one(
                 "SELECT count(*) AS n FROM obs.notification_deliveries WHERE alert_id=%s AND kind='resolved'",
                 (alert["id"],),
@@ -170,3 +190,43 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
         )
     finally:
         cleanup(tenant)
+
+
+def test_incident_pagination_rejects_unbounded_queries(clients: dict) -> None:
+    client = clients["admin"]
+    assert client.get("/api/incidents?page=0").status_code == 422
+    assert client.get("/api/incidents?page_size=201").status_code == 422
+
+
+def test_incident_read_and_response_actions_follow_workspace_roles(
+    clients: dict,
+) -> None:
+    with connection() as conn:
+        incident_id = conn.execute(
+            "INSERT INTO obs.incidents(severity,title) VALUES('high','RBAC test') RETURNING id"
+        ).fetchone()["id"]
+    path = f"/api/incidents/{incident_id}"
+    try:
+        for role in ("viewer", "operator", "admin"):
+            assert clients[role].get("/api/incidents").status_code == 200
+            assert clients[role].get(path).status_code == 200
+
+        assert clients["viewer"].post(f"{path}/ack").status_code == 403
+        assert clients["viewer"].post(f"{path}/resolve").status_code == 403
+        assert (
+            clients["viewer"]
+            .post(f"{path}/notes", json={"body": "Reviewing"})
+            .status_code
+            == 403
+        )
+        assert (
+            clients["operator"]
+            .post(f"{path}/notes", json={"body": "Reviewing"})
+            .status_code
+            == 200
+        )
+        assert clients["operator"].post(f"{path}/ack").status_code == 200
+        assert clients["admin"].post(f"{path}/resolve").status_code == 200
+    finally:
+        with connection() as conn:
+            conn.execute("DELETE FROM obs.incidents WHERE id=%s", (incident_id,))

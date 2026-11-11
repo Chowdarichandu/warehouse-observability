@@ -50,6 +50,30 @@ def test_aggregates_only_and_empty_sample_is_unknown():
     assert status == "fail" and evidence["violations"] == 1
     assert "sensitive-row-value" not in str(evidence)
     assert engine.assess(check, [], {"amount": "text"})[0] == "error"
+    isolation = definition(
+        kind="tenant_isolation",
+        params={"tenant_field": "tenant_id"},
+    )
+    assert engine.assess(
+        isolation,
+        [{"foreign_rows": 2, "total_rows": 10}],
+        {"tenant_id": "text"},
+    ) == (
+        "fail",
+        {
+            "foreign_rows": 2,
+            "total_rows": 10,
+            "scope": "full-table tenant field aggregate",
+        },
+    )
+    assert (
+        engine.assess(
+            isolation,
+            [{"foreign_rows": 0, "total_rows": 10}],
+            {"tenant_id": "text"},
+        )[0]
+        == "pass"
+    )
     duplicate = definition(
         kind="duplicate_keys", params={"columns": ["id"], "max_duplicate_rate": 0}
     )
@@ -210,6 +234,43 @@ def test_live_sample_uses_timeout_readonly_schema_and_limit(monkeypatch):
         assert query == f'SELECT "amount" FROM "{schema}"."orders" LIMIT %s'
         assert args == (7,)
         assert not any("count(" in q.lower() for q, _ in recorded)
+    finally:
+        with connection() as conn:
+            conn.execute(f'DROP SCHEMA "{schema}" CASCADE')
+
+
+def test_live_tenant_isolation_uses_full_table_aggregate(monkeypatch):
+    schema = "quality_" + uuid4().hex[:12]
+    with connection() as conn:
+        conn.execute(f'CREATE SCHEMA "{schema}"')
+        conn.execute(
+            f'CREATE TABLE "{schema}".orders(id bigint,tenant_id text,amount numeric)'
+        )
+        conn.execute(
+            f"INSERT INTO \"{schema}\".orders VALUES (1,'acme_retail',1),(2,'other',2)"
+        )
+
+    @contextmanager
+    def local_warehouse():
+        with psycopg.connect(settings().database_url, row_factory=dict_row) as conn:
+
+            class Source:
+                def execute(self, query, args=None):
+                    return conn.execute(query, args)
+
+            yield Source()
+
+    monkeypatch.setattr(engine.warehouse, "connect", local_warehouse)
+    try:
+        samples, columns = engine.live_evidence(
+            definition(
+                kind="tenant_isolation",
+                params={"tenant_field": "tenant_id"},
+            ),
+            schema,
+        )
+        assert samples == [{"foreign_rows": 1, "total_rows": 2}]
+        assert columns == {"id": "bigint", "tenant_id": "text", "amount": "numeric"}
     finally:
         with connection() as conn:
             conn.execute(f'DROP SCHEMA "{schema}" CASCADE')

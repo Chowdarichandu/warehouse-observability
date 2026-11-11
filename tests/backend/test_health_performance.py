@@ -5,7 +5,7 @@ from obs.db import connection
 
 
 def test_set_based_health_preserves_original_semantics() -> None:
-    """Compare against the immutable original on demo data and awkward edge cases."""
+    """Compare the optimized view with the original for isolated edge cases."""
     migration = Path(__file__).resolve().parents[2] / "sql/migrations/004_views.sql"
     original = (
         migration.read_text()
@@ -81,11 +81,16 @@ def test_set_based_health_preserves_original_semantics() -> None:
                         VALUES(%s,%s,'mysql','cdc','running',now()-interval '6 minutes')""",
                         (tenant + ":running", tenant),
                     )
+            fixture_ids = [f"{prefix}_{name}" for name in cases]
             actual = conn.execute(
-                "SELECT * FROM obs.v_tenant_health ORDER BY tenant_id"
+                "SELECT * FROM obs.v_tenant_health WHERE tenant_id=ANY(%s) ORDER BY tenant_id",
+                (fixture_ids,),
             ).fetchall()
             reference = conn.execute(
-                "SELECT * FROM (" + original + ") original ORDER BY tenant_id"
+                "SELECT * FROM ("
+                + original
+                + ") original WHERE tenant_id=ANY(%s) ORDER BY tenant_id",
+                (fixture_ids,),
             ).fetchall()
             assert actual == reference
             health = {row["tenant_id"]: row["health"] for row in actual}

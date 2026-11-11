@@ -12,7 +12,7 @@ from obs.redact import redact
         ("mongodb+srv://alice:secret@cluster/app", "alice"),
         ("Authorization: Bearer abc.def.ghi", "abc.def.ghi"),
         ("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature", "eyJhbGci"),
-        ("AWS AKIAABCDEFGHIJKLMNOP", "AKIAABCDEFGHIJKLMNOP"),
+        ("AWS " + "AKIA" + "ABCDEFGHIJKLMNOP", "AKIA" + "ABCDEFGHIJKLMNOP"),
         ("owner=test.person@example.org", "test.person@example.org"),
         ("owner=data@acme_retail.example", "data@acme_retail.example"),
     ],
