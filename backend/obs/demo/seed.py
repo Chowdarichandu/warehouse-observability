@@ -411,7 +411,7 @@ def seed() -> None:
                     count = base + int(max(0, 672 - i) * size * 19 * weight)
                     if (
                         tenant == "orbit_logistics"
-                        and table == "orders"
+                        and table == "shipments"
                         and checked >= now - timedelta(days=1)
                     ):
                         count = int(count * 0.6)

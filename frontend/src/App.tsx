@@ -82,6 +82,9 @@ const Access = lazy(() => import('./pages/Access').then((page) => ({ default: pa
 const Dependencies = lazy(() =>
   import('./pages/Dependencies').then((page) => ({ default: page.Dependencies })),
 );
+const Styleguide = lazy(() =>
+  import('./pages/Styleguide').then((page) => ({ default: page.Styleguide })),
+);
 
 function localInputTime(iso: string | null) {
   if (!iso) return undefined;
@@ -126,19 +129,19 @@ const PRODUCT_MODULES = [
     mark: 'H',
     name: 'HRMS',
     description: 'People operations',
-    permission: 'view_module_hrms',
+    moduleId: 'hrms',
   },
   {
     mark: 'F',
     name: 'Finance',
     description: 'Finance operations',
-    permission: 'view_module_finance',
+    moduleId: 'finance',
   },
   {
     mark: 'S',
     name: 'SAP',
     description: 'ERP operations',
-    permission: 'view_module_sap',
+    moduleId: 'sap',
   },
 ] as const;
 
@@ -197,8 +200,13 @@ export function App() {
 function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'RuntimeConfig'> }) {
   const permissions = Array.isArray(user.permissions) ? user.permissions : undefined;
   const metricsOnly = permissions?.includes('metrics_only') ?? false;
+  const access = useQuery({
+    queryKey: ['access'],
+    queryFn: () => api<Schema<'AccessContext'>>('/access'),
+  });
+  const allowedModuleIds = new Set(access.data?.modules?.map((module) => module.module_id) ?? []);
   const availableModules = PRODUCT_MODULES.filter((module) =>
-    permissions ? permissions.includes(module.permission) : user.role === 'admin',
+    allowedModuleIds.has(module.moduleId),
   );
   const searchRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -206,10 +214,6 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     predicate: (query) => !['me', 'config'].includes(String(query.queryKey[0])),
   });
   const live = useLiveEvents();
-  const access = useQuery({
-    queryKey: ['access'],
-    queryFn: () => api<Schema<'AccessContext'>>('/access'),
-  });
   const [theme, setTheme] = useState(() => localStorage.getItem('obs-theme') || 'light');
   const [textSize, setTextSize] = useState(() =>
     localStorage.getItem('obs-text-size') === 'large' ? 'large' : 'standard',
@@ -370,7 +374,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                   <button
                     type="button"
                     className="product-planned"
-                    key={module.permission}
+                    key={module.moduleId}
                     title={`${module.name} module is not available yet`}
                     onClick={() => {
                       setPanel('none');
@@ -772,6 +776,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                     <Route path="/platform" element={<Platform />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/search" element={<SearchResults />} />
+                    <Route path="/styleguide" element={<Styleguide />} />
                     <Route
                       path="*"
                       element={

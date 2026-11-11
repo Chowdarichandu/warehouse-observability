@@ -413,6 +413,156 @@ def test_product_module_permissions_are_explicit_and_narrow(monkeypatch):
     )
 
 
+def test_module_registry_filters_disabled_areas_and_honors_role_and_user_overrides(
+    clients,
+):
+    from obs.access import module_access
+
+    viewer_id = _permissions_user_id("viewer@demo.local")
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO obs.roles(name,base_level,permissions,description,created_by)
+            VALUES('test_viewer','viewer','[\"view_console\"]','test','test')
+            ON CONFLICT(name) DO NOTHING"""
+        )
+        conn.execute(
+            "UPDATE obs.users SET role_name='test_viewer' WHERE user_id=%s",
+            (viewer_id,),
+        )
+        conn.execute("UPDATE obs.modules SET enabled=true WHERE module_id='hrms'")
+        conn.execute(
+            "INSERT INTO obs.role_modules(role_name,module_id,granted_by) VALUES('test_viewer','hrms','test') ON CONFLICT DO NOTHING"
+        )
+    try:
+        body = clients["viewer"].get("/api/access").json()
+        assert [module["module_id"] for module in body["modules"]] == ["pravah", "hrms"]
+
+        with connection() as conn:
+            conn.execute(
+                """INSERT INTO obs.user_module_overrides(user_id,module_id,effect,updated_by)
+                VALUES(%s,'hrms','revoke','test')
+                ON CONFLICT(user_id,module_id) DO UPDATE SET effect='revoke',updated_by='test'""",
+                (viewer_id,),
+            )
+        assert [
+            module["module_id"]
+            for module in module_access(
+                {
+                    "user_id": viewer_id,
+                    "role": "viewer",
+                    "permissions": ["view_console"],
+                }
+            )
+        ] == ["pravah"]
+    finally:
+        with connection() as conn:
+            conn.execute(
+                "DELETE FROM obs.user_module_overrides WHERE user_id=%s AND module_id='hrms'",
+                (viewer_id,),
+            )
+            conn.execute(
+                "DELETE FROM obs.role_modules WHERE role_name='test_viewer' AND module_id='hrms'"
+            )
+            conn.execute(
+                "UPDATE obs.users SET role_name=NULL WHERE user_id=%s", (viewer_id,)
+            )
+            conn.execute("DELETE FROM obs.roles WHERE name='test_viewer'")
+            conn.execute("UPDATE obs.modules SET enabled=false WHERE module_id='hrms'")
+
+
+def test_admin_module_grant_endpoint_is_audited_and_non_admin_is_denied(clients):
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO obs.roles(name,base_level,permissions,description,created_by)
+            VALUES('test_viewer','viewer','[\"view_console\"]','test','test')
+            ON CONFLICT(name) DO NOTHING"""
+        )
+        conn.execute("UPDATE obs.modules SET enabled=true WHERE module_id='finance'")
+    try:
+        viewer_denied = clients["viewer"].put(
+            "/api/access/roles/test_viewer/modules/finance"
+        )
+        assert viewer_denied.status_code == 403
+        denied = clients["operator"].put("/api/access/roles/viewer/modules/finance")
+        assert denied.status_code == 403
+        granted = clients["admin"].put("/api/access/roles/test_viewer/modules/finance")
+        assert granted.status_code == 200, granted.text
+        viewer = clients["admin"].get("/api/access").json()
+        assert {item["module_id"] for item in viewer["modules"]} == {
+            "pravah",
+            "finance",
+        }
+        audit_row = one(
+            """SELECT action,target FROM obs.audit_log
+            WHERE action='grant_role_module' AND target='test_viewer:finance'
+            ORDER BY id DESC LIMIT 1"""
+        )
+        assert audit_row == {
+            "action": "grant_role_module",
+            "target": "test_viewer:finance",
+        }
+    finally:
+        with connection() as conn:
+            conn.execute(
+                "DELETE FROM obs.role_modules WHERE role_name='test_viewer' AND module_id='finance'"
+            )
+            conn.execute("DELETE FROM obs.roles WHERE name='test_viewer'")
+            conn.execute(
+                "UPDATE obs.modules SET enabled=false WHERE module_id='finance'"
+            )
+
+
+def test_admin_can_revoke_a_role_module_grant_and_api_access_updates(clients):
+    viewer_id = _permissions_user_id("viewer@demo.local")
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO obs.roles(name,base_level,permissions,description,created_by)
+            VALUES('test_viewer','viewer','[\"view_console\"]','test','test')
+            ON CONFLICT(name) DO NOTHING"""
+        )
+        conn.execute(
+            "UPDATE obs.users SET role_name='test_viewer' WHERE user_id=%s",
+            (viewer_id,),
+        )
+        conn.execute("UPDATE obs.modules SET enabled=true WHERE module_id='hrms'")
+        conn.execute(
+            """INSERT INTO obs.role_modules(role_name,module_id,granted_by)
+            VALUES('test_viewer','hrms','test') ON CONFLICT DO NOTHING"""
+        )
+    try:
+        before = clients["viewer"].get("/api/access").json()
+        assert [item["module_id"] for item in before["modules"]] == ["pravah", "hrms"]
+
+        viewer_denied = clients["viewer"].delete(
+            "/api/access/roles/test_viewer/modules/hrms"
+        )
+        assert viewer_denied.status_code == 403
+        denied = clients["operator"].delete(
+            "/api/access/roles/test_viewer/modules/hrms"
+        )
+        assert denied.status_code == 403
+        revoked = clients["admin"].delete("/api/access/roles/test_viewer/modules/hrms")
+        assert revoked.status_code == 200, revoked.text
+        assert revoked.json()["effect"] == "revoke"
+        after = clients["viewer"].get("/api/access").json()
+        assert [item["module_id"] for item in after["modules"]] == ["pravah"]
+        assert one(
+            """SELECT 1 AS present FROM obs.audit_log
+            WHERE action='revoke_role_module' AND target='test_viewer:hrms'
+            ORDER BY id DESC LIMIT 1"""
+        ) == {"present": 1}
+    finally:
+        with connection() as conn:
+            conn.execute(
+                "DELETE FROM obs.role_modules WHERE role_name='test_viewer' AND module_id='hrms'"
+            )
+            conn.execute(
+                "UPDATE obs.users SET role_name=NULL WHERE user_id=%s", (viewer_id,)
+            )
+            conn.execute("DELETE FROM obs.roles WHERE name='test_viewer'")
+            conn.execute("UPDATE obs.modules SET enabled=false WHERE module_id='hrms'")
+
+
 def test_revoke_removes_permission_from_live_requests(clients, monkeypatch):
     operator = _permissions_user_id("operator@demo.local")
     called = []

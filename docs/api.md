@@ -7,6 +7,9 @@ The API serves its OpenAPI contract at `/api/openapi.json` and the interactive r
 | Method | Path | Operation |
 |---|---|---|
 | `GET` | `/api/access` | Access |
+| `DELETE` | `/api/access/roles/{role_name}/modules/{module_id}` | Revoke Role Module |
+| `PUT` | `/api/access/roles/{role_name}/modules/{module_id}` | Grant Role Module |
+| `PUT` | `/api/access/users/{id}/modules/{module_id}` | Set User Module |
 | `GET` | `/api/alert-rules` | Rules |
 | `PUT` | `/api/alert-rules/{id}` | Update Rule |
 | `GET` | `/api/alerts` | Alerts |
@@ -31,6 +34,11 @@ The API serves its OpenAPI contract at `/api/openapi.json` and the interactive r
 | `GET` | `/api/freshness` | Freshness |
 | `GET` | `/api/health` | Health |
 | `GET` | `/api/health/live` | Liveness |
+| `GET` | `/api/incidents` | Incidents |
+| `GET` | `/api/incidents/{incident_id}` | Incident |
+| `POST` | `/api/incidents/{incident_id}/ack` | Acknowledge |
+| `POST` | `/api/incidents/{incident_id}/notes` | Note |
+| `POST` | `/api/incidents/{incident_id}/resolve` | Resolve |
 | `GET` | `/api/investigation/timeline` | Timeline |
 | `GET` | `/api/me` | Me |
 | `GET` | `/api/metrics/durations` | Durations |

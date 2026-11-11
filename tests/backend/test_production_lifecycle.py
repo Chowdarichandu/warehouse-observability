@@ -204,6 +204,60 @@ def test_notification_outbox_retries_and_observes_failure(live, monkeypatch):
             )
 
 
+def test_normalized_notification_outbox_is_idempotent_and_mirrors_legacy_delivery(
+    live, monkeypatch
+):
+    channel = "test-outbox-" + str(uuid4())
+    with connection() as conn:
+        conn.execute(
+            "INSERT INTO obs.notification_channels(channel_id,kind,target_env) VALUES(%s,'slack','TEST_WEBHOOK')",
+            (channel,),
+        )
+        notify.deliver(conn, channel, "firing", "Outbox test")
+        notify.deliver(conn, channel, "firing", "Outbox test")
+        outbox = conn.execute(
+            "SELECT * FROM obs.notification_outbox WHERE channel_id=%s", (channel,)
+        ).fetchall()
+        assert len(outbox) == 1
+        deliveries = conn.execute(
+            "SELECT * FROM obs.notification_deliveries WHERE channel_id=%s", (channel,)
+        ).fetchall()
+        assert len(deliveries) == 1
+        assert (
+            outbox[0]["payload"]["message"] == "Outbox test\nhttps://localhost/alerts"
+        )
+
+    def broken(item):
+        if item["channel_id"] == channel:
+            raise RuntimeError("private webhook should not be persisted")
+
+    monkeypatch.setattr(notify, "send", broken)
+    try:
+        notify.dispatch(limit=1)
+        item = one(
+            "SELECT * FROM obs.notification_outbox WHERE channel_id=%s", (channel,)
+        )
+        assert item["state"] == "pending" and item["attempts"] == 1
+        assert item["last_error"].startswith("RuntimeError:")
+        legacy = one(
+            "SELECT status,attempts FROM obs.notification_deliveries WHERE id=%s",
+            (item["payload"]["legacy_delivery_id"],),
+        )
+        assert legacy == {"status": "pending", "attempts": 1}
+    finally:
+        with connection() as conn:
+            conn.execute(
+                "DELETE FROM obs.notification_outbox WHERE channel_id=%s", (channel,)
+            )
+            conn.execute(
+                "DELETE FROM obs.notification_deliveries WHERE channel_id=%s",
+                (channel,),
+            )
+            conn.execute(
+                "DELETE FROM obs.notification_channels WHERE channel_id=%s", (channel,)
+            )
+
+
 def test_successful_operation_is_idempotent(live, monkeypatch):
     key = "test-operation:" + str(uuid4())
     calls = []

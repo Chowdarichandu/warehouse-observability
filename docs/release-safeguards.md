@@ -2,6 +2,8 @@
 
 Pull requests and pushes to `main` run verification and release-safeguard workflows. The safeguards require no AWS credentials or production integrations.
 
+`make verify` is the local release gate. It runs Ruff, the backend and frontend tests, the production frontend build, and the generated OpenAPI drift check. A passing local gate is necessary for a release, but it does not satisfy the staging acceptance section of the release checklist.
+
 ## Repository secrets
 
 Gitleaks scans the full Git history for each pull request and main push. The scan fails the job when it finds a secret. Do not add real credentials to source, fixtures, screenshots, workflow artifacts or documentation. If a credential was committed, revoke it and remove it from Git history using the repository's incident process; deleting the current file is not enough.

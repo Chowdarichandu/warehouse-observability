@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -192,6 +193,39 @@ def test_airflow_version_auth_pagination_and_scoped_retry(live, monkeypatch, ver
         with pytest.raises(ValueError, match="map index"):
             Airflow(write=True).retry(task | {"map_index": 4})
     assert len(calls) == 2
+
+
+@pytest.mark.parametrize(
+    "version,watermarks",
+    [
+        ("v1", {"execution_date_gte", "start_date_gte", "end_date_gte"}),
+        ("v2", {"run_after_gte", "start_date_gte", "end_date_gte"}),
+    ],
+)
+def test_airflow_runs_use_documented_watermark_filters(
+    live, monkeypatch, version, watermarks
+):
+    monkeypatch.setattr(live, "airflow_api_version", version)
+    seen = []
+
+    def handler(request):
+        seen.append(dict(request.url.params))
+        return httpx.Response(
+            200,
+            json={
+                "dag_runs": [
+                    {"dag_run_id": "scheduled__one", "state": "success"},
+                ],
+                "total_entries": 1,
+            },
+        )
+
+    transport(monkeypatch, handler)
+    runs = Airflow().runs("mysql_cdc", datetime(2026, 11, 9, tzinfo=UTC))
+    assert [run["dag_run_id"] for run in runs] == ["scheduled__one"]
+    assert len(seen) == 3
+    assert {next(iter(watermarks & set(params))) for params in seen} == watermarks
+    assert all("updated_at_gte" not in params for params in seen)
 
 
 def test_mwaa_uses_iam_request_contract(live, monkeypatch):

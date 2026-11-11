@@ -67,10 +67,19 @@ class Airflow:
 
     def runs(self, dag: str, since: datetime) -> list[dict]:
         path = f"/dags/{part(dag)}/dagRuns"
-        runs = self.pages(path, "dag_runs", updated_at_gte=since.isoformat())
-        # Revisit unfinished runs independently of the watermark.
-        for state in ("queued", "running"):
-            runs.extend(self.pages(path, "dag_runs", state=state))
+        # Both APIs reject ``updated_at_gte`` on DAG-run listing.  Airflow 2
+        # exposes execution/start/end dates; Airflow 3 exposes their renamed
+        # logical/run-after equivalents.  Read all documented date dimensions
+        # and merge by run id so a run that starts before the watermark but
+        # finishes after it is still collected.  The collector separately
+        # revisits locally queued/running rows, covering runs without dates.
+        stamp = since.isoformat()
+        filters = (
+            ({"execution_date_gte": stamp}, {"start_date_gte": stamp}, {"end_date_gte": stamp})
+            if self.config.airflow_api_version == "v1"
+            else ({"run_after_gte": stamp}, {"start_date_gte": stamp}, {"end_date_gte": stamp})
+        )
+        runs = [run for query in filters for run in self.pages(path, "dag_runs", **query)]
         return list({r["dag_run_id"]: r for r in runs}.values())
 
     def tasks(self, dag: str, run: str) -> list[dict]:

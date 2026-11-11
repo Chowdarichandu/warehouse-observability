@@ -1,0 +1,130 @@
+.styleguide-page {
+  color: var(--ink-900);
+}
+
+.styleguide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.token-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.token-swatch {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--text-meta);
+}
+
+.token-swatch > span {
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.token-swatch code,
+.type-specimens code,
+.spacing-scale code {
+  color: var(--ink-500);
+  font-size: 10px;
+}
+
+.type-specimens {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.type-specimens > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 110px;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.type-specimens > div > span {
+  color: var(--ink-500);
+}
+
+.type-specimens > div > strong {
+  font-weight: 600;
+}
+
+.type-specimens .mono {
+  color: var(--ink-600);
+  font-family: var(--font-code);
+}
+
+.styleguide-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.styleguide-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.styleguide-form label {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  color: var(--ink-600);
+  font-size: var(--text-label);
+}
+
+.styleguide-form label:last-child {
+  grid-column: 1 / -1;
+}
+
+.styleguide-form input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.spacing-scale {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.spacing-scale > div {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.spacing-scale > div > span {
+  display: block;
+  max-width: 64px;
+  height: 24px;
+  background: var(--accent-soft);
+  border-inline-end: 1px solid var(--accent);
+}
+
+@media (max-width: 720px) {
+  .styleguide-grid,
+  .styleguide-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .token-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .type-specimens > div {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .type-specimens code {
+    grid-column: 2;
+  }
+}

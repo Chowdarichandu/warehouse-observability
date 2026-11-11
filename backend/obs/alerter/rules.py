@@ -20,6 +20,46 @@ PARAMS = {
     "collector_silent": {"minutes"},
 }
 
+_SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+
+
+def _incident(
+    conn: psycopg.Connection,
+    *,
+    tenant_id: str | None,
+    source_type: str | None,
+    severity: str,
+    title: str,
+    rule_id: str,
+) -> dict:
+    """Return the open incident for a tenant/source, creating one atomically."""
+    # Incidents intentionally use source_type only for the two source systems.
+    # Platform rules are grouped at workspace scope with a NULL source.
+    source = source_type if source_type in {"mysql", "mongo"} else None
+    incident = conn.execute(
+        """SELECT * FROM obs.incidents
+        WHERE tenant_id IS NOT DISTINCT FROM %s
+          AND source_type IS NOT DISTINCT FROM %s
+          AND state IN ('open','acknowledged')
+        ORDER BY opened_at DESC LIMIT 1 FOR UPDATE""",
+        (tenant_id, source),
+    ).fetchone()
+    if incident:
+        if _SEVERITY_RANK.get(severity, 0) > _SEVERITY_RANK.get(incident["severity"], 0):
+            incident = conn.execute(
+                """UPDATE obs.incidents SET severity=%s,title=%s,cause_rule=%s,updated_at=now()
+                WHERE id=%s RETURNING *""",
+                (severity, title, rule_id, incident["id"]),
+            ).fetchone()
+        else:
+            conn.execute("UPDATE obs.incidents SET updated_at=now() WHERE id=%s", (incident["id"],))
+        return incident
+    return conn.execute(
+        """INSERT INTO obs.incidents(tenant_id,source_type,severity,title,cause_rule)
+        VALUES(%s,%s,%s,%s,%s) RETURNING *""",
+        (tenant_id, source, severity, title, rule_id),
+    ).fetchone()
+
 
 def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
     key = rule["rule_id"]
@@ -125,14 +165,23 @@ def evaluate() -> None:
                             for k, v in item.items()
                         }
                         title = f"{rule['name']} · {tenant or item.get('source_type', 'platform')}"
+                        incident = _incident(
+                            conn,
+                            tenant_id=tenant,
+                            source_type=item.get("source_type"),
+                            severity=rule["severity"],
+                            title=title,
+                            rule_id=rule["rule_id"],
+                        )
                         alert = conn.execute(
                             "SELECT * FROM obs.alerts WHERE fingerprint=%s AND state<>'resolved' FOR UPDATE",
                             (fp,),
                         ).fetchone()
                         if not alert:
                             alert = conn.execute(
-                                """INSERT INTO obs.alerts(rule_id,fingerprint,tenant_id,severity,state,title,details)
-                                VALUES(%s,%s,%s,%s,'firing',%s,%s) RETURNING *""",
+                                """INSERT INTO obs.alerts(
+                                    rule_id,fingerprint,tenant_id,severity,state,title,details,incident_id
+                                ) VALUES(%s,%s,%s,%s,'firing',%s,%s,%s) RETURNING *""",
                                 (
                                     rule["rule_id"],
                                     fp,
@@ -140,6 +189,7 @@ def evaluate() -> None:
                                     rule["severity"],
                                     title,
                                     Jsonb(details),
+                                    incident["id"],
                                 ),
                             ).fetchone()
                             notify(
@@ -154,8 +204,15 @@ def evaluate() -> None:
                             )
                         else:
                             conn.execute(
-                                "UPDATE obs.alerts SET last_seen_at=%s,details=%s,severity=%s WHERE id=%s",
-                                (now, Jsonb(details), rule["severity"], alert["id"]),
+                                """UPDATE obs.alerts SET last_seen_at=%s,details=%s,severity=%s,
+                                incident_id=coalesce(incident_id,%s) WHERE id=%s""",
+                                (
+                                    now,
+                                    Jsonb(details),
+                                    rule["severity"],
+                                    incident["id"],
+                                    alert["id"],
+                                ),
                             )
                         if alert["state"] != "acked" and (
                             not alert["last_notified_at"]
@@ -183,6 +240,14 @@ def evaluate() -> None:
                                 "UPDATE obs.alerts SET state='resolved',resolved_at=%s WHERE id=%s",
                                 (now, alert["id"]),
                             )
+                            if alert.get("incident_id"):
+                                conn.execute(
+                                    """UPDATE obs.incidents SET state='resolved',resolved_at=%s,updated_at=now()
+                                    WHERE id=%s AND NOT EXISTS(
+                                        SELECT 1 FROM obs.alerts WHERE incident_id=%s AND state<>'resolved'
+                                    )""",
+                                    (now, alert["incident_id"], alert["incident_id"]),
+                                )
                             for channel in rule["channels"]:
                                 deliver(conn, channel, "resolved", alert["title"], alert["id"])
                             notify(

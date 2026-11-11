@@ -5,6 +5,7 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 ## Unreleased
 
 - Expand the observability data model with shared metric definitions, incident and operations records, retention rollups, and a product-module access registry.
+- Add module-aware navigation and grants, incident response APIs, durable notification delivery, and a responsive IBM Plex design system.
 - Start the v3 foundation work: repository guidance, configuration guards, generated API documentation and full-history secret scanning.
 - Allow isolated native demo instances with their own runtime directory and ports; model the demo CDC incident as a recoverable eight-hour outage.
 

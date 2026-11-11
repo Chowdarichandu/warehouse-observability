@@ -4,7 +4,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-Kind = Literal["null_rate", "duplicate_keys", "accepted_values", "schema_contract"]
+Kind = Literal[
+    "null_rate",
+    "duplicate_keys",
+    "accepted_values",
+    "schema_contract",
+    "tenant_isolation",
+]
 
 
 def identifier(value: str) -> str:
@@ -63,11 +69,18 @@ class SchemaContract(Params):
         return {name: data_type.lower().strip() for name, data_type in value.items()}
 
 
+class TenantIsolation(Params):
+    tenant_field: str = "tenant_id"
+
+    _tenant_field = field_validator("tenant_field")(identifier)
+
+
 PARAM_TYPES = {
     "null_rate": NullRate,
     "duplicate_keys": DuplicateKeys,
     "accepted_values": AcceptedValues,
     "schema_contract": SchemaContract,
+    "tenant_isolation": TenantIsolation,
 }
 
 

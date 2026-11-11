@@ -53,7 +53,11 @@ export function EChart({ option, height = 240 }: { option: EChartsCoreOption; he
         animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         animationDuration: 240,
         animationDurationUpdate: 260,
-        textStyle: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: '#81909f' },
+        textStyle: {
+          fontFamily: 'IBM Plex Sans, system-ui, sans-serif',
+          fontSize: 11,
+          color: '#81909f',
+        },
         grid: { left: 46, right: 24, top: 30, bottom: 36, containLabel: true },
         ...option,
         tooltip: {

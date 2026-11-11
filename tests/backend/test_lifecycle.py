@@ -15,6 +15,7 @@ def cleanup(tenant: str) -> None:
             (tenant,),
         )
         conn.execute("DELETE FROM obs.alerts WHERE tenant_id=%s", (tenant,))
+        conn.execute("DELETE FROM obs.incidents WHERE tenant_id=%s", (tenant,))
         conn.execute("DELETE FROM obs.pipeline_runs WHERE tenant_id=%s", (tenant,))
         conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant,))
         conn.execute(
@@ -107,6 +108,17 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
             (tenant,),
         )
         assert alert["severity"] == "critical"
+        incident = one(
+            "SELECT * FROM obs.incidents WHERE tenant_id=%s AND state<>'resolved'",
+            (tenant,),
+        )
+        assert incident["source_type"] == "mysql"
+        assert (
+            one("SELECT incident_id FROM obs.alerts WHERE id=%s", (alert["id"],))[
+                "incident_id"
+            ]
+            == incident["id"]
+        )
         assert (
             one(
                 "SELECT count(*) AS n FROM obs.alerts WHERE tenant_id=%s AND rule_id='cdc_position_lost'",
@@ -164,6 +176,12 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
             == "resolved"
         )
         assert (
+            one("SELECT state FROM obs.incidents WHERE id=%s", (incident["id"],))[
+                "state"
+            ]
+            == "resolved"
+        )
+        assert (
             one(
                 "SELECT count(*) AS n FROM obs.notification_deliveries WHERE alert_id=%s AND kind='resolved'",
                 (alert["id"],),
@@ -172,3 +190,43 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
         )
     finally:
         cleanup(tenant)
+
+
+def test_incident_pagination_rejects_unbounded_queries(clients: dict) -> None:
+    client = clients["admin"]
+    assert client.get("/api/incidents?page=0").status_code == 422
+    assert client.get("/api/incidents?page_size=201").status_code == 422
+
+
+def test_incident_read_and_response_actions_follow_workspace_roles(
+    clients: dict,
+) -> None:
+    with connection() as conn:
+        incident_id = conn.execute(
+            "INSERT INTO obs.incidents(severity,title) VALUES('high','RBAC test') RETURNING id"
+        ).fetchone()["id"]
+    path = f"/api/incidents/{incident_id}"
+    try:
+        for role in ("viewer", "operator", "admin"):
+            assert clients[role].get("/api/incidents").status_code == 200
+            assert clients[role].get(path).status_code == 200
+
+        assert clients["viewer"].post(f"{path}/ack").status_code == 403
+        assert clients["viewer"].post(f"{path}/resolve").status_code == 403
+        assert (
+            clients["viewer"]
+            .post(f"{path}/notes", json={"body": "Reviewing"})
+            .status_code
+            == 403
+        )
+        assert (
+            clients["operator"]
+            .post(f"{path}/notes", json={"body": "Reviewing"})
+            .status_code
+            == 200
+        )
+        assert clients["operator"].post(f"{path}/ack").status_code == 200
+        assert clients["admin"].post(f"{path}/resolve").status_code == 200
+    finally:
+        with connection() as conn:
+            conn.execute("DELETE FROM obs.incidents WHERE id=%s", (incident_id,))

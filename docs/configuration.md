@@ -78,5 +78,7 @@ Release tools use separate invocation-only variables: `OBS_LOAD_SESSION` is an a
 
 `SERVICE_KIND=console` is required for the API. Reviewed Airflow workers use `SERVICE_KIND=airflow_worker`; the API refuses to start in worker mode. `ONBOARDING_DAG_IDS` optionally overrides individual DAG IDs; defaults retain `ONBOARDING_DAG_ID` and `AIRFLOW_DAGS`.
 
+The onboarding registry must resolve to seven distinct DAG IDs: the coordinator, MySQL provisioning, Mongo provisioning, MySQL initial load, MySQL CDC, Mongo initial load, and Mongo CDC. Analytics DAGs are observed after the source load and are not part of the operator trigger allowlist. Keep the mapping in the service secret or reviewed configuration and verify it with `python -m obs.configure <path> --check` before enabling registry actions.
+
 
 `DEMO_UNSAFE_SELF_SERVICE_PASSWORD_RESET` defaults to `false`. The optional legacy self-service reset exposes temporary passwords and must only be enabled in a disposable, isolated demo; it is never enabled in live mode.
