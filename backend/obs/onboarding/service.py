@@ -155,6 +155,9 @@ def start(data: OnboardInput, actor: str) -> dict:
                     RETURNING id""",
                     (data.tenant_id, Jsonb({"tenant_field": "tenant_id"})),
                 ).fetchone()
+            if not live:
+                # The demo job drives the seven-DAG progression for every
+                # demo tenant; it must not depend on MongoDB being enabled.
                 conn.execute(
                     "INSERT INTO obs.demo_jobs(job_key,kind,tenant_id,payload) VALUES(%s,'onboarding',%s,%s)",
                     (f"onboard:{data.tenant_id}", data.tenant_id, Jsonb(data.model_dump())),

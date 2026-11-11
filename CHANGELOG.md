@@ -4,6 +4,7 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Fix demo onboarding stalling for MySQL-only tenants: the simulated seven-DAG progression job is now created for every demo onboarding, not only when MongoDB is enabled.
 - Fix dialogs overflowing small viewports: modals now cap at the viewport height and scroll internally, so the title and close control stay reachable (the User permissions dialog outgrew the screen as the permission catalog grew).
 - Fix incident responses masking console usernames: acknowledged-by, resolved-by, assignee and note-author fields are no longer redacted as if they were secrets (free text such as note bodies still is).
 - Add maintenance windows: operators can schedule per-tenant windows; runs inside a window are tagged in-maintenance, excluded from SLA buckets, and never raise consecutive-failure alerts. The demo seeds Cedar Foods with a nightly window.
