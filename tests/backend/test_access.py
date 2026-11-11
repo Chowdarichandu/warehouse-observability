@@ -471,7 +471,7 @@ def test_module_registry_filters_disabled_areas_and_honors_role_and_user_overrid
                 "UPDATE obs.users SET role_name=NULL WHERE user_id=%s", (viewer_id,)
             )
             conn.execute("DELETE FROM obs.roles WHERE name='test_viewer'")
-            conn.execute("UPDATE obs.modules SET enabled=false WHERE module_id='hrms'")
+            conn.execute("UPDATE obs.modules SET enabled=true WHERE module_id='hrms'")
 
 
 def test_data_routers_enforce_the_pravah_module_on_direct_api_requests(clients):
@@ -529,7 +529,13 @@ def test_admin_module_grant_endpoint_is_audited_and_non_admin_is_denied(clients)
         viewer = clients["admin"].get("/api/access").json()
         assert {item["module_id"] for item in viewer["modules"]} == {
             "pravah",
+            "hrms",
             "finance",
+            "sap",
+            "pos",
+            "inventory",
+            "support",
+            "hospitality",
         }
         audit_row = one(
             """SELECT action,target FROM obs.audit_log
@@ -547,7 +553,7 @@ def test_admin_module_grant_endpoint_is_audited_and_non_admin_is_denied(clients)
             )
             conn.execute("DELETE FROM obs.roles WHERE name='test_viewer'")
             conn.execute(
-                "UPDATE obs.modules SET enabled=false WHERE module_id='finance'"
+                "UPDATE obs.modules SET enabled=true WHERE module_id='finance'"
             )
 
 
@@ -599,7 +605,7 @@ def test_admin_can_revoke_a_role_module_grant_and_api_access_updates(clients):
                 "UPDATE obs.users SET role_name=NULL WHERE user_id=%s", (viewer_id,)
             )
             conn.execute("DELETE FROM obs.roles WHERE name='test_viewer'")
-            conn.execute("UPDATE obs.modules SET enabled=false WHERE module_id='hrms'")
+            conn.execute("UPDATE obs.modules SET enabled=true WHERE module_id='hrms'")
 
 
 def test_revoke_removes_permission_from_live_requests(clients, monkeypatch):
