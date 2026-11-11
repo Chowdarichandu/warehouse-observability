@@ -1,0 +1,17 @@
+{
+  "pools": [
+    {
+      "deferred_slots": 0,
+      "description": "Default pool",
+      "include_deferred": false,
+      "name": "default_pool",
+      "occupied_slots": 3,
+      "open_slots": 125,
+      "queued_slots": 0,
+      "running_slots": 3,
+      "scheduled_slots": 0,
+      "slots": 128
+    }
+  ],
+  "total_entries": 1
+}

@@ -1,0 +1,50 @@
+{
+  "job": {
+    "id": 987654321,
+    "configId": "11111111-1111-4111-8111-111111111111",
+    "configType": "sync",
+    "createdAt": 1762732831,
+    "updatedAt": 1762733069,
+    "status": "failed"
+  },
+  "attempts": [
+    {
+      "attempt": {
+        "id": 0,
+        "status": "failed",
+        "createdAt": 1762732831,
+        "updatedAt": 1762733069,
+        "endedAt": 1762733069,
+        "bytesSynced": 8400,
+        "recordsSynced": 42,
+        "failureSummary": {
+          "failures": [
+            {
+              "failureOrigin": "source",
+              "failureType": "system_error",
+              "externalMessage": "MySQL binlog has been purged",
+              "stacktrace": "com.github.shyiko.mysql.binlog.BinaryLogClient connect"
+            }
+          ],
+          "partialSuccess": false
+        }
+      },
+      "logs": {
+        "logLines": ["INFO Starting sync", "ERROR MySQL binlog has been purged"]
+      },
+      "output": {
+        "sync": {
+          "status": "failed",
+          "recordsSynced": 42,
+          "bytesSynced": 8400,
+          "streamStats": [
+            {
+              "streamName": "orders",
+              "stats": {"recordsCommitted": 42, "bytesEmitted": 8400, "recordsEmitted": 42}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

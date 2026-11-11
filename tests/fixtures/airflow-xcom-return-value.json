@@ -1,0 +1,10 @@
+{
+  "dag_id": "mysql_cdc",
+  "execution_date": "2026-11-09T01:00:00+00:00",
+  "key": "return_value",
+  "logical_date": "2026-11-09T01:00:00+00:00",
+  "run_id": "scheduled__2026-11-09T01:00:00+00:00",
+  "task_id": "sync_acme_retail",
+  "timestamp": "2026-11-09T01:04:29+00:00",
+  "value": "{\"job_id\": 987654321}"
+}

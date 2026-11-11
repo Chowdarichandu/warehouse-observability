@@ -4,6 +4,9 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Add the Incidents screen: grouped incidents with a timeline, acknowledge, assign, notes, and resolve with an optional root-cause category.
+- Fix demo tenant-isolation checks raising a critical incident for every shared-source tenant: demo isolation evidence no longer depends on the table catalog, quality checks name tables that exist in each tenant's catalog, and the demo dataset gains the Pinecrest Education tenant with its resolved isolation incident and check history (replacing Luminous Labs).
+- Add recorded contract fixtures for every supported Airflow (2.x, 3.x) and Airbyte endpoint family, replayed through the clients in tests.
 - Expand the observability data model with shared metric definitions, incident and operations records, retention rollups, and a product-module access registry.
 - Add module-aware navigation and grants, incident response APIs, durable notification delivery, and a responsive IBM Plex design system.
 - Start the v3 foundation work: repository guidance, configuration guards, generated API documentation and full-history secret scanning.

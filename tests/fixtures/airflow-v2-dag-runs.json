@@ -1,0 +1,22 @@
+{
+  "dag_runs": [
+    {
+      "conf": {},
+      "dag_id": "mysql_cdc",
+      "dag_run_id": "scheduled__2026-11-09T01:00:00+00:00",
+      "data_interval_end": "2026-11-09T02:00:00+00:00",
+      "data_interval_start": "2026-11-09T01:00:00+00:00",
+      "end_date": "2026-11-09T01:04:30+00:00",
+      "external_trigger": false,
+      "logical_date": "2026-11-09T01:00:00+00:00",
+      "note": null,
+      "queued_at": "2026-11-09T01:00:01+00:00",
+      "run_after": "2026-11-09T01:00:00+00:00",
+      "run_type": "scheduled",
+      "start_date": "2026-11-09T01:00:05+00:00",
+      "state": "failed",
+      "triggered_by": "timer"
+    }
+  ],
+  "total_entries": 1
+}

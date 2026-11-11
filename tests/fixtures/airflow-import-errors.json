@@ -1,0 +1,11 @@
+{
+  "import_errors": [
+    {
+      "filename": "/opt/airflow/dags/example_broken.py",
+      "import_error_id": 7,
+      "stack_trace": "Traceback (most recent call last):\n  File \"/opt/airflow/dags/example_broken.py\", line 3, in <module>\n    import missing_module\nModuleNotFoundError: No module named 'missing_module'",
+      "timestamp": "2026-11-08T04:12:00+00:00"
+    }
+  ],
+  "total_entries": 1
+}

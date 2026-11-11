@@ -19,7 +19,7 @@ TENANTS = [
     ("helix_energy", "Helix Energy", 14),
     ("evergreen_market", "Evergreen Market", 2),
     ("summit_media", "Summit Media", 4),
-    ("luminous_labs", "Luminous Labs", 3),
+    ("pinecrest_edu", "Pinecrest Education", 3),
     ("beacon_finance", "Beacon Finance", 9),
 ]
 STREAMS = [
@@ -144,15 +144,19 @@ TENANT_TABLES: dict[str, list[tuple[str, float, list[str]]]] = {
         ("comments", 1.8, ["content_id:bigint", "user_id:bigint", "body:text"]),
         ("payouts", 0.4, ["creator_id:bigint", "amount:numeric", "period:text"]),
     ],
-    "luminous_labs": [
-        ("experiments", 0.4, ["name:text", "project_id:bigint", "status:text"]),
-        ("samples", 1.6, ["experiment_id:bigint", "sample_code:text", "collected_at:timestamp"]),
-        ("instruments", 0.2, ["name:text", "instrument_type:text", "status:text"]),
-        ("protocols", 0.25, ["name:text", "version:text"]),
-        ("results", 2.2, ["sample_id:bigint", "metric:text", "value:numeric", "unit:text"]),
-        ("projects", 0.15, ["name:text", "lead_researcher:text"]),
-        ("reagents", 0.5, ["name:text", "lot_no:text", "expires_on:date"]),
-        ("researchers", 0.1, ["full_name:text", "team:text"]),
+    "pinecrest_edu": [
+        ("students", 0.8, ["full_name:text", "date_of_birth:date", "grade_level:text"]),
+        (
+            "enrollments",
+            1.7,
+            ["student_id:bigint", "course_id:bigint", "enrolled_at:timestamp", "status:text"],
+        ),
+        ("courses", 0.25, ["name:text", "department:text", "credits:integer"]),
+        ("grades", 2.2, ["enrollment_id:bigint", "assessment:text", "score:numeric"]),
+        ("attendance", 2.6, ["student_id:bigint", "attended_on:date", "present:boolean"]),
+        ("fees", 0.9, ["student_id:bigint", "amount:numeric", "status:text"]),
+        ("staff", 0.1, ["full_name:text", "department:text"]),
+        ("terms", 0.05, ["name:text", "starts_on:date", "ends_on:date"]),
     ],
     "beacon_finance": [
         ("customers", 0.7, ["full_name:text", "kyc_status:text", "segment:text"]),

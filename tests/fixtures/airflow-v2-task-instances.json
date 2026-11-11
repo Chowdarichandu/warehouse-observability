@@ -1,0 +1,34 @@
+{
+  "task_instances": [
+    {
+      "id": "019a0000-0000-7000-8000-000000000001",
+      "dag_id": "mysql_cdc",
+      "dag_run_id": "scheduled__2026-11-09T01:00:00+00:00",
+      "task_id": "sync_acme_retail",
+      "map_index": -1,
+      "logical_date": "2026-11-09T01:00:00+00:00",
+      "run_after": "2026-11-09T01:00:00+00:00",
+      "start_date": "2026-11-09T01:00:30+00:00",
+      "end_date": "2026-11-09T01:04:30+00:00",
+      "duration": 240.0,
+      "state": "failed",
+      "try_number": 2,
+      "max_tries": 2,
+      "task_display_name": "sync_acme_retail",
+      "operator_name": "AirbyteTriggerSyncOperator",
+      "hostname": "worker-1.example.com",
+      "unixname": "airflow",
+      "pid": 1234,
+      "queue": "default",
+      "queued_when": "2026-11-09T01:00:00+00:00",
+      "pool": "default_pool",
+      "pool_slots": 1,
+      "priority_weight": 1,
+      "note": null,
+      "rendered_map_index": null,
+      "trigger": null,
+      "triggerer_job": null
+    }
+  ],
+  "total_entries": 1
+}

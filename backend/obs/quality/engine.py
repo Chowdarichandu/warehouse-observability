@@ -131,6 +131,12 @@ def live_evidence(check: dict, schema: str) -> tuple[list[dict], dict[str, str]]
 
 
 def demo_evidence(conn: psycopg.Connection, check: dict) -> tuple[list[dict], dict[str, str]]:
+    if check["kind"] == "tenant_isolation":
+        # The demo models shared Mongo collections partitioned by the tenant
+        # field, so isolation evidence does not depend on the table catalog:
+        # no foreign rows are ever simulated outside the scripted history.
+        field = str(check["params"].get("tenant_field") or "tenant_id")
+        return [{"foreign_rows": 0, "total_rows": 100}], {field: "text"}
     snapshot = conn.execute(
         "SELECT columns FROM obs.schema_snapshots WHERE tenant_id=%s AND table_name=%s ORDER BY checked_at DESC LIMIT 1",
         (check["tenant_id"], check["table_name"]),
@@ -138,8 +144,6 @@ def demo_evidence(conn: psycopg.Connection, check: dict) -> tuple[list[dict], di
     columns = {item["name"]: item["type"] for item in snapshot["columns"]} if snapshot else {}
     if not columns:
         raise ValueError("No demo catalog for this table")
-    if check["kind"] == "tenant_isolation":
-        return [{"foreign_rows": 0, "total_rows": 100}], columns
     samples = []
     for index in range(min(100, check["sample_limit"])):
         row: dict[str, Any] = {name: index for name in columns}
@@ -217,7 +221,15 @@ def execute(conn: psycopg.Connection, check: dict) -> dict:
             (check["tenant_id"], title, check["tenant_id"], check["tenant_id"]),
         )
         if incident.rowcount:
-            notify(conn, "incident.created", {"tenant_id": check["tenant_id"], "severity": "critical", "rule_id": "tenant_isolation"})
+            notify(
+                conn,
+                "incident.created",
+                {
+                    "tenant_id": check["tenant_id"],
+                    "severity": "critical",
+                    "rule_id": "tenant_isolation",
+                },
+            )
     if (
         check["kind"] == "tenant_isolation"
         and status == "fail"
