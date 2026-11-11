@@ -47,9 +47,19 @@ def execute(kind: str, target: str, actor: str, payload: dict, idempotency_key: 
             return old
         operation_id = str(uuid4())
         operation = conn.execute(
-            """INSERT INTO obs.operations(id,idempotency_key,kind,target,actor,payload,status)
-            VALUES(%s,%s,%s,%s,%s,%s,'sending') RETURNING *""",
-            (operation_id, idempotency_key, kind, target, actor, Jsonb(payload)),
+            """INSERT INTO obs.operations(
+                id,idempotency_key,kind,target,actor,requested_by,payload,request,status,state
+            ) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,'sending','running') RETURNING *""",
+            (
+                operation_id,
+                idempotency_key,
+                kind,
+                target,
+                actor,
+                actor,
+                Jsonb(payload),
+                Jsonb(payload),
+            ),
         ).fetchone()
         audit(conn, actor, kind + "_requested", target, {"operation_id": operation_id})
     try:
@@ -73,9 +83,15 @@ def execute(kind: str, target: str, actor: str, payload: dict, idempotency_key: 
         }:
             ambiguous = True
         with connection() as conn:
+            state = "needs_review" if ambiguous else "failed"
             conn.execute(
-                "UPDATE obs.operations SET status=%s,last_error=%s,updated_at=now() WHERE id=%s",
-                ("uncertain" if ambiguous else "failed", redact(str(exc))[:2048], operation_id),
+                "UPDATE obs.operations SET status=%s,state=%s,last_error=%s,updated_at=now() WHERE id=%s",
+                (
+                    "uncertain" if ambiguous else "failed",
+                    state,
+                    redact(str(exc))[:2048],
+                    operation_id,
+                ),
             )
             audit(
                 conn,
@@ -91,7 +107,7 @@ def execute(kind: str, target: str, actor: str, payload: dict, idempotency_key: 
         )
     with connection() as conn:
         operation = conn.execute(
-            "UPDATE obs.operations SET status='succeeded',result=%s,updated_at=now() WHERE id=%s RETURNING *",
+            "UPDATE obs.operations SET status='succeeded',state='succeeded',result=%s,updated_at=now() WHERE id=%s RETURNING *",
             (Jsonb(result), operation_id),
         ).fetchone()
         audit(conn, actor, kind + "_accepted", target, {"operation_id": operation_id})

@@ -355,12 +355,11 @@ def mttr(
     to: datetime | None = None,
 ) -> dict:
     items = rows(
-        """SELECT f.tenant_id,round((avg(extract(epoch FROM s.ended_at-f.ended_at))/60)::numeric,1) AS avg_min,
-        count(s.ended_at) AS recovered,count(*) FILTER(WHERE s.ended_at IS NULL) AS unresolved
-        FROM obs.pipeline_runs f LEFT JOIN LATERAL(SELECT ended_at FROM obs.pipeline_runs r
-         WHERE r.tenant_id=f.tenant_id AND r.source_type=f.source_type AND r.load_type=f.load_type
-         AND r.status='success' AND r.started_at>f.started_at AND r.ended_at>=f.ended_at ORDER BY r.ended_at LIMIT 1) s ON true
-        WHERE f.status='failed' AND f.started_at>=%s AND f.started_at<%s GROUP BY f.tenant_id ORDER BY avg_min DESC NULLS LAST""",
+        """SELECT m.tenant_id,round(avg(m.recovery_minutes)::numeric,1) AS avg_min,
+        count(m.recovered_at) AS recovered,count(*) FILTER(WHERE m.recovered_at IS NULL) AS unresolved
+        FROM obs.v_mttr m JOIN obs.pipeline_runs f USING(run_key)
+        WHERE f.started_at>=%s AND f.started_at<%s
+        GROUP BY m.tenant_id ORDER BY avg_min DESC NULLS LAST""",
         a.bounds(range, from_, to),
     )
     return a.page(items, page, page_size)

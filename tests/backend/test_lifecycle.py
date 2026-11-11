@@ -25,13 +25,14 @@ def cleanup(tenant: str) -> None:
 
 def test_sla_uses_five_minute_buckets_and_includes_a_missing_initial_success() -> None:
     tenant = "test_" + uuid4().hex[:8]
-    end = datetime.now(UTC).replace(microsecond=0)
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    end = now.replace(minute=now.minute - now.minute % 5)
     start = end - timedelta(minutes=20)
     try:
         with connection() as conn:
             conn.execute(
-                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at) VALUES(%s,'Test','active',false,5,%s)",
-                (tenant, start),
+                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at,registered_at) VALUES(%s,'Test','active',false,5,%s,%s)",
+                (tenant, start, start),
             )
             run = make_run(
                 tenant, "mysql", "cdc", start + timedelta(minutes=4), 60, 991
@@ -48,13 +49,14 @@ def test_sla_uses_five_minute_buckets_and_includes_a_missing_initial_success() -
 
 def test_new_tenants_are_not_charged_for_buckets_before_registration() -> None:
     tenant = "test_" + uuid4().hex[:8]
-    end = datetime.now(UTC).replace(microsecond=0)
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    end = now.replace(minute=now.minute - now.minute % 5)
     created = end - timedelta(minutes=10)
     try:
         with connection() as conn:
             conn.execute(
-                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at) VALUES(%s,'Test','active',false,5,%s)",
-                (tenant, created),
+                "INSERT INTO obs.tenants(tenant_id,display_name,status,has_mongo,freshness_sla_min,created_at,registered_at) VALUES(%s,'Test','active',false,5,%s,%s)",
+                (tenant, created, created),
             )
             upsert_run(conn, make_run(tenant, "mysql", "cdc", created, 0, 999))
         _sla_cache.clear()

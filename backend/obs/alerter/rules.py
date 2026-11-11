@@ -48,19 +48,18 @@ def conditions(conn: psycopg.Connection, rule: dict) -> list[dict]:
     elif key == "freshness_breach":
         found = conn.execute(
             """SELECT tenant_id,source_type,'Freshness SLA exceeded' AS reason FROM obs.v_freshness
-            WHERE minutes_stale IS NULL OR minutes_stale>freshness_sla_min*%s/100.0""",
+            WHERE last_success_at IS NULL OR now() - last_success_at >
+                freshness_sla_min * (%s / 100.0) * interval '1 minute'""",
             (params.get("pct", 100),),
         ).fetchall()
     elif key == "stuck_run":
         found = conn.execute(
-            """WITH baseline AS(SELECT tenant_id,source_type,load_type,
-            percentile_cont(.5) WITHIN GROUP(ORDER BY duration_s) AS median FROM obs.pipeline_runs
-            WHERE status='success' AND started_at>now()-interval '7 days' GROUP BY 1,2,3)
-            SELECT r.tenant_id,r.source_type,'Run is taking longer than its 7-day baseline' AS reason,r.run_key
-            FROM obs.pipeline_runs r JOIN baseline b USING(tenant_id,source_type,load_type)
-            JOIN obs.tenants t USING(tenant_id) WHERE t.status='active' AND r.status='running'
-            AND extract(epoch FROM now()-r.started_at)>%s*b.median""",
-            (params.get("multiplier", 3),),
+            """SELECT tenant_id,source_type,
+                'Run is taking longer than its robust duration baseline' AS reason,run_key
+            FROM obs.v_stuck_runs
+            WHERE extract(epoch FROM now()-started_at) >
+                greatest(threshold_s,baseline_median_s*%s)""",
+            (max(3, float(params.get("multiplier", 3))),),
         ).fetchall()
     elif key == "volume_anomaly":
         found = [

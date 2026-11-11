@@ -334,11 +334,16 @@ create index on obs.run_logs using gin (tsv);
 | `runbooks` | Fix hints per error class | error_class, hint, url, updated_by, updated_at |
 | `saved_views` | Private filters | user_id, page, name, query |
 | `users` | Accounts | user_id, email (unique), display_name, role, status (active / invited / disabled), password_hash (argon2id, local auth only), last_sign_in_at |
+| `roles` | Reusable workspace access bundles | name, base_level, permissions, description, created_by |
 | `sessions` | Server-side sessions | id (hash), user_id, created_at, last_seen_at, expires_at, ip, user_agent, revoked_at |
 | `password_reset_tokens` / `invites` | Account flows | token_hash, user_id or email, expires_at, used_at |
 | `api_tokens` | Read API | id, name, token_hash, scopes, created_by, last_used_at, revoked_at |
 | `audit_log` | Append-only record | id, at, actor, action, target, request_id, outcome, details |
 | `app_settings` | Runtime settings | key, value, updated_by, updated_at |
+| `modules` / `role_modules` / `user_module_overrides` | Product areas and server-enforced access | module_id, enabled, role grants, per-user grant or revoke |
+| `warehouse_daily_rollups` / `platform_daily_rollups` | Long-term history after raw snapshots age out | day, tenant or component, aggregate counts and last state |
+
+Pravah is the default module. HRMS, Finance and SAP are registry entries that stay disabled until those areas ship. The module picker returns only enabled modules the signed-in user can access. Admins manage assignments; a CEO or another named business role receives access through its module grants. The API checks module access on every route, so filtering the picker alone never grants or protects data.
 
 Retention:
 
@@ -349,6 +354,8 @@ Retention:
 | Snapshots and platform health | 30 days, then daily rollups |
 | Audit log | 2 years |
 | Outbox | 30 days after delivery |
+
+Runs, warehouse snapshots and platform health are rolled into daily aggregates before high-resolution rows are removed. Daily rollups are retained indefinitely.
 
 ---
 
@@ -630,6 +637,7 @@ Unversioned `/api/*` routes from earlier builds stay as aliases until the fronte
 | Users, roles, API tokens, audit log, settings, demo reset | | | ✓ |
 
 - The server enforces every row on every endpoint; the UI only reflects it (`docs/DESIGN.md` §8).
+- Module access is separate from page permissions. Custom workspace roles can receive access to enabled product modules; per-user grants and revokes are audited and applied by the API. Admins can manage the registry and grants. A CEO is represented by an explicitly assigned role, not a hard-coded email or title.
 - Nobody can change their own role, and the last admin can't be demoted or disabled.
 - Admins can preview the UI as another role ("View as"). Preview is read-only and audited.
 

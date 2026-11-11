@@ -305,14 +305,23 @@ def seed() -> None:
                 for load_kind in ("initial", "cdc")
             }
             conn.execute(
-                """INSERT INTO obs.tenants(tenant_id,display_name,status,airbyte_connections,warehouse_schema,owner_email,created_at)
-                VALUES(%s,%s,'active',%s,%s,%s,%s) ON CONFLICT(tenant_id) DO NOTHING""",
+                """INSERT INTO obs.tenants(
+                    tenant_id,display_name,status,airbyte_connections,sources,
+                    warehouse_schema,owner_email,created_at,registered_at
+                ) VALUES(%s,%s,'active',%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id) DO NOTHING""",
                 (
                     tenant,
                     name,
                     Jsonb(mapping),
+                    Jsonb(
+                        {
+                            "mysql": {"database_per_tenant": True},
+                            "mongo": {"shared": True, "tenant_field": "tenant_id"},
+                        }
+                    ),
                     tenant,
                     f"data@{tenant}.example",
+                    now - timedelta(days=45),
                     now - timedelta(days=45),
                 ),
             )
@@ -459,7 +468,7 @@ def seed() -> None:
             )
             upsert_run(conn, recovery)
         stuck = make_run(
-            "northwind", "mysql", "cdc", now - timedelta(minutes=58), 0, 99001, "running"
+            "northwind", "mysql", "cdc", now - timedelta(minutes=180), 0, 99001, "running"
         )
         upsert_run(conn, stuck)
         for tenant, _, _ in TENANTS[3:]:

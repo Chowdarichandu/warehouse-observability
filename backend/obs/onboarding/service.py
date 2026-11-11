@@ -103,13 +103,40 @@ def start(data: OnboardInput, actor: str) -> dict:
             workflow_id = None
         else:
             conn.execute(
-                """INSERT INTO obs.tenants(tenant_id,display_name,status,has_mysql,has_mongo,warehouse_schema,freshness_sla_min,owner_email)
-                VALUES(%s,%s,'onboarding',%s,%s,%s,%s,%s)""",
+                """INSERT INTO obs.tenants(
+                    tenant_id,display_name,status,has_mysql,has_mongo,sources,
+                    warehouse_schema,freshness_sla_min,owner_email
+                ) VALUES(%s,%s,'onboarding',%s,%s,%s,%s,%s,%s)""",
                 (
                     data.tenant_id,
                     data.display_name,
                     data.has_mysql,
                     data.has_mongo,
+                    Jsonb(
+                        {
+                            **(
+                                {
+                                    "mysql": {
+                                        "database": data.mysql_database,
+                                        "database_per_tenant": True,
+                                    }
+                                }
+                                if data.has_mysql
+                                else {}
+                            ),
+                            **(
+                                {
+                                    "mongo": {
+                                        "database": data.mongo_database,
+                                        "shared": True,
+                                        "tenant_field": "tenant_id",
+                                    }
+                                }
+                                if data.has_mongo
+                                else {}
+                            ),
+                        }
+                    ),
                     data.warehouse_schema or data.tenant_id,
                     data.freshness_sla_min,
                     data.owner_email,

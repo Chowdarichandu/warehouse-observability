@@ -133,7 +133,7 @@ export function Freshness() {
       <div className="two-column">
         <Panel
           title="Volume anomalies"
-          subtitle="Drops greater than 30%, or growth above 5× the previous seven-day average delta."
+          subtitle="Drops over 30%, or growth over 5× the seven-day average and 5% above the previous count."
           action={<Table2 size={17} />}
           className={volume.isPlaceholderData ? 'is-fetching' : ''}
         >
