@@ -1,3 +1,10 @@
 # Historical synthetic AWS access-key example in tests/backend/test_redact.py.
 # The test assembles the fake value at runtime; this permits only the old commit finding.
 0dad7f786e81aeaf5665f87864be129576ef8caf:tests/backend/test_redact.py:aws-access-token:15
+# AWS_SECRET_PREFIX is a secret-manager path prefix (a naming convention,
+# not a credential) in the example environment files.
+d8c9c5b8ae56879d1a278b93d2756e048b5c70d9:.env.example:generic-api-key:20
+d8c9c5b8ae56879d1a278b93d2756e048b5c70d9:.env.live.example:generic-api-key:23
+# Synthetic secret-manager id used with the botocore Stubber in the live
+# integration tests; no real credential exists in the test.
+d8c9c5b8ae56879d1a278b93d2756e048b5c70d9:tests/backend/test_live_integrations.py:generic-api-key:384
