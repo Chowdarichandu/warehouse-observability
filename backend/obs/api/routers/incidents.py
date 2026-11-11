@@ -11,6 +11,11 @@ from obs.db import connection, one, rows
 from obs.redact import redact_tree
 
 router = APIRouter(dependencies=[Depends(current_user)], tags=["Incidents"])
+# Console-user identity fields are displayed by the UI ("Acknowledged by …",
+# "Assigned to …"); they are usernames, not secrets, so redaction skips them.
+ACTOR_KEYS = frozenset(
+    {"acknowledged_by", "resolved_by", "assignee", "acked_by", "author", "created_by"}
+)
 PageNumber = Annotated[int, Query(ge=1)]
 PageSize = Annotated[int, Query(ge=1, le=200)]
 
@@ -37,7 +42,12 @@ def incidents(
                  opened_at DESC LIMIT %s OFFSET %s""",
         (*args, page_size, (page - 1) * page_size),
     )
-    return {"items": redact_tree(items), "total": total, "page": page, "page_size": page_size}
+    return {
+        "items": redact_tree(items, ACTOR_KEYS),
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 @router.get("/incidents/{incident_id}", response_model=s.IncidentDetail)
@@ -46,18 +56,20 @@ def incident(incident_id: UUID) -> dict:
     if not item:
         fail(404, "incident_not_found", "Incident not found.")
     return {
-        **redact_tree(item),
+        **redact_tree(item, ACTOR_KEYS),
         "alerts": redact_tree(
             rows(
                 "SELECT * FROM obs.alerts WHERE incident_id=%s ORDER BY first_fired_at",
                 (incident_id,),
-            )
+            ),
+            ACTOR_KEYS,
         ),
         "notes": redact_tree(
             rows(
                 "SELECT * FROM obs.incident_notes WHERE incident_id=%s ORDER BY created_at,id",
                 (incident_id,),
-            )
+            ),
+            ACTOR_KEYS,
         ),
     }
 

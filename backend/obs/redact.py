@@ -22,11 +22,22 @@ def redact(text: str | None) -> str:
     return value.encode("utf-8")[-512 * 1024 :].decode("utf-8", errors="ignore")
 
 
-def redact_tree(value: object) -> object:
+def redact_tree(value: object, preserve_keys: frozenset[str] | None = None) -> object:
+    """Redact secrets from free text anywhere in a payload.
+
+    Values stored under a key in ``preserve_keys`` pass through untouched:
+    structured identity fields (who acknowledged, resolved, was assigned)
+    are console usernames, not secrets, and the UI displays them.
+    """
     if isinstance(value, str):
         return redact(value)
     if isinstance(value, dict):
-        return {key: redact_tree(item) for key, item in value.items()}
+        return {
+            key: item
+            if preserve_keys and key in preserve_keys
+            else redact_tree(item, preserve_keys)
+            for key, item in value.items()
+        }
     if isinstance(value, list):
-        return [redact_tree(item) for item in value]
+        return [redact_tree(item, preserve_keys) for item in value]
     return value
