@@ -32,10 +32,10 @@ test("onboarding guards URL steps and validates identity and enabled sources", a
   ).toBeVisible();
   await expect(page).toHaveURL(/step=1/);
   await expect(page.getByLabel("Display name", { exact: true })).toHaveValue(
-    "System Engines",
+    "Zenith Pay",
   );
   await expect(page.getByLabel("Tenant slug", { exact: true })).toHaveValue(
-    "system_engines",
+    "zenith_pay",
   );
   await page
     .getByLabel("Display name", { exact: true })
@@ -158,7 +158,9 @@ test("failed preflight remains failed and back navigation invalidates readiness"
     page.getByRole("heading", { name: "Your configuration is ready" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Ready when you are", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Ready when you are", exact: true }),
+  ).toBeVisible();
   await page.goBack();
   await expect(
     page.getByRole("button", { name: "Run pre-flight checks", exact: true }),
