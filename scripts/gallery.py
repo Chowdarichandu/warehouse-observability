@@ -135,6 +135,16 @@ SCREENS = [
     ),
     ("tv-mode", "TV mode", "Overview without navigation, for a shared office screen."),
     ("overview-dark", "Dark theme", "The overview in dark mode."),
+    (
+        "overview-mobile",
+        "Mobile overview",
+        "The Pravah overview at a narrow viewport in light mode.",
+    ),
+    (
+        "overview-dark-mobile",
+        "Mobile overview, dark theme",
+        "The Pravah overview at a narrow viewport in dark mode.",
+    ),
     ("mobile", "Mobile", "Tenant health and service levels on a narrow viewport."),
     ("login", "Sign in", "Local demo accounts with Viewer, Operator, and Admin roles."),
 ]

@@ -129,4 +129,19 @@ test("capture all console screens from the running workspace", async ({
     fullPage: true,
     animations: "disabled",
   });
+  await page.goto("/");
+  await ready();
+  await page.screenshot({
+    path: path.join(directory, "overview-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByLabel("Toggle color theme").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await ready();
+  await page.screenshot({
+    path: path.join(directory, "overview-dark-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
 });

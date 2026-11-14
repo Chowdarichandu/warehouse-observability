@@ -188,6 +188,18 @@ The overview in dark mode.
 
 [![Dark theme](overview-dark.png)](overview-dark.png)
 
+## Mobile overview
+
+The Pravah overview at a narrow viewport in light mode.
+
+[![Mobile overview](overview-mobile.png)](overview-mobile.png)
+
+## Mobile overview, dark theme
+
+The Pravah overview at a narrow viewport in dark mode.
+
+[![Mobile overview, dark theme](overview-dark-mobile.png)](overview-dark-mobile.png)
+
 ## Mobile
 
 Tenant health and service levels on a narrow viewport.
