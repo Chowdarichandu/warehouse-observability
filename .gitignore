@@ -8,6 +8,7 @@ __pycache__/
 .runtime
 playwright-report/
 test-results/
+# Generated outputs; the curated screenshot gallery lives under docs/screenshots/.
 /output/
 *.pyc
 

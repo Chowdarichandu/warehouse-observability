@@ -6,7 +6,7 @@ Version 3.0. This file is the source of truth for this repository. Visual design
 
 ## 1. Product
 
-Pravah is the control room for multi-tenant ELT pipelines built on Airbyte and Airflow. It does five things:
+Pravah is the control room for multi-tenant ELT pipelines built on Airbyte and Airflow. It helps teams catch data that is late, missing or incorrect before it affects downstream consumers. It does six things:
 
 - Captures every sync, from source to warehouse.
 - Explains failures in plain language.
@@ -343,7 +343,7 @@ create index on obs.run_logs using gin (tsv);
 | `modules` / `role_modules` / `user_module_overrides` | Product areas and server-enforced access | module_id, enabled, role grants, per-user grant or revoke |
 | `warehouse_daily_rollups` / `platform_daily_rollups` | Long-term history after raw snapshots age out | day, tenant or component, aggregate counts and last state |
 
-Pravah is the default module. HRMS, Finance and SAP are registry entries that stay disabled until those areas ship. The module picker returns only enabled modules the signed-in user can access. Admins manage assignments; a CEO or another named business role receives access through its module grants. The API checks module access on every route, so filtering the picker alone never grants or protects data.
+Pravah is the default module. Additional product areas use the same generic module registry and remain unavailable until enabled. The module picker returns only enabled modules the signed-in user can access. Administrators manage role-level and per-user module grants. The API checks module access on every route, so filtering the picker alone never grants or protects data.
 
 Retention:
 
@@ -637,7 +637,8 @@ Unversioned `/api/*` routes from earlier builds stay as aliases until the fronte
 | Users, roles, API tokens, audit log, settings, demo reset | | | ✓ |
 
 - The server enforces every row on every endpoint; the UI only reflects it (`docs/DESIGN.md` §8).
-- Module access is separate from page permissions. Custom workspace roles can receive access to enabled product modules; per-user grants and revokes are audited and applied by the API. Admins can manage the registry and grants. A CEO is represented by an explicitly assigned role, not a hard-coded email or title.
+- Module access is separate from page permissions. The generic module registry controls which product areas are enabled. Role-level and per-user module grants and revokes are audited and enforced by the API.
+- A custom role declares a `base_level` of Viewer, Operator or Admin. That level applies the built-in permission matrix as the role's ceiling; a capability is effective only when both the base level and the role's configured permission bundle allow it. Module grants are separate and checked alongside effective permissions. This supports narrower roles, such as a Viewer limited to aggregate metrics, without granting capabilities outside the built-in matrix.
 - Nobody can change their own role, and the last admin can't be demoted or disabled.
 - Admins can preview the UI as another role ("View as"). Preview is read-only and audited.
 

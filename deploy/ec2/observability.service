@@ -1,5 +1,5 @@
 [Unit]
-Description=Warehouse observability console
+Description=Pravah pipeline observability service
 Requires=docker.service
 After=docker.service network-online.target
 

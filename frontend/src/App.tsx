@@ -402,9 +402,9 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               aria-haspopup="true"
               title="Product navigation"
             >
-              <span className="workspace-avatar">O</span>
+              <span className="workspace-avatar">P</span>
               <div>
-                <strong>Observability</strong>
+                <strong>Pravah</strong>
                 <small>{runtime.environment}</small>
               </div>
               <ChevronDown size={14} className="switch-chevron" />
@@ -417,9 +417,9 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               >
                 <span className="product-menu-label">YOUR MODULES</span>
                 <NavLink to="/" className="product-active">
-                  <span className="workspace-avatar">O</span>
+                  <span className="workspace-avatar">P</span>
                   <span>
-                    <strong>Observability</strong>
+                    <strong>Pravah</strong>
                     <small>Monitor data operations</small>
                   </span>
                   <span className="product-current">Open</span>
@@ -520,7 +520,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Menu size={19} />
               </button>
               <Workflow size={15} />
-              <NavLink to="/">Observability</NavLink>
+              <NavLink to="/">Pravah</NavLink>
               <span className="slash">/</span>
               <strong>{section}</strong>
             </div>

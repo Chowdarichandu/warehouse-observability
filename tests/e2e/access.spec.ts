@@ -61,7 +61,7 @@ test("admin sees policy source and a role matrix; session revocation needs confi
   );
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
-    path: "../output/screenshots/access.png",
+    path: "../docs/screenshots/access.png",
     fullPage: true,
   });
 });
@@ -208,7 +208,7 @@ test("role creation stays readable and usable on desktop and mobile", async ({
     (roleForm?.y ?? 0) - ((roleList?.y ?? 0) + (roleList?.height ?? 0)),
   ).toBeGreaterThanOrEqual(24);
   await page.screenshot({
-    path: path.resolve("../output/screenshots/admin-roles.png"),
+    path: path.resolve("../docs/screenshots/admin-roles.png"),
     fullPage: true,
     animations: "disabled",
   });
@@ -221,7 +221,7 @@ test("role creation stays readable and usable on desktop and mobile", async ({
     (mobileBounds?.x ?? 0) + (mobileBounds?.width ?? 0),
   ).toBeLessThanOrEqual(390);
   await page.screenshot({
-    path: path.resolve("../output/screenshots/admin-roles-mobile.png"),
+    path: path.resolve("../docs/screenshots/admin-roles-mobile.png"),
     fullPage: true,
     animations: "disabled",
   });
@@ -337,7 +337,7 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
     await chooseSelectOption(metricsTenant, "All tenants");
     await expect(viewerPage).not.toHaveURL(/activity_tenant=/);
     await viewerPage.screenshot({
-      path: path.resolve("../output/screenshots/metrics-only.png"),
+      path: path.resolve("../docs/screenshots/metrics-only.png"),
       fullPage: true,
       animations: "disabled",
     });
@@ -395,7 +395,7 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
     );
     expect(mobileWidth).toBeLessThanOrEqual(390);
     await viewerPage.screenshot({
-      path: path.resolve("../output/screenshots/metrics-only-mobile.png"),
+      path: path.resolve("../docs/screenshots/metrics-only-mobile.png"),
       fullPage: true,
       animations: "disabled",
     });

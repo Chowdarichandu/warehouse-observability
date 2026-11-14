@@ -31,7 +31,7 @@ test("capture the redesigned orchestration and account screens", async ({
       page.getByText("Unable to load this view", { exact: true }),
     ).toHaveCount(0);
     await page.screenshot({
-      path: path.resolve("../output/screenshots", screen.file),
+      path: path.resolve("../docs/screenshots", screen.file),
       fullPage: true,
       animations: "disabled",
     });

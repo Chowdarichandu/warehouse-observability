@@ -1,4 +1,4 @@
-.PHONY: install up demo live down reset seed types test e2e lint build verify load-test recovery-drill
+.PHONY: install up demo live down reset seed types test e2e lint build verify gallery load-test recovery-drill
 PY := .venv/bin/python
 
 install:
@@ -19,6 +19,10 @@ test:
 
 e2e:
 	cd frontend && npm run e2e
+
+gallery:
+	cd frontend && npm run e2e -- ../tests/e2e/screenshots.spec.ts ../tests/e2e/access.spec.ts ../tests/e2e/presentation-screens.spec.ts
+	$(PY) scripts/gallery.py
 
 lint:
 	.venv/bin/ruff check backend/obs tests/backend scripts

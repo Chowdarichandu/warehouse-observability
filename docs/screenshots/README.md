@@ -104,17 +104,77 @@ Component history, Airflow pools, collectors, and database health.
 
 [![Platform](platform.png)](platform.png)
 
+## Warehouse catalog
+
+Table-level freshness, volume, schema history, and warehouse health.
+
+[![Warehouse catalog](warehouse.png)](warehouse.png)
+
 ## Administration
 
 Users, roles, operation outcomes, notification deliveries, and audit history.
 
 [![Administration](admin.png)](admin.png)
 
+## Role administration
+
+Custom role permissions and the built-in access matrix.
+
+[![Role administration](admin-roles.png)](admin-roles.png)
+
+## Role administration on mobile
+
+Custom role permissions in the narrow-screen layout.
+
+[![Role administration on mobile](admin-roles-mobile.png)](admin-roles-mobile.png)
+
+## Operations and delivery
+
+Durable action outcomes and notification delivery history.
+
+[![Operations and delivery](admin-operations.png)](admin-operations.png)
+
+## Administration activity
+
+Recent workspace actions and account changes.
+
+[![Administration activity](admin-activity.png)](admin-activity.png)
+
+## Audit history
+
+Recorded access and configuration changes.
+
+[![Audit history](admin-audit.png)](admin-audit.png)
+
 ## Global search
 
 Full-text search over classified errors and redacted logs.
 
 [![Global search](search.png)](search.png)
+
+## Metrics-only access
+
+Aggregate workspace metrics viewed with a least-privilege role.
+
+[![Metrics-only access](metrics-only.png)](metrics-only.png)
+
+## Metrics-only access on mobile
+
+Aggregate workspace metrics in the narrow-screen layout.
+
+[![Metrics-only access on mobile](metrics-only-mobile.png)](metrics-only-mobile.png)
+
+## Design system
+
+Pravah interface tokens and component states.
+
+[![Design system](styleguide.png)](styleguide.png)
+
+## Design system, dark theme
+
+Pravah tokens and component states in dark mode.
+
+[![Design system, dark theme](styleguide-dark.png)](styleguide-dark.png)
 
 ## TV mode
 

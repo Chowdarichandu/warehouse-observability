@@ -1,5 +1,5 @@
 # Resolve against your deployed Airflow constraints file; do not install the API lock into Airflow.
-# Install the built obs-console wheel with --no-deps after resolving these worker-only dependencies.
+# Install the built pravah-api wheel with --no-deps after resolving these worker-only dependencies.
 psycopg[binary]>=3.2,<4
 pydantic-settings>=2.9,<3
 httpx>=0.28,<1

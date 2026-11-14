@@ -1,7 +1,7 @@
 /* Pravah console styles — single source of truth.
    Sections, in cascade order:
    1. Base (formerly style.css)   — tokens, layout, components
-   2. Design (formerly design.css) — the merged Flowmark design pass
+   2. Design (formerly design.css) — the integrated design-system layer
    3. Polish (formerly polish.css) — late overrides and the newest components
    Page-specific styles still live beside their pages (pages/*.css).
    New global rules go at the end of section 3 so the cascade stays obvious. */

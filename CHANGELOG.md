@@ -4,6 +4,7 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Standardize the product name and package metadata on Pravah, and define custom roles as constrained subsets of the built-in permission matrix.
 - Show the planned product modules (HRMS, Finance, SAP, POS, Inventory, Support, Hospitality) in the product picker: migration 017 enables them in the registry, so admins see them and access is still gated per role and per user.
 - Move the sidebar Collapse control to the top of the sidebar, next to the brand.
 - Give account Settings its own (gear) icon; it previously shared the Administration sliders icon.

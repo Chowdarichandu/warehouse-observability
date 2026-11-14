@@ -30,7 +30,7 @@ Rules:
 
 Principles:
 
-1. **Color means status.** Green, amber, red and blue appear only for health and run state. Everything else is ink on paper, plus one accent (Conduit teal) for actions, links and focus.
+1. **Color means status.** Green, amber, red and blue appear only for health and run state. Everything else is ink on paper, plus one accent (Pravah teal) for actions, links and focus.
 2. **One memorable element: the tenant health board** on Overview. It gets the boldness: the live flow animation, the status glyphs, and the strongest type. Everything around it stays quiet.
 3. **Hierarchy comes from type and space, not boxes.** Not every block is a card. Use panels only where content is a real group, and separate sections with whitespace and hairlines.
 4. **Numbers are first-class.** Tabular figures everywhere, units always shown, no fake precision.
@@ -81,7 +81,7 @@ All tokens live in `frontend/src/styles/tokens.css` as CSS variables and are map
 | `--ink-600` | `#465450` | Secondary text (7.9:1) |
 | `--ink-500` | `#5C6A66` | Meta text, axis labels (5.7:1) |
 | `--ink-400` | `#7D8B86` | Disabled and decorative only (3.6:1; never for body text) |
-| `--accent` | `#0B6B75` | Conduit teal: primary buttons, links, focus, selection (6.2:1) |
+| `--accent` | `#0B6B75` | Pravah teal: primary buttons, links, focus, selection (6.2:1) |
 | `--accent-soft` | `#DFF0F1` | Selected rows, active nav, info callouts |
 | `--ok` / `--ok-soft` | `#1D7A49` / `#E2F1E8` | Success, healthy |
 | `--warn` / `--warn-fill` / `--warn-soft` | `#8F5B00` text / `#D99A1E` fills / `#FBEFD5` | Degraded, stuck, acknowledged |

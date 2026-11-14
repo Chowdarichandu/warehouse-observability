@@ -126,7 +126,7 @@ test("product navigation only shows modules granted to the signed-in user", asyn
     page.getByRole("heading", { name: "Tenant health", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: /Observability/ }).click();
+  await page.getByRole("button", { name: /Pravah/ }).click();
   const menu = page.locator("#workspace-product-menu");
   await expect(menu).toBeVisible();
   await expect(menu).toHaveCSS("width", "248px");

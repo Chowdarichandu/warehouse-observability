@@ -15,7 +15,7 @@ def connection() -> Iterator[psycopg.Connection[dict[str, Any]]]:
         settings().database_url,
         row_factory=dict_row,
         connect_timeout=5,
-        application_name="obs-console",
+        application_name="pravah-api",
         options="-c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000",
     ) as conn:
         conn.execute("SET TIME ZONE 'UTC'")

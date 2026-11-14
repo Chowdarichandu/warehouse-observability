@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "obs-console"
+name = "pravah-api"
 version = "0.2.0"
-description = "In-house pipeline observability console, AWS-ready pipeline observability"
+description = "Pravah API and pipeline observability service for AWS deployments"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi==0.162.2", "uvicorn==0.34.3", "psycopg[binary]==3.2.9",

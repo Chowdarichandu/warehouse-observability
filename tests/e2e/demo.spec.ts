@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 let adminState: Awaited<ReturnType<BrowserContext["storageState"]>>;
-const screenshots = path.resolve("../output/screenshots");
+const screenshots = path.resolve("../docs/screenshots");
 test.beforeAll(async ({ browser }) => {
   mkdirSync(screenshots, { recursive: true });
   const page = await browser.newPage();

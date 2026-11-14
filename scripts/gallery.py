@@ -78,14 +78,60 @@ SCREENS = [
         "Component history, Airflow pools, collectors, and database health.",
     ),
     (
+        "warehouse",
+        "Warehouse catalog",
+        "Table-level freshness, volume, schema history, and warehouse health.",
+    ),
+    (
         "admin",
         "Administration",
         "Users, roles, operation outcomes, notification deliveries, and audit history.",
     ),
     (
+        "admin-roles",
+        "Role administration",
+        "Custom role permissions and the built-in access matrix.",
+    ),
+    (
+        "admin-roles-mobile",
+        "Role administration on mobile",
+        "Custom role permissions in the narrow-screen layout.",
+    ),
+    (
+        "admin-operations",
+        "Operations and delivery",
+        "Durable action outcomes and notification delivery history.",
+    ),
+    (
+        "admin-activity",
+        "Administration activity",
+        "Recent workspace actions and account changes.",
+    ),
+    (
+        "admin-audit",
+        "Audit history",
+        "Recorded access and configuration changes.",
+    ),
+    (
         "search",
         "Global search",
         "Full-text search over classified errors and redacted logs.",
+    ),
+    (
+        "metrics-only",
+        "Metrics-only access",
+        "Aggregate workspace metrics viewed with a least-privilege role.",
+    ),
+    (
+        "metrics-only-mobile",
+        "Metrics-only access on mobile",
+        "Aggregate workspace metrics in the narrow-screen layout.",
+    ),
+    ("styleguide", "Design system", "Pravah interface tokens and component states."),
+    (
+        "styleguide-dark",
+        "Design system, dark theme",
+        "Pravah tokens and component states in dark mode.",
     ),
     ("tv-mode", "TV mode", "Overview without navigation, for a shared office screen."),
     ("overview-dark", "Dark theme", "The overview in dark mode."),

@@ -5,7 +5,7 @@ import path from "node:path";
 test("capture all console screens from the running workspace", async ({
   page,
 }) => {
-  const directory = path.resolve("../output/screenshots");
+  const directory = path.resolve("../docs/screenshots");
   mkdirSync(directory, { recursive: true });
   await page.goto("/");
   await expect(
