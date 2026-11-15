@@ -5,7 +5,7 @@ import path from "node:path";
 test("capture all console screens from the running workspace", async ({
   page,
 }) => {
-  const directory = path.resolve("../output/screenshots");
+  const directory = path.resolve("../docs/screenshots");
   mkdirSync(directory, { recursive: true });
   await page.goto("/");
   await expect(
@@ -126,6 +126,21 @@ test("capture all console screens from the running workspace", async ({
   await expect(page.locator(".health-grid-desktop")).toBeHidden();
   await page.screenshot({
     path: path.join(directory, "mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.goto("/");
+  await ready();
+  await page.screenshot({
+    path: path.join(directory, "overview-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByLabel("Toggle color theme").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await ready();
+  await page.screenshot({
+    path: path.join(directory, "overview-dark-mobile.png"),
     fullPage: true,
     animations: "disabled",
   });

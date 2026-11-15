@@ -101,15 +101,12 @@ Documentation is part of the product. Follow these rules in docs, code comments,
   - No real hostnames, account ids, client names or customer data anywhere.
 - **UI text** follows the copy rules in DESIGN §10.
 
-## Repository cleanup (part of R0)
+## Repository hygiene
 
-- Remove `SPEC.original.pdf` and `AGENTS.original.pdf`.
-- Replace `MILESTONES.md` with `CHANGELOG.md` (summarize the earlier work as 0.x entries) and `docs/release-checklist.md`.
-- Replace `README.md` with the product README.
-- Fold anything still relevant from `docs/repository-vision.md` into `SPEC.md`, then delete the file.
-- Remove session notes and internal references from every doc, following the writing rules above.
-- Move the screenshot gallery to `docs/screenshots/`. Stop tracking generated output (`output/`) and add it to `.gitignore`.
-- Add secret scanning (gitleaks) to CI, and fail the build on any finding.
+- Keep generated artifacts under `output/` untracked; `.gitignore` owns that path.
+- Keep the screenshot gallery and committed screen captures in `docs/screenshots/`; regenerate them with `make gallery` when the screens change.
+- Keep `README.md` product-facing and use `CHANGELOG.md` for user-visible history.
+- Run the full-history Gitleaks scan in CI and fail the build on any finding.
 
 ## Don't
 
