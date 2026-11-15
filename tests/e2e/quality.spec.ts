@@ -11,7 +11,7 @@ test("quality definitions can be created, investigated, edited, run and disabled
     .fill(process.env.DEMO_PASSWORD || "demo");
   const loginResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/auth/login") &&
+      response.url().endsWith("/api/v1/auth/login") &&
       response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Sign in to workspace" }).click();
@@ -40,7 +40,7 @@ test("quality definitions can be created, investigated, edited, run and disabled
     await page.getByLabel("Sample limit", { exact: true }).fill("100");
     const created = page.waitForResponse(
       (response) =>
-        response.url().endsWith("/api/quality/checks") &&
+        response.url().endsWith("/api/v1/quality/checks") &&
         response.request().method() === "POST",
     );
     await page.getByRole("button", { name: "Save check", exact: true }).click();
@@ -88,7 +88,7 @@ test("quality definitions can be created, investigated, edited, run and disabled
   } finally {
     // Keep test-created definitions inactive; a clean demo reset removes test fixtures before capture.
     if (id !== undefined)
-      await page.request.patch(`/api/quality/checks/${id}`, {
+      await page.request.patch(`/api/v1/quality/checks/${id}`, {
         data: { enabled: false },
         headers: { "X-CSRF-Token": session.csrf_token },
       });

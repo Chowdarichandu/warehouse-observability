@@ -2,12 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api",
-      "destination": "https://warehouse-observability-production.up.railway.app/api"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://warehouse-observability-production.up.railway.app/api/:path*"
+      "source": "/api/v1/:path*",
+      "destination": "https://warehouse-observability-production.up.railway.app/api/v1/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

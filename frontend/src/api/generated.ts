@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/health": {
+    "/api/v1/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** Health */
-        get: operations["health_api_health_get"];
+        get: operations["health_api_v1_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -21,7 +21,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/health/live": {
+    "/api/v1/health/live": {
         parameters: {
             query?: never;
             header?: never;
@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         /** Liveness */
-        get: operations["liveness_api_health_live_get"];
+        get: operations["liveness_api_v1_health_live_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38,7 +38,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/config": {
+    "/api/v1/config": {
         parameters: {
             query?: never;
             header?: never;
@@ -46,7 +46,7 @@ export interface paths {
             cookie?: never;
         };
         /** Runtime Config */
-        get: operations["runtime_config_api_config_get"];
+        get: operations["runtime_config_api_v1_config_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -55,7 +55,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/change-password": {
+    "/api/v1/auth/change-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -65,14 +65,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Change Password */
-        post: operations["change_password_api_auth_change_password_post"];
+        post: operations["change_password_api_v1_auth_change_password_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/password": {
+    "/api/v1/auth/password": {
         parameters: {
             query?: never;
             header?: never;
@@ -82,14 +82,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Change Password */
-        post: operations["change_password_api_auth_password_post"];
+        post: operations["change_password_api_v1_auth_password_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/login": {
+    "/api/v1/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -99,14 +99,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Login */
-        post: operations["login_api_auth_login_post"];
+        post: operations["login_api_v1_auth_login_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/forgot-password": {
+    "/api/v1/auth/forgot-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -116,14 +116,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Forgot Password */
-        post: operations["forgot_password_api_auth_forgot_password_post"];
+        post: operations["forgot_password_api_v1_auth_forgot_password_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/logout": {
+    "/api/v1/auth/logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -133,14 +133,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Logout */
-        post: operations["logout_api_auth_logout_post"];
+        post: operations["logout_api_v1_auth_logout_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/me": {
+    "/api/v1/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -148,7 +148,7 @@ export interface paths {
             cookie?: never;
         };
         /** Me */
-        get: operations["me_api_me_get"];
+        get: operations["me_api_v1_me_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -157,7 +157,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/oidc/start": {
+    "/api/v1/auth/oidc/start": {
         parameters: {
             query?: never;
             header?: never;
@@ -165,7 +165,7 @@ export interface paths {
             cookie?: never;
         };
         /** Oidc Start */
-        get: operations["oidc_start_api_auth_oidc_start_get"];
+        get: operations["oidc_start_api_v1_auth_oidc_start_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -174,7 +174,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/oidc/callback": {
+    "/api/v1/auth/oidc/callback": {
         parameters: {
             query?: never;
             header?: never;
@@ -182,7 +182,7 @@ export interface paths {
             cookie?: never;
         };
         /** Oidc Callback */
-        get: operations["oidc_callback_api_auth_oidc_callback_get"];
+        get: operations["oidc_callback_api_v1_auth_oidc_callback_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -191,7 +191,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/overview": {
+    "/api/v1/overview": {
         parameters: {
             query?: never;
             header?: never;
@@ -199,7 +199,7 @@ export interface paths {
             cookie?: never;
         };
         /** Overview */
-        get: operations["overview_api_overview_get"];
+        get: operations["overview_api_v1_overview_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -208,7 +208,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics/overview": {
+    "/api/v1/metrics/overview": {
         parameters: {
             query?: never;
             header?: never;
@@ -219,7 +219,7 @@ export interface paths {
          * Metrics Overview
          * @description Return aggregate dashboard metrics without run-level or platform detail.
          */
-        get: operations["metrics_overview_api_metrics_overview_get"];
+        get: operations["metrics_overview_api_v1_metrics_overview_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -228,7 +228,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics/tenants": {
+    "/api/v1/metrics/tenants": {
         parameters: {
             query?: never;
             header?: never;
@@ -239,7 +239,7 @@ export interface paths {
          * Metrics Tenants
          * @description Expose tenant labels and metric summaries, excluding run identifiers and logs.
          */
-        get: operations["metrics_tenants_api_metrics_tenants_get"];
+        get: operations["metrics_tenants_api_v1_metrics_tenants_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -248,7 +248,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tenants": {
+    "/api/v1/tenants": {
         parameters: {
             query?: never;
             header?: never;
@@ -256,7 +256,7 @@ export interface paths {
             cookie?: never;
         };
         /** Tenants */
-        get: operations["tenants_api_tenants_get"];
+        get: operations["tenants_api_v1_tenants_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -265,7 +265,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}": {
+    "/api/v1/tenants/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -273,17 +273,17 @@ export interface paths {
             cookie?: never;
         };
         /** Tenant Detail */
-        get: operations["tenant_detail_api_tenants__id__get"];
+        get: operations["tenant_detail_api_v1_tenants__id__get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         /** Update Tenant */
-        patch: operations["update_tenant_api_tenants__id__patch"];
+        patch: operations["update_tenant_api_v1_tenants__id__patch"];
         trace?: never;
     };
-    "/api/tenants/{id}/maintenance-windows": {
+    "/api/v1/tenants/{id}/maintenance-windows": {
         parameters: {
             query?: never;
             header?: never;
@@ -291,17 +291,17 @@ export interface paths {
             cookie?: never;
         };
         /** Maintenance Windows */
-        get: operations["maintenance_windows_api_tenants__id__maintenance_windows_get"];
+        get: operations["maintenance_windows_api_v1_tenants__id__maintenance_windows_get"];
         put?: never;
         /** Create Maintenance Window */
-        post: operations["create_maintenance_window_api_tenants__id__maintenance_windows_post"];
+        post: operations["create_maintenance_window_api_v1_tenants__id__maintenance_windows_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}/timeline": {
+    "/api/v1/tenants/{id}/timeline": {
         parameters: {
             query?: never;
             header?: never;
@@ -309,7 +309,7 @@ export interface paths {
             cookie?: never;
         };
         /** Timeline */
-        get: operations["timeline_api_tenants__id__timeline_get"];
+        get: operations["timeline_api_v1_tenants__id__timeline_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -318,7 +318,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/runs": {
+    "/api/v1/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -326,7 +326,7 @@ export interface paths {
             cookie?: never;
         };
         /** Runs */
-        get: operations["runs_api_runs_get"];
+        get: operations["runs_api_v1_runs_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -335,7 +335,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}/metrics": {
+    "/api/v1/tenants/{id}/metrics": {
         parameters: {
             query?: never;
             header?: never;
@@ -350,7 +350,7 @@ export interface paths {
          *     so initial loads silently vanished once CDC runs filled the page. This
          *     endpoint aggregates the full range in SQL instead.
          */
-        get: operations["tenant_metrics_api_tenants__id__metrics_get"];
+        get: operations["tenant_metrics_api_v1_tenants__id__metrics_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -359,7 +359,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/runs/{run_key}/log": {
+    "/api/v1/runs/{run_key}/log": {
         parameters: {
             query?: never;
             header?: never;
@@ -367,7 +367,7 @@ export interface paths {
             cookie?: never;
         };
         /** Log */
-        get: operations["log_api_runs__run_key__log_get"];
+        get: operations["log_api_v1_runs__run_key__log_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -376,7 +376,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/runs/{run_key}": {
+    "/api/v1/runs/{run_key}": {
         parameters: {
             query?: never;
             header?: never;
@@ -384,7 +384,7 @@ export interface paths {
             cookie?: never;
         };
         /** Run Detail */
-        get: operations["run_detail_api_runs__run_key__get"];
+        get: operations["run_detail_api_v1_runs__run_key__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -393,7 +393,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/errors/groups": {
+    "/api/v1/errors/groups": {
         parameters: {
             query?: never;
             header?: never;
@@ -401,7 +401,7 @@ export interface paths {
             cookie?: never;
         };
         /** Groups */
-        get: operations["groups_api_errors_groups_get"];
+        get: operations["groups_api_v1_errors_groups_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -410,7 +410,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/errors/groups/{fingerprint}": {
+    "/api/v1/errors/groups/{fingerprint}": {
         parameters: {
             query?: never;
             header?: never;
@@ -418,7 +418,7 @@ export interface paths {
             cookie?: never;
         };
         /** Group */
-        get: operations["group_api_errors_groups__fingerprint__get"];
+        get: operations["group_api_v1_errors_groups__fingerprint__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -427,7 +427,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics/durations": {
+    "/api/v1/metrics/durations": {
         parameters: {
             query?: never;
             header?: never;
@@ -435,7 +435,7 @@ export interface paths {
             cookie?: never;
         };
         /** Durations */
-        get: operations["durations_api_metrics_durations_get"];
+        get: operations["durations_api_v1_metrics_durations_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -444,7 +444,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics/mttr": {
+    "/api/v1/metrics/mttr": {
         parameters: {
             query?: never;
             header?: never;
@@ -452,7 +452,7 @@ export interface paths {
             cookie?: never;
         };
         /** Mttr */
-        get: operations["mttr_api_metrics_mttr_get"];
+        get: operations["mttr_api_v1_metrics_mttr_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -461,7 +461,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics/failures-heatmap": {
+    "/api/v1/metrics/failures-heatmap": {
         parameters: {
             query?: never;
             header?: never;
@@ -469,7 +469,7 @@ export interface paths {
             cookie?: never;
         };
         /** Heatmap */
-        get: operations["heatmap_api_metrics_failures_heatmap_get"];
+        get: operations["heatmap_api_v1_metrics_failures_heatmap_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -478,7 +478,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics/failures-breakdown": {
+    "/api/v1/metrics/failures-breakdown": {
         parameters: {
             query?: never;
             header?: never;
@@ -486,7 +486,7 @@ export interface paths {
             cookie?: never;
         };
         /** Failures Breakdown */
-        get: operations["failures_breakdown_api_metrics_failures_breakdown_get"];
+        get: operations["failures_breakdown_api_v1_metrics_failures_breakdown_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -495,7 +495,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/freshness": {
+    "/api/v1/freshness": {
         parameters: {
             query?: never;
             header?: never;
@@ -503,7 +503,7 @@ export interface paths {
             cookie?: never;
         };
         /** Freshness */
-        get: operations["freshness_api_freshness_get"];
+        get: operations["freshness_api_v1_freshness_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -512,7 +512,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forecast": {
+    "/api/v1/forecast": {
         parameters: {
             query?: never;
             header?: never;
@@ -525,7 +525,7 @@ export interface paths {
          *     freshness breaches the SLA if no further run succeeds, using the data
          *     age, the SLA, and the tenant's observed run interval.
          */
-        get: operations["forecast_api_forecast_get"];
+        get: operations["forecast_api_v1_forecast_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -534,7 +534,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dev/mailbox": {
+    "/api/v1/dev/mailbox": {
         parameters: {
             query?: never;
             header?: never;
@@ -545,7 +545,7 @@ export interface paths {
          * Dev Mailbox
          * @description SPEC §13 dev mailbox: account emails captured in demo mode.
          */
-        get: operations["dev_mailbox_api_dev_mailbox_get"];
+        get: operations["dev_mailbox_api_v1_dev_mailbox_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -554,7 +554,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/volume-anomalies": {
+    "/api/v1/volume-anomalies": {
         parameters: {
             query?: never;
             header?: never;
@@ -562,7 +562,7 @@ export interface paths {
             cookie?: never;
         };
         /** Volume */
-        get: operations["volume_api_volume_anomalies_get"];
+        get: operations["volume_api_v1_volume_anomalies_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -571,7 +571,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/schema-changes": {
+    "/api/v1/schema-changes": {
         parameters: {
             query?: never;
             header?: never;
@@ -579,7 +579,7 @@ export interface paths {
             cookie?: never;
         };
         /** Schema */
-        get: operations["schema_api_schema_changes_get"];
+        get: operations["schema_api_v1_schema_changes_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -588,7 +588,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/alerts": {
+    "/api/v1/alerts": {
         parameters: {
             query?: never;
             header?: never;
@@ -596,7 +596,7 @@ export interface paths {
             cookie?: never;
         };
         /** Alerts */
-        get: operations["alerts_api_alerts_get"];
+        get: operations["alerts_api_v1_alerts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -605,7 +605,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/alert-rules": {
+    "/api/v1/alert-rules": {
         parameters: {
             query?: never;
             header?: never;
@@ -613,7 +613,7 @@ export interface paths {
             cookie?: never;
         };
         /** Rules */
-        get: operations["rules_api_alert_rules_get"];
+        get: operations["rules_api_v1_alert_rules_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -622,7 +622,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/channels": {
+    "/api/v1/channels": {
         parameters: {
             query?: never;
             header?: never;
@@ -630,7 +630,7 @@ export interface paths {
             cookie?: never;
         };
         /** Channels */
-        get: operations["channels_api_channels_get"];
+        get: operations["channels_api_v1_channels_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -639,7 +639,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/onboarding/{tenant_id}": {
+    "/api/v1/onboarding/{tenant_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -647,7 +647,7 @@ export interface paths {
             cookie?: never;
         };
         /** Onboarding */
-        get: operations["onboarding_api_onboarding__tenant_id__get"];
+        get: operations["onboarding_api_v1_onboarding__tenant_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -656,7 +656,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/platform/health": {
+    "/api/v1/platform/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -664,7 +664,7 @@ export interface paths {
             cookie?: never;
         };
         /** Platform */
-        get: operations["platform_api_platform_health_get"];
+        get: operations["platform_api_v1_platform_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -673,7 +673,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/search": {
+    "/api/v1/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -681,7 +681,7 @@ export interface paths {
             cookie?: never;
         };
         /** Search */
-        get: operations["search_api_search_get"];
+        get: operations["search_api_v1_search_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -690,7 +690,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/audit": {
+    "/api/v1/audit": {
         parameters: {
             query?: never;
             header?: never;
@@ -698,7 +698,7 @@ export interface paths {
             cookie?: never;
         };
         /** Audit */
-        get: operations["audit_api_audit_get"];
+        get: operations["audit_api_v1_audit_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -707,7 +707,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users": {
+    "/api/v1/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -715,17 +715,17 @@ export interface paths {
             cookie?: never;
         };
         /** Users */
-        get: operations["users_api_users_get"];
+        get: operations["users_api_v1_users_get"];
         put?: never;
         /** Create User */
-        post: operations["create_user_api_users_post"];
+        post: operations["create_user_api_v1_users_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/operations": {
+    "/api/v1/operations": {
         parameters: {
             query?: never;
             header?: never;
@@ -733,7 +733,7 @@ export interface paths {
             cookie?: never;
         };
         /** Operations */
-        get: operations["operations_api_operations_get"];
+        get: operations["operations_api_v1_operations_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -742,7 +742,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/deliveries": {
+    "/api/v1/deliveries": {
         parameters: {
             query?: never;
             header?: never;
@@ -750,7 +750,7 @@ export interface paths {
             cookie?: never;
         };
         /** Deliveries */
-        get: operations["deliveries_api_deliveries_get"];
+        get: operations["deliveries_api_v1_deliveries_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -759,7 +759,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/warehouse": {
+    "/api/v1/warehouse": {
         parameters: {
             query?: never;
             header?: never;
@@ -767,7 +767,7 @@ export interface paths {
             cookie?: never;
         };
         /** Warehouse */
-        get: operations["warehouse_api_warehouse_get"];
+        get: operations["warehouse_api_v1_warehouse_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -776,7 +776,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/runs/{run_key}/retry": {
+    "/api/v1/runs/{run_key}/retry": {
         parameters: {
             query?: never;
             header?: never;
@@ -786,14 +786,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Retry */
-        post: operations["retry_api_runs__run_key__retry_post"];
+        post: operations["retry_api_v1_runs__run_key__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}/maintenance-windows/{window_id}": {
+    "/api/v1/tenants/{id}/maintenance-windows/{window_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -804,13 +804,13 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Maintenance Window */
-        delete: operations["delete_maintenance_window_api_tenants__id__maintenance_windows__window_id__delete"];
+        delete: operations["delete_maintenance_window_api_v1_tenants__id__maintenance_windows__window_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}/resync": {
+    "/api/v1/tenants/{id}/resync": {
         parameters: {
             query?: never;
             header?: never;
@@ -820,14 +820,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Resync */
-        post: operations["resync_api_tenants__id__resync_post"];
+        post: operations["resync_api_v1_tenants__id__resync_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/alerts/{id}/ack": {
+    "/api/v1/alerts/{id}/ack": {
         parameters: {
             query?: never;
             header?: never;
@@ -837,14 +837,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Ack */
-        post: operations["ack_api_alerts__id__ack_post"];
+        post: operations["ack_api_v1_alerts__id__ack_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/alerts/{id}/resolve": {
+    "/api/v1/alerts/{id}/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -854,14 +854,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Resolve */
-        post: operations["resolve_api_alerts__id__resolve_post"];
+        post: operations["resolve_api_v1_alerts__id__resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/alert-rules/{id}": {
+    "/api/v1/alert-rules/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -870,7 +870,7 @@ export interface paths {
         };
         get?: never;
         /** Update Rule */
-        put: operations["update_rule_api_alert_rules__id__put"];
+        put: operations["update_rule_api_v1_alert_rules__id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -878,7 +878,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/channels/{id}/test": {
+    "/api/v1/channels/{id}/test": {
         parameters: {
             query?: never;
             header?: never;
@@ -888,14 +888,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Test Channel */
-        post: operations["test_channel_api_channels__id__test_post"];
+        post: operations["test_channel_api_v1_channels__id__test_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/onboarding/preflight": {
+    "/api/v1/onboarding/preflight": {
         parameters: {
             query?: never;
             header?: never;
@@ -905,14 +905,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Preflight */
-        post: operations["preflight_api_onboarding_preflight_post"];
+        post: operations["preflight_api_v1_onboarding_preflight_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/onboarding": {
+    "/api/v1/onboarding": {
         parameters: {
             query?: never;
             header?: never;
@@ -922,14 +922,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Onboard */
-        post: operations["onboard_api_onboarding_post"];
+        post: operations["onboard_api_v1_onboarding_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}": {
+    "/api/v1/users/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -940,14 +940,14 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete User */
-        delete: operations["delete_user_api_users__id__delete"];
+        delete: operations["delete_user_api_v1_users__id__delete"];
         options?: never;
         head?: never;
         /** Update User */
-        patch: operations["update_user_api_users__id__patch"];
+        patch: operations["update_user_api_v1_users__id__patch"];
         trace?: never;
     };
-    "/api/roles": {
+    "/api/v1/roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -955,17 +955,17 @@ export interface paths {
             cookie?: never;
         };
         /** List Roles */
-        get: operations["list_roles_api_roles_get"];
+        get: operations["list_roles_api_v1_roles_get"];
         put?: never;
         /** Create Role */
-        post: operations["create_role_api_roles_post"];
+        post: operations["create_role_api_v1_roles_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/roles/{name}": {
+    "/api/v1/roles/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -976,13 +976,13 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Role */
-        delete: operations["delete_role_api_roles__name__delete"];
+        delete: operations["delete_role_api_v1_roles__name__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/reset-password": {
+    "/api/v1/users/{id}/reset-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -992,14 +992,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Reset Password */
-        post: operations["reset_password_api_users__id__reset_password_post"];
+        post: operations["reset_password_api_v1_users__id__reset_password_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/permissions": {
+    "/api/v1/users/{id}/permissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1007,9 +1007,9 @@ export interface paths {
             cookie?: never;
         };
         /** Get User Permissions */
-        get: operations["get_user_permissions_api_users__id__permissions_get"];
+        get: operations["get_user_permissions_api_v1_users__id__permissions_get"];
         /** Set User Permissions */
-        put: operations["set_user_permissions_api_users__id__permissions_put"];
+        put: operations["set_user_permissions_api_v1_users__id__permissions_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1017,7 +1017,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/operations/{id}/reconcile": {
+    "/api/v1/operations/{id}/reconcile": {
         parameters: {
             query?: never;
             header?: never;
@@ -1027,14 +1027,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Reconcile */
-        post: operations["reconcile_api_operations__id__reconcile_post"];
+        post: operations["reconcile_api_v1_operations__id__reconcile_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/revoke-sessions": {
+    "/api/v1/users/{id}/revoke-sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1044,14 +1044,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Revoke Sessions */
-        post: operations["revoke_sessions_api_users__id__revoke_sessions_post"];
+        post: operations["revoke_sessions_api_v1_users__id__revoke_sessions_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}/workflow": {
+    "/api/v1/tenants/{id}/workflow": {
         parameters: {
             query?: never;
             header?: never;
@@ -1059,7 +1059,7 @@ export interface paths {
             cookie?: never;
         };
         /** Workflow */
-        get: operations["workflow_api_tenants__id__workflow_get"];
+        get: operations["workflow_api_v1_tenants__id__workflow_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1068,7 +1068,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tenants/{id}/trigger": {
+    "/api/v1/tenants/{id}/trigger": {
         parameters: {
             query?: never;
             header?: never;
@@ -1078,14 +1078,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Trigger */
-        post: operations["trigger_api_tenants__id__trigger_post"];
+        post: operations["trigger_api_v1_tenants__id__trigger_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/stream": {
+    "/api/v1/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -1093,7 +1093,7 @@ export interface paths {
             cookie?: never;
         };
         /** Stream */
-        get: operations["stream_api_stream_get"];
+        get: operations["stream_api_v1_stream_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1102,7 +1102,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dependencies/tenants": {
+    "/api/v1/dependencies/tenants": {
         parameters: {
             query?: never;
             header?: never;
@@ -1110,7 +1110,7 @@ export interface paths {
             cookie?: never;
         };
         /** Dependency Tenants */
-        get: operations["dependency_tenants_api_dependencies_tenants_get"];
+        get: operations["dependency_tenants_api_v1_dependencies_tenants_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1119,7 +1119,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dependencies": {
+    "/api/v1/dependencies": {
         parameters: {
             query?: never;
             header?: never;
@@ -1127,7 +1127,7 @@ export interface paths {
             cookie?: never;
         };
         /** Dependencies */
-        get: operations["dependencies_api_dependencies_get"];
+        get: operations["dependencies_api_v1_dependencies_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1136,7 +1136,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/saved-views": {
+    "/api/v1/saved-views": {
         parameters: {
             query?: never;
             header?: never;
@@ -1144,17 +1144,17 @@ export interface paths {
             cookie?: never;
         };
         /** Saved Views */
-        get: operations["saved_views_api_saved_views_get"];
+        get: operations["saved_views_api_v1_saved_views_get"];
         put?: never;
         /** Save View */
-        post: operations["save_view_api_saved_views_post"];
+        post: operations["save_view_api_v1_saved_views_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/saved-views/{view_id}": {
+    "/api/v1/saved-views/{view_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1165,13 +1165,13 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete View */
-        delete: operations["delete_view_api_saved_views__view_id__delete"];
+        delete: operations["delete_view_api_v1_saved_views__view_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/investigation/timeline": {
+    "/api/v1/investigation/timeline": {
         parameters: {
             query?: never;
             header?: never;
@@ -1179,7 +1179,7 @@ export interface paths {
             cookie?: never;
         };
         /** Timeline */
-        get: operations["timeline_api_investigation_timeline_get"];
+        get: operations["timeline_api_v1_investigation_timeline_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1188,7 +1188,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/incidents": {
+    "/api/v1/incidents": {
         parameters: {
             query?: never;
             header?: never;
@@ -1196,7 +1196,7 @@ export interface paths {
             cookie?: never;
         };
         /** Incidents */
-        get: operations["incidents_api_incidents_get"];
+        get: operations["incidents_api_v1_incidents_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1205,7 +1205,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/incidents/{incident_id}": {
+    "/api/v1/incidents/{incident_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1213,7 +1213,7 @@ export interface paths {
             cookie?: never;
         };
         /** Incident */
-        get: operations["incident_api_incidents__incident_id__get"];
+        get: operations["incident_api_v1_incidents__incident_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1222,7 +1222,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/incidents/{incident_id}/ack": {
+    "/api/v1/incidents/{incident_id}/ack": {
         parameters: {
             query?: never;
             header?: never;
@@ -1232,14 +1232,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Acknowledge */
-        post: operations["acknowledge_api_incidents__incident_id__ack_post"];
+        post: operations["acknowledge_api_v1_incidents__incident_id__ack_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/incidents/{incident_id}/resolve": {
+    "/api/v1/incidents/{incident_id}/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -1249,14 +1249,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Resolve */
-        post: operations["resolve_api_incidents__incident_id__resolve_post"];
+        post: operations["resolve_api_v1_incidents__incident_id__resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/incidents/{incident_id}/assign": {
+    "/api/v1/incidents/{incident_id}/assign": {
         parameters: {
             query?: never;
             header?: never;
@@ -1266,14 +1266,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Assign */
-        post: operations["assign_api_incidents__incident_id__assign_post"];
+        post: operations["assign_api_v1_incidents__incident_id__assign_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/incidents/{incident_id}/notes": {
+    "/api/v1/incidents/{incident_id}/notes": {
         parameters: {
             query?: never;
             header?: never;
@@ -1283,14 +1283,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Note */
-        post: operations["note_api_incidents__incident_id__notes_post"];
+        post: operations["note_api_v1_incidents__incident_id__notes_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/quality/checks": {
+    "/api/v1/quality/checks": {
         parameters: {
             query?: never;
             header?: never;
@@ -1298,17 +1298,17 @@ export interface paths {
             cookie?: never;
         };
         /** Checks */
-        get: operations["checks_api_quality_checks_get"];
+        get: operations["checks_api_v1_quality_checks_get"];
         put?: never;
         /** Create */
-        post: operations["create_api_quality_checks_post"];
+        post: operations["create_api_v1_quality_checks_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/quality/checks/{id}": {
+    "/api/v1/quality/checks/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1317,16 +1317,16 @@ export interface paths {
         };
         get?: never;
         /** Update */
-        put: operations["update_api_quality_checks__id__put"];
+        put: operations["update_api_v1_quality_checks__id__put"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         /** Toggle */
-        patch: operations["toggle_api_quality_checks__id__patch"];
+        patch: operations["toggle_api_v1_quality_checks__id__patch"];
         trace?: never;
     };
-    "/api/quality/checks/{id}/run": {
+    "/api/v1/quality/checks/{id}/run": {
         parameters: {
             query?: never;
             header?: never;
@@ -1336,14 +1336,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Run */
-        post: operations["run_api_quality_checks__id__run_post"];
+        post: operations["run_api_v1_quality_checks__id__run_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/quality/results": {
+    "/api/v1/quality/results": {
         parameters: {
             query?: never;
             header?: never;
@@ -1351,7 +1351,7 @@ export interface paths {
             cookie?: never;
         };
         /** Results */
-        get: operations["results_api_quality_results_get"];
+        get: operations["results_api_v1_quality_results_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1360,7 +1360,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/access": {
+    "/api/v1/access": {
         parameters: {
             query?: never;
             header?: never;
@@ -1368,7 +1368,7 @@ export interface paths {
             cookie?: never;
         };
         /** Access */
-        get: operations["access_api_access_get"];
+        get: operations["access_api_v1_access_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1377,7 +1377,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/access/roles/{role_name}/modules/{module_id}": {
+    "/api/v1/access/roles/{role_name}/modules/{module_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1389,19 +1389,19 @@ export interface paths {
          * Grant Role Module
          * @description Grant a product area to a reusable workspace role.
          */
-        put: operations["grant_role_module_api_access_roles__role_name__modules__module_id__put"];
+        put: operations["grant_role_module_api_v1_access_roles__role_name__modules__module_id__put"];
         post?: never;
         /**
          * Revoke Role Module
          * @description Remove a product-area grant from a reusable workspace role.
          */
-        delete: operations["revoke_role_module_api_access_roles__role_name__modules__module_id__delete"];
+        delete: operations["revoke_role_module_api_v1_access_roles__role_name__modules__module_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/access/users/{id}/modules/{module_id}": {
+    "/api/v1/access/users/{id}/modules/{module_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1413,7 +1413,7 @@ export interface paths {
          * Set User Module
          * @description Apply a per-user module override with an append-only audit event.
          */
-        put: operations["set_user_module_api_access_users__id__modules__module_id__put"];
+        put: operations["set_user_module_api_v1_access_users__id__modules__module_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1421,7 +1421,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/pipelines/catalog": {
+    "/api/v1/pipelines/catalog": {
         parameters: {
             query?: never;
             header?: never;
@@ -1429,7 +1429,7 @@ export interface paths {
             cookie?: never;
         };
         /** Catalog */
-        get: operations["catalog_api_pipelines_catalog_get"];
+        get: operations["catalog_api_v1_pipelines_catalog_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1438,7 +1438,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/onboarding/{tenant_id}/resume": {
+    "/api/v1/onboarding/{tenant_id}/resume": {
         parameters: {
             query?: never;
             header?: never;
@@ -1448,7 +1448,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Resume Onboarding */
-        post: operations["resume_onboarding_api_onboarding__tenant_id__resume_post"];
+        post: operations["resume_onboarding_api_v1_onboarding__tenant_id__resume_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3843,7 +3843,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_api_health_get: {
+    health_api_v1_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3865,7 +3865,7 @@ export interface operations {
             };
         };
     };
-    liveness_api_health_live_get: {
+    liveness_api_v1_health_live_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3887,7 +3887,7 @@ export interface operations {
             };
         };
     };
-    runtime_config_api_config_get: {
+    runtime_config_api_v1_config_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3907,7 +3907,7 @@ export interface operations {
             };
         };
     };
-    change_password_api_auth_change_password_post: {
+    change_password_api_v1_auth_change_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4003,7 +4003,7 @@ export interface operations {
             };
         };
     };
-    change_password_api_auth_password_post: {
+    change_password_api_v1_auth_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4099,7 +4099,7 @@ export interface operations {
             };
         };
     };
-    login_api_auth_login_post: {
+    login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4195,7 +4195,7 @@ export interface operations {
             };
         };
     };
-    forgot_password_api_auth_forgot_password_post: {
+    forgot_password_api_v1_auth_forgot_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4291,7 +4291,7 @@ export interface operations {
             };
         };
     };
-    logout_api_auth_logout_post: {
+    logout_api_v1_auth_logout_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4383,7 +4383,7 @@ export interface operations {
             };
         };
     };
-    me_api_me_get: {
+    me_api_v1_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4475,7 +4475,7 @@ export interface operations {
             };
         };
     };
-    oidc_start_api_auth_oidc_start_get: {
+    oidc_start_api_v1_auth_oidc_start_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4567,7 +4567,7 @@ export interface operations {
             };
         };
     };
-    oidc_callback_api_auth_oidc_callback_get: {
+    oidc_callback_api_v1_auth_oidc_callback_get: {
         parameters: {
             query?: {
                 code?: string;
@@ -4662,7 +4662,7 @@ export interface operations {
             };
         };
     };
-    overview_api_overview_get: {
+    overview_api_v1_overview_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -4758,7 +4758,7 @@ export interface operations {
             };
         };
     };
-    metrics_overview_api_metrics_overview_get: {
+    metrics_overview_api_v1_metrics_overview_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -4854,7 +4854,7 @@ export interface operations {
             };
         };
     };
-    metrics_tenants_api_metrics_tenants_get: {
+    metrics_tenants_api_v1_metrics_tenants_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -4949,7 +4949,7 @@ export interface operations {
             };
         };
     };
-    tenants_api_tenants_get: {
+    tenants_api_v1_tenants_get: {
         parameters: {
             query?: {
                 q?: string;
@@ -5046,7 +5046,7 @@ export interface operations {
             };
         };
     };
-    tenant_detail_api_tenants__id__get: {
+    tenant_detail_api_v1_tenants__id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5140,7 +5140,7 @@ export interface operations {
             };
         };
     };
-    update_tenant_api_tenants__id__patch: {
+    update_tenant_api_v1_tenants__id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -5238,7 +5238,7 @@ export interface operations {
             };
         };
     };
-    maintenance_windows_api_tenants__id__maintenance_windows_get: {
+    maintenance_windows_api_v1_tenants__id__maintenance_windows_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -5335,7 +5335,7 @@ export interface operations {
             };
         };
     };
-    create_maintenance_window_api_tenants__id__maintenance_windows_post: {
+    create_maintenance_window_api_v1_tenants__id__maintenance_windows_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -5433,7 +5433,7 @@ export interface operations {
             };
         };
     };
-    timeline_api_tenants__id__timeline_get: {
+    timeline_api_v1_tenants__id__timeline_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -5533,7 +5533,7 @@ export interface operations {
             };
         };
     };
-    runs_api_runs_get: {
+    runs_api_v1_runs_get: {
         parameters: {
             query?: {
                 tenant?: string;
@@ -5641,7 +5641,7 @@ export interface operations {
             };
         };
     };
-    tenant_metrics_api_tenants__id__metrics_get: {
+    tenant_metrics_api_v1_tenants__id__metrics_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -5739,7 +5739,7 @@ export interface operations {
             };
         };
     };
-    log_api_runs__run_key__log_get: {
+    log_api_v1_runs__run_key__log_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5833,7 +5833,7 @@ export interface operations {
             };
         };
     };
-    run_detail_api_runs__run_key__get: {
+    run_detail_api_v1_runs__run_key__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5927,7 +5927,7 @@ export interface operations {
             };
         };
     };
-    groups_api_errors_groups_get: {
+    groups_api_v1_errors_groups_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -6025,7 +6025,7 @@ export interface operations {
             };
         };
     };
-    group_api_errors_groups__fingerprint__get: {
+    group_api_v1_errors_groups__fingerprint__get: {
         parameters: {
             query?: {
                 range?: string;
@@ -6125,7 +6125,7 @@ export interface operations {
             };
         };
     };
-    durations_api_metrics_durations_get: {
+    durations_api_v1_metrics_durations_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -6224,7 +6224,7 @@ export interface operations {
             };
         };
     };
-    mttr_api_metrics_mttr_get: {
+    mttr_api_v1_metrics_mttr_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -6322,7 +6322,7 @@ export interface operations {
             };
         };
     };
-    heatmap_api_metrics_failures_heatmap_get: {
+    heatmap_api_v1_metrics_failures_heatmap_get: {
         parameters: {
             query?: {
                 range?: string;
@@ -6422,7 +6422,7 @@ export interface operations {
             };
         };
     };
-    failures_breakdown_api_metrics_failures_breakdown_get: {
+    failures_breakdown_api_v1_metrics_failures_breakdown_get: {
         parameters: {
             query?: {
                 group_by?: "stage" | "class" | "tenant";
@@ -6521,7 +6521,7 @@ export interface operations {
             };
         };
     };
-    freshness_api_freshness_get: {
+    freshness_api_v1_freshness_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -6616,7 +6616,7 @@ export interface operations {
             };
         };
     };
-    forecast_api_forecast_get: {
+    forecast_api_v1_forecast_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -6711,7 +6711,7 @@ export interface operations {
             };
         };
     };
-    dev_mailbox_api_dev_mailbox_get: {
+    dev_mailbox_api_v1_dev_mailbox_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -6806,7 +6806,7 @@ export interface operations {
             };
         };
     };
-    volume_api_volume_anomalies_get: {
+    volume_api_v1_volume_anomalies_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -6901,7 +6901,7 @@ export interface operations {
             };
         };
     };
-    schema_api_schema_changes_get: {
+    schema_api_v1_schema_changes_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -6996,7 +6996,7 @@ export interface operations {
             };
         };
     };
-    alerts_api_alerts_get: {
+    alerts_api_v1_alerts_get: {
         parameters: {
             query?: {
                 state?: "" | "firing" | "acked" | "resolved";
@@ -7093,7 +7093,7 @@ export interface operations {
             };
         };
     };
-    rules_api_alert_rules_get: {
+    rules_api_v1_alert_rules_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -7188,7 +7188,7 @@ export interface operations {
             };
         };
     };
-    channels_api_channels_get: {
+    channels_api_v1_channels_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -7283,7 +7283,7 @@ export interface operations {
             };
         };
     };
-    onboarding_api_onboarding__tenant_id__get: {
+    onboarding_api_v1_onboarding__tenant_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7377,7 +7377,7 @@ export interface operations {
             };
         };
     };
-    platform_api_platform_health_get: {
+    platform_api_v1_platform_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7469,7 +7469,7 @@ export interface operations {
             };
         };
     };
-    search_api_search_get: {
+    search_api_v1_search_get: {
         parameters: {
             query: {
                 q: string;
@@ -7565,7 +7565,7 @@ export interface operations {
             };
         };
     };
-    audit_api_audit_get: {
+    audit_api_v1_audit_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -7660,7 +7660,7 @@ export interface operations {
             };
         };
     };
-    users_api_users_get: {
+    users_api_v1_users_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -7755,7 +7755,7 @@ export interface operations {
             };
         };
     };
-    create_user_api_users_post: {
+    create_user_api_v1_users_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -7851,7 +7851,7 @@ export interface operations {
             };
         };
     };
-    operations_api_operations_get: {
+    operations_api_v1_operations_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7943,7 +7943,7 @@ export interface operations {
             };
         };
     };
-    deliveries_api_deliveries_get: {
+    deliveries_api_v1_deliveries_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -8035,7 +8035,7 @@ export interface operations {
             };
         };
     };
-    warehouse_api_warehouse_get: {
+    warehouse_api_v1_warehouse_get: {
         parameters: {
             query: {
                 tenant: string;
@@ -8129,7 +8129,7 @@ export interface operations {
             };
         };
     };
-    retry_api_runs__run_key__retry_post: {
+    retry_api_v1_runs__run_key__retry_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8223,7 +8223,7 @@ export interface operations {
             };
         };
     };
-    delete_maintenance_window_api_tenants__id__maintenance_windows__window_id__delete: {
+    delete_maintenance_window_api_v1_tenants__id__maintenance_windows__window_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -8318,7 +8318,7 @@ export interface operations {
             };
         };
     };
-    resync_api_tenants__id__resync_post: {
+    resync_api_v1_tenants__id__resync_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8412,7 +8412,7 @@ export interface operations {
             };
         };
     };
-    ack_api_alerts__id__ack_post: {
+    ack_api_v1_alerts__id__ack_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8506,7 +8506,7 @@ export interface operations {
             };
         };
     };
-    resolve_api_alerts__id__resolve_post: {
+    resolve_api_v1_alerts__id__resolve_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8600,7 +8600,7 @@ export interface operations {
             };
         };
     };
-    update_rule_api_alert_rules__id__put: {
+    update_rule_api_v1_alert_rules__id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -8698,7 +8698,7 @@ export interface operations {
             };
         };
     };
-    test_channel_api_channels__id__test_post: {
+    test_channel_api_v1_channels__id__test_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8792,7 +8792,7 @@ export interface operations {
             };
         };
     };
-    preflight_api_onboarding_preflight_post: {
+    preflight_api_v1_onboarding_preflight_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8888,7 +8888,7 @@ export interface operations {
             };
         };
     };
-    onboard_api_onboarding_post: {
+    onboard_api_v1_onboarding_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8984,7 +8984,7 @@ export interface operations {
             };
         };
     };
-    delete_user_api_users__id__delete: {
+    delete_user_api_v1_users__id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -9078,7 +9078,7 @@ export interface operations {
             };
         };
     };
-    update_user_api_users__id__patch: {
+    update_user_api_v1_users__id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -9176,7 +9176,7 @@ export interface operations {
             };
         };
     };
-    list_roles_api_roles_get: {
+    list_roles_api_v1_roles_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -9268,7 +9268,7 @@ export interface operations {
             };
         };
     };
-    create_role_api_roles_post: {
+    create_role_api_v1_roles_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9364,7 +9364,7 @@ export interface operations {
             };
         };
     };
-    delete_role_api_roles__name__delete: {
+    delete_role_api_v1_roles__name__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -9458,7 +9458,7 @@ export interface operations {
             };
         };
     };
-    reset_password_api_users__id__reset_password_post: {
+    reset_password_api_v1_users__id__reset_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9552,7 +9552,7 @@ export interface operations {
             };
         };
     };
-    get_user_permissions_api_users__id__permissions_get: {
+    get_user_permissions_api_v1_users__id__permissions_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -9646,7 +9646,7 @@ export interface operations {
             };
         };
     };
-    set_user_permissions_api_users__id__permissions_put: {
+    set_user_permissions_api_v1_users__id__permissions_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -9744,7 +9744,7 @@ export interface operations {
             };
         };
     };
-    reconcile_api_operations__id__reconcile_post: {
+    reconcile_api_v1_operations__id__reconcile_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9842,7 +9842,7 @@ export interface operations {
             };
         };
     };
-    revoke_sessions_api_users__id__revoke_sessions_post: {
+    revoke_sessions_api_v1_users__id__revoke_sessions_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9936,7 +9936,7 @@ export interface operations {
             };
         };
     };
-    workflow_api_tenants__id__workflow_get: {
+    workflow_api_v1_tenants__id__workflow_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10030,7 +10030,7 @@ export interface operations {
             };
         };
     };
-    trigger_api_tenants__id__trigger_post: {
+    trigger_api_v1_tenants__id__trigger_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10128,7 +10128,7 @@ export interface operations {
             };
         };
     };
-    stream_api_stream_get: {
+    stream_api_v1_stream_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10221,7 +10221,7 @@ export interface operations {
             };
         };
     };
-    dependency_tenants_api_dependencies_tenants_get: {
+    dependency_tenants_api_v1_dependencies_tenants_get: {
         parameters: {
             query?: {
                 q?: string;
@@ -10316,7 +10316,7 @@ export interface operations {
             };
         };
     };
-    dependencies_api_dependencies_get: {
+    dependencies_api_v1_dependencies_get: {
         parameters: {
             query?: {
                 tenant_id?: string;
@@ -10410,7 +10410,7 @@ export interface operations {
             };
         };
     };
-    saved_views_api_saved_views_get: {
+    saved_views_api_v1_saved_views_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10502,7 +10502,7 @@ export interface operations {
             };
         };
     };
-    save_view_api_saved_views_post: {
+    save_view_api_v1_saved_views_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10598,7 +10598,7 @@ export interface operations {
             };
         };
     };
-    delete_view_api_saved_views__view_id__delete: {
+    delete_view_api_v1_saved_views__view_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -10692,7 +10692,7 @@ export interface operations {
             };
         };
     };
-    timeline_api_investigation_timeline_get: {
+    timeline_api_v1_investigation_timeline_get: {
         parameters: {
             query?: {
                 tenant?: string;
@@ -10790,7 +10790,7 @@ export interface operations {
             };
         };
     };
-    incidents_api_incidents_get: {
+    incidents_api_v1_incidents_get: {
         parameters: {
             query?: {
                 state?: string;
@@ -10887,7 +10887,7 @@ export interface operations {
             };
         };
     };
-    incident_api_incidents__incident_id__get: {
+    incident_api_v1_incidents__incident_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10981,7 +10981,7 @@ export interface operations {
             };
         };
     };
-    acknowledge_api_incidents__incident_id__ack_post: {
+    acknowledge_api_v1_incidents__incident_id__ack_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -11075,7 +11075,7 @@ export interface operations {
             };
         };
     };
-    resolve_api_incidents__incident_id__resolve_post: {
+    resolve_api_v1_incidents__incident_id__resolve_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -11173,7 +11173,7 @@ export interface operations {
             };
         };
     };
-    assign_api_incidents__incident_id__assign_post: {
+    assign_api_v1_incidents__incident_id__assign_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -11271,7 +11271,7 @@ export interface operations {
             };
         };
     };
-    note_api_incidents__incident_id__notes_post: {
+    note_api_v1_incidents__incident_id__notes_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -11369,7 +11369,7 @@ export interface operations {
             };
         };
     };
-    checks_api_quality_checks_get: {
+    checks_api_v1_quality_checks_get: {
         parameters: {
             query?: {
                 tenant_id?: string | null;
@@ -11464,7 +11464,7 @@ export interface operations {
             };
         };
     };
-    create_api_quality_checks_post: {
+    create_api_v1_quality_checks_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -11560,7 +11560,7 @@ export interface operations {
             };
         };
     };
-    update_api_quality_checks__id__put: {
+    update_api_v1_quality_checks__id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -11658,7 +11658,7 @@ export interface operations {
             };
         };
     };
-    toggle_api_quality_checks__id__patch: {
+    toggle_api_v1_quality_checks__id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -11756,7 +11756,7 @@ export interface operations {
             };
         };
     };
-    run_api_quality_checks__id__run_post: {
+    run_api_v1_quality_checks__id__run_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -11850,7 +11850,7 @@ export interface operations {
             };
         };
     };
-    results_api_quality_results_get: {
+    results_api_v1_quality_results_get: {
         parameters: {
             query?: {
                 tenant_id?: string | null;
@@ -11946,7 +11946,7 @@ export interface operations {
             };
         };
     };
-    access_api_access_get: {
+    access_api_v1_access_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -12038,7 +12038,7 @@ export interface operations {
             };
         };
     };
-    grant_role_module_api_access_roles__role_name__modules__module_id__put: {
+    grant_role_module_api_v1_access_roles__role_name__modules__module_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -12133,7 +12133,7 @@ export interface operations {
             };
         };
     };
-    revoke_role_module_api_access_roles__role_name__modules__module_id__delete: {
+    revoke_role_module_api_v1_access_roles__role_name__modules__module_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -12228,7 +12228,7 @@ export interface operations {
             };
         };
     };
-    set_user_module_api_access_users__id__modules__module_id__put: {
+    set_user_module_api_v1_access_users__id__modules__module_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -12327,7 +12327,7 @@ export interface operations {
             };
         };
     };
-    catalog_api_pipelines_catalog_get: {
+    catalog_api_v1_pipelines_catalog_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -12419,7 +12419,7 @@ export interface operations {
             };
         };
     };
-    resume_onboarding_api_onboarding__tenant_id__resume_post: {
+    resume_onboarding_api_v1_onboarding__tenant_id__resume_post: {
         parameters: {
             query?: never;
             header?: never;

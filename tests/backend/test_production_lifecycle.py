@@ -80,25 +80,25 @@ def test_oidc_callback_rejects_replay_and_bad_signature(live, monkeypatch):
 
     monkeypatch.setattr(oidc, "upstream", upstream)
     client = TestClient(app, base_url="https://localhost", follow_redirects=False)
-    response = client.get("/api/auth/oidc/start")
+    response = client.get("/api/v1/auth/oidc/start")
     assert (
         response.status_code == 302
         and "code_challenge=" in response.headers["location"]
     )
     state = client.cookies.get("obs_oidc_state")
     failed = client.get(
-        "/api/auth/oidc/callback", params={"state": state, "code": "code"}
+        "/api/v1/auth/oidc/callback", params={"state": state, "code": "code"}
     )
     assert failed.status_code == 401
     assert (
         client.get(
-            "/api/auth/oidc/callback", params={"state": state, "code": "code"}
+            "/api/v1/auth/oidc/callback", params={"state": state, "code": "code"}
         ).status_code
         == 400
     )
     assert (
         client.get(
-            "/api/auth/oidc/callback", params={"state": "mismatch", "code": "code"}
+            "/api/v1/auth/oidc/callback", params={"state": "mismatch", "code": "code"}
         ).status_code
         == 400
     )
@@ -108,15 +108,15 @@ def test_oidc_callback_rejects_replay_and_bad_signature(live, monkeypatch):
 def test_logout_invalidates_a_copied_session():
     client = TestClient(app, base_url="https://localhost")
     response = client.post(
-        "/api/auth/login",
+        "/api/v1/auth/login",
         json={"email": "viewer@demo.local", "password": settings().demo_password},
     )
     assert response.status_code == 200
     copied = client.cookies.get("obs_session")
     client.headers["X-CSRF-Token"] = response.json()["csrf_token"]
-    assert client.post("/api/auth/logout").status_code == 200
-    client.cookies.set("obs_session", copied, domain="localhost.local", path="/api")
-    assert client.get("/api/me").status_code == 401
+    assert client.post("/api/v1/auth/logout").status_code == 200
+    client.cookies.set("obs_session", copied, domain="localhost.local", path="/api/v1")
+    assert client.get("/api/v1/me").status_code == 401
     client.close()
 
 
@@ -339,7 +339,7 @@ def test_oidc_signed_login_and_session_roundtrip(live, monkeypatch):
     monkeypatch.setattr(oidc, "upstream", upstream)
     client = TestClient(app, base_url="https://localhost", follow_redirects=False)
     try:
-        assert client.get("/api/auth/oidc/start").status_code == 302
+        assert client.get("/api/v1/auth/oidc/start").status_code == 302
         state = client.cookies.get("obs_oidc_state")
         import hashlib
 
@@ -348,16 +348,16 @@ def test_oidc_signed_login_and_session_roundtrip(live, monkeypatch):
             (hashlib.sha256(state.encode()).hexdigest(),),
         )["nonce"]
         response = client.get(
-            "/api/auth/oidc/callback",
+            "/api/v1/auth/oidc/callback",
             params={"state": state, "code": "authorization-code"},
         )
         assert response.status_code == 302 and response.headers["location"] == "/"
-        session = client.get("/api/me")
+        session = client.get("/api/v1/me")
         assert session.status_code == 200 and session.json()["role"] == "admin"
         assert session.json()["csrf_token"]
         assert (
             client.post(
-                "/api/auth/login",
+                "/api/v1/auth/login",
                 json={"email": "admin@demo.local", "password": "demo"},
             ).status_code
             == 403

@@ -3,7 +3,7 @@ import { test, expect, type Route } from "@playwright/test";
 test("unexpected API responses have an actionable message on mobile browsers", async ({
   page,
 }) => {
-  await page.route("**/api/config", (route) =>
+  await page.route("**/api/v1/config", (route) =>
     route.fulfill({
       status: 200,
       contentType: "text/html",
@@ -39,7 +39,7 @@ test("sign-in works without the AbortSignal.timeout browser extension", async ({
 test("live sign-in presents organization SSO without demo credentials", async ({
   page,
 }) => {
-  await page.route("**/api/config", (route) =>
+  await page.route("**/api/v1/config", (route) =>
     route.fulfill({
       json: {
         mode: "live",
@@ -52,7 +52,7 @@ test("live sign-in presents organization SSO without demo credentials", async ({
   await page.goto("/");
   await expect(
     page.getByRole("link", { name: "Continue with organization SSO" }),
-  ).toHaveAttribute("href", "/api/auth/oidc/start");
+  ).toHaveAttribute("href", "/api/v1/auth/oidc/start");
   await expect(page.getByText("Explore the demo", { exact: true })).toHaveCount(
     0,
   );
@@ -102,9 +102,9 @@ test("product navigation only shows modules granted to the signed-in user", asyn
       .concat("view_module_sap");
     await route.fulfill({ response, json: user });
   };
-  await page.route("**/api/me", sapOnlyIdentity);
-  await page.route("**/api/auth/login", sapOnlyIdentity);
-  await page.route("**/api/access", async (route) => {
+  await page.route("**/api/v1/me", sapOnlyIdentity);
+  await page.route("**/api/v1/auth/login", sapOnlyIdentity);
+  await page.route("**/api/v1/access", async (route) => {
     const response = await route.fetch();
     if (!response.ok()) return route.fulfill({ response });
     const access = await response.json();

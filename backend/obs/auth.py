@@ -250,21 +250,21 @@ def _metrics_only_request_allowed(request: Request) -> bool:
     path = request.url.path
     if request.method in {"GET", "HEAD"}:
         return path in {
-            "/api/me",
-            "/api/access",
-            "/api/metrics/overview",
-            "/api/metrics/tenants",
-            "/api/stream",
+            "/api/v1/me",
+            "/api/v1/access",
+            "/api/v1/metrics/overview",
+            "/api/v1/metrics/tenants",
+            "/api/v1/stream",
         } or (
-            len(path.split("/")) == 5
-            and path.split("/")[1:3] == ["api", "tenants"]
-            and bool(path.split("/")[3])
-            and path.split("/")[4] == "metrics"
+            len(path.split("/")) == 6
+            and path.split("/")[1:4] == ["api", "v1", "tenants"]
+            and bool(path.split("/")[4])
+            and path.split("/")[5] == "metrics"
         )
     return request.method == "POST" and path in {
-        "/api/auth/logout",
-        "/api/auth/password",
-        "/api/auth/change-password",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/password",
+        "/api/v1/auth/change-password",
     }
 
 

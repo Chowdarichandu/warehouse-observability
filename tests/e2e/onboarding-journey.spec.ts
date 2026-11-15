@@ -100,7 +100,7 @@ test("failed preflight remains failed and back navigation invalidates readiness"
   page,
 }) => {
   let passed = false;
-  await page.route("**/api/onboarding/preflight", (route) =>
+  await page.route("**/api/v1/onboarding/preflight", (route) =>
     route.fulfill({
       json: {
         passed,
@@ -210,7 +210,7 @@ test("seven-DAG execution is resumable and defers CDC until initial success", as
   ).toHaveCount(0);
   await expect(page.locator(".journey-dag")).toHaveCount(7);
   const before = await (
-    await page.request.get(`/api/onboarding/${tenant}`)
+    await page.request.get(`/api/v1/onboarding/${tenant}`)
   ).json();
   expect(before.dags).toHaveLength(7);
   expect(
@@ -233,7 +233,7 @@ test("seven-DAG execution is resumable and defers CDC until initial success", as
     }),
   ).toBeVisible();
   const restored = await (
-    await page.request.get(`/api/onboarding/${tenant}`)
+    await page.request.get(`/api/v1/onboarding/${tenant}`)
   ).json();
   expect(restored.workflow_id).toBe(before.workflow_id);
   await page

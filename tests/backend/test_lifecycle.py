@@ -145,7 +145,7 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
             == "firing"
         )
         assert (
-            clients["operator"].post(f"/api/alerts/{alert['id']}/ack").status_code
+            clients["operator"].post(f"/api/v1/alerts/{alert['id']}/ack").status_code
             == 200
         )
         with connection() as conn:
@@ -194,8 +194,8 @@ def test_alert_dedup_ack_suppression_and_automatic_resolution(clients: dict) -> 
 
 def test_incident_pagination_rejects_unbounded_queries(clients: dict) -> None:
     client = clients["admin"]
-    assert client.get("/api/incidents?page=0").status_code == 422
-    assert client.get("/api/incidents?page_size=201").status_code == 422
+    assert client.get("/api/v1/incidents?page=0").status_code == 422
+    assert client.get("/api/v1/incidents?page_size=201").status_code == 422
 
 
 def test_incident_read_and_response_actions_follow_workspace_roles(
@@ -205,10 +205,10 @@ def test_incident_read_and_response_actions_follow_workspace_roles(
         incident_id = conn.execute(
             "INSERT INTO obs.incidents(severity,title) VALUES('high','RBAC test') RETURNING id"
         ).fetchone()["id"]
-    path = f"/api/incidents/{incident_id}"
+    path = f"/api/v1/incidents/{incident_id}"
     try:
         for role in ("viewer", "operator", "admin"):
-            assert clients[role].get("/api/incidents").status_code == 200
+            assert clients[role].get("/api/v1/incidents").status_code == 200
             assert clients[role].get(path).status_code == 200
 
         assert clients["viewer"].post(f"{path}/ack").status_code == 403

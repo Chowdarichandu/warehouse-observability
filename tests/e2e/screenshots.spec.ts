@@ -54,13 +54,13 @@ test("capture every console screen across light/dark desktop and mobile themes",
   ).toBeVisible();
 
   const response = await page.request.get(
-    "/api/runs?tenant=acme_retail&status=failed",
+    "/api/v1/runs?tenant=acme_retail&status=failed",
   );
   expect(response.ok()).toBeTruthy();
   const failed = await response.json();
   expect(failed.items.length).toBeGreaterThan(0);
   const detailResponse = await page.request.get(
-    `/api/runs/${encodeURIComponent(failed.items[0].run_key)}`,
+    `/api/v1/runs/${encodeURIComponent(failed.items[0].run_key)}`,
   );
   expect(detailResponse.ok()).toBeTruthy();
   const detail = await detailResponse.json();

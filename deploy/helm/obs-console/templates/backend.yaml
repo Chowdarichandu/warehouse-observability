@@ -36,9 +36,9 @@ spec:
           {{- if eq $component "api" }}
           args: [uvicorn, "obs.api.main:app", --host, 0.0.0.0, --port, "8000", --no-access-log]
           ports: [{name: http, containerPort: 8000}]
-          startupProbe: {httpGet: {path: /api/health/live, port: http}, periodSeconds: 3, failureThreshold: 40}
-          livenessProbe: {httpGet: {path: /api/health/live, port: http}, periodSeconds: 20}
-          readinessProbe: {httpGet: {path: /api/health, port: http}, periodSeconds: 10, timeoutSeconds: 6}
+          startupProbe: {httpGet: {path: /api/v1/health/live, port: http}, periodSeconds: 3, failureThreshold: 40}
+          livenessProbe: {httpGet: {path: /api/v1/health/live, port: http}, periodSeconds: 20}
+          readinessProbe: {httpGet: {path: /api/v1/health, port: http}, periodSeconds: 10, timeoutSeconds: 6}
           {{- else }}
           args: [python, -m, "obs.{{ $component }}"]
           readinessProbe:

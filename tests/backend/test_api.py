@@ -36,21 +36,30 @@ from obs.demo.seed import seed
     ],
 )
 def test_read_contracts(clients: dict, path: str) -> None:
-    response = clients["admin"].get("/api" + path)
+    response = clients["admin"].get("/api/v1" + path)
     assert response.status_code == 200, response.text
+
+
+def test_application_api_is_versioned_without_legacy_aliases() -> None:
+    with TestClient(app) as client:
+        assert client.get("/api/v1/health/live").status_code == 200
+        assert client.get("/api/health/live").status_code == 404
+        assert client.get("/api/v1/openapi.json").status_code == 200
+        assert client.get("/api/openapi.json").status_code == 404
 
 
 def test_authentication_and_csrf(clients: dict) -> None:
     with TestClient(app) as anonymous:
-        response = anonymous.get("/api/tenants")
+        response = anonymous.get("/api/v1/tenants")
         assert response.status_code == 401
         assert response.json()["error"]["code"] == "unauthenticated"
     response = clients["admin"].post(
-        "/api/channels/slack-data-eng/test", headers={"X-CSRF-Token": "wrong"}
+        "/api/v1/channels/slack-data-eng/test", headers={"X-CSRF-Token": "wrong"}
     )
     assert response.status_code == 403
     response = clients["admin"].post(
-        "/api/channels/slack-data-eng/test", headers={"Origin": "https://evil.example"}
+        "/api/v1/channels/slack-data-eng/test",
+        headers={"Origin": "https://evil.example"},
     )
     assert response.status_code == 403
 
@@ -66,23 +75,25 @@ def test_login_throttle_counts_failures_without_blocking_successful_sessions(
     with TestClient(app, base_url="https://localhost") as login_client:
         for _ in range(12):
             assert (
-                login_client.post("/api/auth/login", json=credentials).status_code
+                login_client.post("/api/v1/auth/login", json=credentials).status_code
                 == 200
             )
 
         for _ in range(10):
-            assert login_client.post("/api/auth/login", json=invalid).status_code == 401
-        limited = login_client.post("/api/auth/login", json=invalid)
+            assert (
+                login_client.post("/api/v1/auth/login", json=invalid).status_code == 401
+            )
+        limited = login_client.post("/api/v1/auth/login", json=invalid)
         assert limited.status_code == 429
         assert limited.json()["error"]["code"] == "rate_limited"
 
 
 def test_roles_are_enforced_on_server(clients: dict) -> None:
-    assert clients["viewer"].get("/api/audit").status_code == 403
+    assert clients["viewer"].get("/api/v1/audit").status_code == 403
     assert (
         clients["viewer"]
         .post(
-            "/api/onboarding/preflight",
+            "/api/v1/onboarding/preflight",
             json={"tenant_id": "test_tenant", "display_name": "Test Tenant"},
         )
         .status_code
@@ -90,16 +101,16 @@ def test_roles_are_enforced_on_server(clients: dict) -> None:
     )
     assert (
         clients["operator"]
-        .patch("/api/tenants/acme_retail", json={"status": "paused"})
+        .patch("/api/v1/tenants/acme_retail", json={"status": "paused"})
         .status_code
         == 403
     )
-    assert clients["operator"].get("/api/alert-rules").status_code == 403
+    assert clients["operator"].get("/api/v1/alert-rules").status_code == 403
 
 
 def test_pagination_filters_and_sort(clients: dict) -> None:
     response = clients["admin"].get(
-        "/api/runs?status=failed&tenant=acme_retail&page_size=2&sort=started_at"
+        "/api/v1/runs?status=failed&tenant=acme_retail&page_size=2&sort=started_at"
     )
     data = response.json()
     assert len(data["items"]) == 2 and data["total"] > 2
@@ -110,7 +121,7 @@ def test_pagination_filters_and_sort(clients: dict) -> None:
     second = (
         clients["admin"]
         .get(
-            "/api/runs?status=failed&tenant=acme_retail&page_size=2&sort=started_at&page=2"
+            "/api/v1/runs?status=failed&tenant=acme_retail&page_size=2&sort=started_at&page=2"
         )
         .json()
     )
@@ -118,18 +129,19 @@ def test_pagination_filters_and_sort(clients: dict) -> None:
         r["run_key"] for r in second["items"]
     }
     assert (
-        clients["admin"].get("/api/runs?sort=duration_s;DROP TABLE").status_code == 422
+        clients["admin"].get("/api/v1/runs?sort=duration_s;DROP TABLE").status_code
+        == 422
     )
-    assert clients["admin"].get("/api/runs?page_size=999").status_code == 422
+    assert clients["admin"].get("/api/v1/runs?page_size=999").status_code == 422
 
 
 def test_csv_exports_whole_filtered_range(clients: dict) -> None:
     response = clients["admin"].get(
-        "/api/runs?tenant=acme_retail&status=failed&format=csv"
+        "/api/v1/runs?tenant=acme_retail&status=failed&format=csv"
     )
     count = (
         clients["admin"]
-        .get("/api/runs?tenant=acme_retail&status=failed")
+        .get("/api/v1/runs?tenant=acme_retail&status=failed")
         .json()["total"]
     )
     assert response.headers["content-type"].startswith("text/csv")
@@ -137,19 +149,19 @@ def test_csv_exports_whole_filtered_range(clients: dict) -> None:
 
 
 def test_scenarios_and_log_boundary(clients: dict) -> None:
-    data = clients["admin"].get("/api/tenants/acme_retail").json()
+    data = clients["admin"].get("/api/v1/tenants/acme_retail").json()
     assert data["health"]["health"] == "down"
     latest = next(
         r
         for r in data["health"]["latest_runs"]
         if r["source_type"] == "mysql" and r["load_type"] == "cdc"
     )
-    run = clients["admin"].get("/api/runs/" + latest["run_key"]).json()
+    run = clients["admin"].get("/api/v1/runs/" + latest["run_key"]).json()
     assert run["error"]["error_class"] == "MYSQL_BINLOG_PURGED"
     assert "resync" in run["error"]["hint"].lower()
     log = (
         clients["admin"]
-        .get("/api/runs/" + latest["run_key"] + "/log")
+        .get("/api/v1/runs/" + latest["run_key"] + "/log")
         .json()["content"]
     )
     assert "demo-password" not in log and "demo-sensitive-token" not in log
@@ -162,11 +174,11 @@ def test_scenarios_and_log_boundary(clients: dict) -> None:
     )
     assert any(
         v["tenant_id"] == "orbit_logistics" and v["change_pct"] < -39
-        for v in clients["admin"].get("/api/volume-anomalies").json()["items"]
+        for v in clients["admin"].get("/api/v1/volume-anomalies").json()["items"]
     )
-    assert clients["admin"].get("/api/schema-changes").json()["items"][0]["added"] == [
-        "delivery_region"
-    ]
+    assert clients["admin"].get("/api/v1/schema-changes").json()["items"][0][
+        "added"
+    ] == ["delivery_region"]
     assert (
         one(
             "SELECT count(*) AS n FROM obs.platform_health WHERE component='airflow_import_errors' AND status='degraded'"
@@ -186,7 +198,10 @@ def test_metric_definition_matches_raw_runs(clients: dict) -> None:
     )
     data = (
         clients["admin"]
-        .get("/api/overview", params={"from": start.isoformat(), "to": end.isoformat()})
+        .get(
+            "/api/v1/overview",
+            params={"from": start.isoformat(), "to": end.isoformat()},
+        )
         .json()["kpis"]
     )
     assert data["success_rate"] == round(
@@ -208,8 +223,8 @@ def test_retry_is_audited_and_idempotent(clients: dict) -> None:
     key = one(
         "SELECT run_key FROM obs.pipeline_runs WHERE tenant_id='acme_retail' AND status='failed' ORDER BY started_at DESC LIMIT 1"
     )["run_key"]
-    first = clients["operator"].post("/api/runs/" + key + "/retry")
-    second = clients["operator"].post("/api/runs/" + key + "/retry")
+    first = clients["operator"].post("/api/v1/runs/" + key + "/retry")
+    second = clients["operator"].post("/api/v1/runs/" + key + "/retry")
     assert first.status_code == second.status_code == 200
     assert first.json()["run_key"] == second.json()["run_key"]
     assert (
@@ -227,11 +242,11 @@ def test_never_accept_onboarding_passwords(clients: dict) -> None:
         "display_name": "Test",
         "password": "do-not-store",
     }
-    assert clients["operator"].post("/api/onboarding", json=body).status_code == 422
+    assert clients["operator"].post("/api/v1/onboarding", json=body).status_code == 422
     body.pop("password")
     body["mysql_secret_ref"] = "mysql://user:password@host"
     assert (
-        clients["operator"].post("/api/onboarding/preflight", json=body).status_code
+        clients["operator"].post("/api/v1/onboarding/preflight", json=body).status_code
         == 422
     )
 
@@ -246,7 +261,7 @@ def test_pause_resume_and_audit(clients: dict) -> None:
     try:
         assert (
             clients["admin"]
-            .patch("/api/tenants/" + tenant, json={"status": "paused"})
+            .patch("/api/v1/tenants/" + tenant, json={"status": "paused"})
             .status_code
             == 200
         )
@@ -258,7 +273,7 @@ def test_pause_resume_and_audit(clients: dict) -> None:
         )
         assert (
             clients["admin"]
-            .patch("/api/tenants/" + tenant, json={"status": "active"})
+            .patch("/api/v1/tenants/" + tenant, json={"status": "active"})
             .status_code
             == 200
         )
@@ -300,13 +315,13 @@ def test_change_password_flow(temporary_local_user) -> None:
     account = temporary_local_user("viewer")
     with TestClient(app, base_url="https://localhost") as client:
         login = client.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             json={"email": account["email"], "password": "original password"},
         )
         assert login.status_code == 200, login.text
         client.headers["X-CSRF-Token"] = login.json()["csrf_token"]
         wrong = client.post(
-            "/api/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "not-the-password",
                 "new_password": "new-secret-42",
@@ -314,12 +329,12 @@ def test_change_password_flow(temporary_local_user) -> None:
         )
         assert wrong.status_code == 403
         weak = client.post(
-            "/api/auth/change-password",
+            "/api/v1/auth/change-password",
             json={"current_password": "original password", "new_password": "short"},
         )
         assert weak.status_code == 422
         reused = client.post(
-            "/api/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "original password",
                 "new_password": "original password",
@@ -328,7 +343,7 @@ def test_change_password_flow(temporary_local_user) -> None:
         assert reused.status_code == 422
         assert reused.json()["error"]["code"] == "password_reused"
         changed = client.post(
-            "/api/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "original password",
                 "new_password": "new-secret-42",
@@ -337,7 +352,7 @@ def test_change_password_flow(temporary_local_user) -> None:
         assert changed.status_code == 200, changed.text
         with TestClient(app, base_url="https://localhost") as relogin:
             ok = relogin.post(
-                "/api/auth/login",
+                "/api/v1/auth/login",
                 json={"email": account["email"], "password": "new-secret-42"},
             )
             assert ok.status_code == 200, ok.text
@@ -345,12 +360,12 @@ def test_change_password_flow(temporary_local_user) -> None:
 
 def test_roles_reset_and_trigger(clients: dict) -> None:
     admin = clients["admin"]
-    roles = admin.get("/api/roles")
+    roles = admin.get("/api/v1/roles")
     assert roles.status_code == 200, roles.text
     names = {r["name"] for r in roles.json()}
     assert {"viewer", "operator", "admin"} <= names
     created = admin.post(
-        "/api/roles",
+        "/api/v1/roles",
         json={
             "name": "support_engineer",
             "base_level": "operator",
@@ -360,21 +375,23 @@ def test_roles_reset_and_trigger(clients: dict) -> None:
     )
     assert created.status_code == 201, created.text
     assert "view_console" in created.json()["permissions"]
-    users = admin.get("/api/users").json()["items"]
+    users = admin.get("/api/v1/users").json()["items"]
     viewer = next(u for u in users if u["email"] == "viewer@demo.local")
     assigned = admin.patch(
-        f"/api/users/{viewer['user_id']}", json={"role_name": "support_engineer"}
+        f"/api/v1/users/{viewer['user_id']}", json={"role_name": "support_engineer"}
     )
     assert assigned.status_code == 200, assigned.text
-    me = clients["viewer"].get("/api/me")
+    me = clients["viewer"].get("/api/v1/me")
     assert me.status_code == 200
     assert me.json()["role_name"] == "support_engineer"
     assert "trigger_pipelines" in me.json()["permissions"]
     assert "manage_users" not in me.json()["permissions"]
     # Restore the viewer to the plain system role for other tests.
-    restored = admin.patch(f"/api/users/{viewer['user_id']}", json={"role": "viewer"})
+    restored = admin.patch(
+        f"/api/v1/users/{viewer['user_id']}", json={"role": "viewer"}
+    )
     assert restored.status_code == 200
-    deleted = admin.delete("/api/roles/support_engineer")
+    deleted = admin.delete("/api/v1/roles/support_engineer")
     assert deleted.status_code == 200, deleted.text
 
 
@@ -383,7 +400,7 @@ def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
     viewer = clients["viewer"]
     role_name = f"metrics_observer_{uuid4().hex[:8]}"
     invalid_role = admin.post(
-        "/api/roles",
+        "/api/v1/roles",
         json={
             "name": f"invalid_metrics_{uuid4().hex[:8]}",
             "base_level": "operator",
@@ -393,7 +410,7 @@ def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
     )
     assert invalid_role.status_code == 422
     created = admin.post(
-        "/api/roles",
+        "/api/v1/roles",
         json={
             "name": role_name,
             "base_level": "viewer",
@@ -407,19 +424,19 @@ def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
     viewer_id = one(
         "SELECT user_id FROM obs.users WHERE email=%s", ("viewer@demo.local",)
     )["user_id"]
-    assigned = admin.patch(f"/api/users/{viewer_id}", json={"role_name": role_name})
+    assigned = admin.patch(f"/api/v1/users/{viewer_id}", json={"role_name": role_name})
     assert assigned.status_code == 200, assigned.text
     try:
-        identity = viewer.get("/api/me")
+        identity = viewer.get("/api/v1/me")
         assert identity.status_code == 200, identity.text
         assert identity.json()["role_name"] == role_name
         assert set(identity.json()["permissions"]) == {"view_console", "metrics_only"}
 
-        overview = viewer.get("/api/metrics/overview")
+        overview = viewer.get("/api/v1/metrics/overview")
         assert overview.status_code == 200, overview.text
         assert {"kpis", "series", "durations", "as_of"} <= set(overview.json())
         assert "recent_failures" not in overview.json()
-        tenant_metrics = viewer.get("/api/metrics/tenants?page_size=200")
+        tenant_metrics = viewer.get("/api/v1/metrics/tenants?page_size=200")
         assert tenant_metrics.status_code == 200, tenant_metrics.text
         assert tenant_metrics.json()["items"]
         assert set(tenant_metrics.json()["items"][0]) == {
@@ -436,62 +453,62 @@ def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
         }
         assert "latest_runs" not in tenant_metrics.json()["items"][0]
         assert "run_key" not in tenant_metrics.json()["items"][0]
-        assert viewer.get("/api/tenants/acme_retail/metrics").status_code == 200
+        assert viewer.get("/api/v1/tenants/acme_retail/metrics").status_code == 200
 
-        policy = viewer.get("/api/access")
+        policy = viewer.get("/api/v1/access")
         assert policy.status_code == 200
         capabilities = {item["id"]: item for item in policy.json()["permissions"]}
         assert capabilities["metrics.dashboard"]["enabled"]
         assert not capabilities["workspace.read"]["allowed"]
 
         for path in (
-            "/api/overview",
-            "/api/tenants",
-            "/api/tenants/acme_retail",
-            "/api/tenants/acme_retail/timeline",
-            "/api/tenants/acme_retail/workflow",
-            "/api/runs",
-            "/api/runs/not-a-real-run",
-            "/api/runs/not-a-real-run/log",
-            "/api/errors/groups?range=7d",
-            "/api/metrics/durations",
-            "/api/metrics/mttr",
-            "/api/metrics/failures-heatmap",
-            "/api/metrics/failures-breakdown",
-            "/api/freshness",
-            "/api/volume-anomalies",
-            "/api/schema-changes",
-            "/api/alerts",
-            "/api/alert-rules",
-            "/api/channels",
-            "/api/platform/health",
-            "/api/search?q=binlog",
-            "/api/audit",
-            "/api/users",
-            "/api/roles",
-            "/api/dependencies",
-            "/api/dependencies/tenants",
-            "/api/pipelines/catalog",
-            "/api/quality/checks",
-            "/api/quality/results",
-            "/api/warehouse?tenant=acme_retail",
-            "/api/investigation/timeline",
-            "/api/saved-views",
+            "/api/v1/overview",
+            "/api/v1/tenants",
+            "/api/v1/tenants/acme_retail",
+            "/api/v1/tenants/acme_retail/timeline",
+            "/api/v1/tenants/acme_retail/workflow",
+            "/api/v1/runs",
+            "/api/v1/runs/not-a-real-run",
+            "/api/v1/runs/not-a-real-run/log",
+            "/api/v1/errors/groups?range=7d",
+            "/api/v1/metrics/durations",
+            "/api/v1/metrics/mttr",
+            "/api/v1/metrics/failures-heatmap",
+            "/api/v1/metrics/failures-breakdown",
+            "/api/v1/freshness",
+            "/api/v1/volume-anomalies",
+            "/api/v1/schema-changes",
+            "/api/v1/alerts",
+            "/api/v1/alert-rules",
+            "/api/v1/channels",
+            "/api/v1/platform/health",
+            "/api/v1/search?q=binlog",
+            "/api/v1/audit",
+            "/api/v1/users",
+            "/api/v1/roles",
+            "/api/v1/dependencies",
+            "/api/v1/dependencies/tenants",
+            "/api/v1/pipelines/catalog",
+            "/api/v1/quality/checks",
+            "/api/v1/quality/results",
+            "/api/v1/warehouse?tenant=acme_retail",
+            "/api/v1/investigation/timeline",
+            "/api/v1/saved-views",
         ):
             denied = viewer.get(path)
             assert denied.status_code == 403, (path, denied.text)
             assert denied.json()["error"]["code"] == "metrics_only"
         retry = viewer.post(
-            "/api/runs/not-a-real-run/retry",
+            "/api/v1/runs/not-a-real-run/retry",
             headers={"X-CSRF-Token": identity.json()["csrf_token"]},
         )
         assert retry.status_code == 403
         assert retry.json()["error"]["code"] == "metrics_only"
         for path in (
-            "/api/tenants/acme_retail/resync",
-            "/api/alerts/1/ack",
-            "/api/quality/checks/1/run",
-            f"/api/users/{viewer_id}/revoke-sessions",
+            "/api/v1/tenants/acme_retail/resync",
+            "/api/v1/alerts/1/ack",
+            "/api/v1/quality/checks/1/run",
+            f"/api/v1/users/{viewer_id}/revoke-sessions",
         ):
             denied_action = viewer.post(
                 path, headers={"X-CSRF-Token": identity.json()["csrf_token"]}
@@ -499,9 +516,9 @@ def test_metrics_only_role_is_scoped_end_to_end(clients: dict) -> None:
             assert denied_action.status_code == 403, (path, denied_action.text)
             assert denied_action.json()["error"]["code"] == "metrics_only"
     finally:
-        restored = admin.patch(f"/api/users/{viewer_id}", json={"role": "viewer"})
+        restored = admin.patch(f"/api/v1/users/{viewer_id}", json={"role": "viewer"})
         assert restored.status_code == 200, restored.text
-        deleted = admin.delete(f"/api/roles/{role_name}")
+        deleted = admin.delete(f"/api/v1/roles/{role_name}")
         assert deleted.status_code == 200, deleted.text
 
 
@@ -510,7 +527,7 @@ def test_module_role_grant_is_scoped_to_the_assigned_module(clients: dict) -> No
     viewer = clients["viewer"]
     role_name = f"sap_only_{uuid4().hex[:8]}"
     created = admin.post(
-        "/api/roles",
+        "/api/v1/roles",
         json={
             "name": role_name,
             "base_level": "viewer",
@@ -524,10 +541,10 @@ def test_module_role_grant_is_scoped_to_the_assigned_module(clients: dict) -> No
     viewer_id = one(
         "SELECT user_id FROM obs.users WHERE email=%s", ("viewer@demo.local",)
     )["user_id"]
-    assigned = admin.patch(f"/api/users/{viewer_id}", json={"role_name": role_name})
+    assigned = admin.patch(f"/api/v1/users/{viewer_id}", json={"role_name": role_name})
     assert assigned.status_code == 200, assigned.text
     try:
-        identity = viewer.get("/api/me")
+        identity = viewer.get("/api/v1/me")
         assert identity.status_code == 200, identity.text
         assert identity.json()["role_name"] == role_name
         permissions = set(identity.json()["permissions"])
@@ -535,31 +552,31 @@ def test_module_role_grant_is_scoped_to_the_assigned_module(clients: dict) -> No
         assert "view_module_hrms" not in permissions
         assert "view_module_finance" not in permissions
 
-        detail = admin.get(f"/api/users/{viewer_id}/permissions")
+        detail = admin.get(f"/api/v1/users/{viewer_id}/permissions")
         assert detail.status_code == 200, detail.text
         assert "view_module_sap" in detail.json()["effective"]
     finally:
-        restored = admin.patch(f"/api/users/{viewer_id}", json={"role": "viewer"})
+        restored = admin.patch(f"/api/v1/users/{viewer_id}", json={"role": "viewer"})
         assert restored.status_code == 200, restored.text
-        deleted = admin.delete(f"/api/roles/{role_name}")
+        deleted = admin.delete(f"/api/v1/roles/{role_name}")
         assert deleted.status_code == 200, deleted.text
 
 
 def test_admin_password_reset(clients: dict, temporary_local_user) -> None:
     account = temporary_local_user("operator")
-    reset = clients["admin"].post(f"/api/users/{account['user_id']}/reset-password")
+    reset = clients["admin"].post(f"/api/v1/users/{account['user_id']}/reset-password")
     assert reset.status_code == 200, reset.text
     temporary = reset.json()["temporary_password"]
     assert temporary
     with TestClient(app, base_url="https://localhost") as fresh:
         login = fresh.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             json={"email": account["email"], "password": temporary},
         )
         assert login.status_code == 200, login.text
         fresh.headers["X-CSRF-Token"] = login.json()["csrf_token"]
         changed = fresh.post(
-            "/api/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": temporary,
                 "new_password": "a secure replacement password",
@@ -570,7 +587,7 @@ def test_admin_password_reset(clients: dict, temporary_local_user) -> None:
 
 def test_workflow_trigger_and_warehouse(clients: dict) -> None:
     operator = clients["operator"]
-    workflow = operator.get("/api/tenants/acme_retail/workflow")
+    workflow = operator.get("/api/v1/tenants/acme_retail/workflow")
     assert workflow.status_code == 200, workflow.text
     body = workflow.json()
     assert body["tenant_id"] == "acme_retail"
@@ -583,19 +600,19 @@ def test_workflow_trigger_and_warehouse(clients: dict) -> None:
         )
     try:
         triggered = operator.post(
-            f"/api/tenants/{tenant_id}/trigger", json={"dag": "mysql_initial"}
+            f"/api/v1/tenants/{tenant_id}/trigger", json={"dag": "mysql_initial"}
         )
         assert triggered.status_code == 403, triggered.text
         locked = operator.post(
-            f"/api/tenants/{tenant_id}/trigger", json={"dag": "analytics_marts"}
+            f"/api/v1/tenants/{tenant_id}/trigger", json={"dag": "analytics_marts"}
         )
         assert locked.status_code == 422, locked.text
         eligible = operator.post(
-            "/api/tenants/acme_retail/trigger", json={"dag": "analytics_marts"}
+            "/api/v1/tenants/acme_retail/trigger", json={"dag": "analytics_marts"}
         )
         assert eligible.status_code == 200, eligible.text
         unknown = operator.post(
-            f"/api/tenants/{tenant_id}/trigger", json={"dag": "nope"}
+            f"/api/v1/tenants/{tenant_id}/trigger", json={"dag": "nope"}
         )
         assert unknown.status_code == 404
     finally:
@@ -605,7 +622,7 @@ def test_workflow_trigger_and_warehouse(clients: dict) -> None:
                 "DELETE FROM obs.tenant_events WHERE tenant_id=%s", (tenant_id,)
             )
             conn.execute("DELETE FROM obs.tenants WHERE tenant_id=%s", (tenant_id,))
-    warehouse = operator.get("/api/warehouse", params={"tenant": "acme_retail"})
+    warehouse = operator.get("/api/v1/warehouse", params={"tenant": "acme_retail"})
     assert warehouse.status_code == 200, warehouse.text
     view = warehouse.json()
     assert view["table_count"] >= 1
@@ -613,7 +630,7 @@ def test_workflow_trigger_and_warehouse(clients: dict) -> None:
 
 
 def test_pipeline_catalog_includes_demo_analytics(clients: dict) -> None:
-    response = clients["viewer"].get("/api/pipelines/catalog")
+    response = clients["viewer"].get("/api/v1/pipelines/catalog")
     assert response.status_code == 200, response.text
     dags = {dag["node_id"]: dag for dag in response.json()["dags"]}
     assert {
@@ -634,7 +651,7 @@ def test_pipeline_catalog_includes_demo_analytics(clients: dict) -> None:
 
 
 def test_tenant_metrics_cover_initial_loads_and_activity(clients):
-    response = clients["admin"].get("/api/tenants/acme_retail/metrics?range=24h")
+    response = clients["admin"].get("/api/v1/tenants/acme_retail/metrics?range=24h")
     assert response.status_code == 200
     body = response.json()
     by_pipeline = {(p["source_type"], p["load_type"]): p for p in body["pipelines"]}
@@ -645,28 +662,32 @@ def test_tenant_metrics_cover_initial_loads_and_activity(clients):
     assert by_pipeline[("mysql", "cdc")]["runs"] >= 1
     assert body["activity"], "expected hourly activity buckets"
     assert sum(b["failed"] for b in body["activity"]) >= 1  # Acme's outage
-    assert clients["admin"].get("/api/tenants/nope/metrics").status_code == 404
+    assert clients["admin"].get("/api/v1/tenants/nope/metrics").status_code == 404
 
 
 def test_alerts_can_filter_by_tenant(clients):
-    response = clients["admin"].get("/api/alerts?tenant=northwind")
+    response = clients["admin"].get("/api/v1/alerts?tenant=northwind")
     assert response.status_code == 200
     body = response.json()
     assert body["total"] >= 1
     assert all(item["tenant_id"] == "northwind" for item in body["items"])
-    empty = clients["admin"].get("/api/alerts?tenant=acme_retail&state=firing")
+    empty = clients["admin"].get("/api/v1/alerts?tenant=acme_retail&state=firing")
     assert empty.status_code == 200
     assert all(item["tenant_id"] == "acme_retail" for item in empty.json()["items"])
 
 
 def test_failures_heatmap_accepts_viewer_timezone(clients):
-    utc = clients["admin"].get("/api/metrics/failures-heatmap?range=7d&tz=UTC")
+    utc = clients["admin"].get("/api/v1/metrics/failures-heatmap?range=7d&tz=UTC")
     assert utc.status_code == 200
-    ist = clients["admin"].get("/api/metrics/failures-heatmap?range=7d&tz=Asia/Kolkata")
+    ist = clients["admin"].get(
+        "/api/v1/metrics/failures-heatmap?range=7d&tz=Asia/Kolkata"
+    )
     assert ist.status_code == 200
     # Same failures, different local buckets: the two grids must not be identical
     # for a dataset spanning many hours (Acme fails around the clock).
     assert utc.json()["items"] != ist.json()["items"]
-    bogus = clients["admin"].get("/api/metrics/failures-heatmap?range=7d&tz=Not/AZone")
+    bogus = clients["admin"].get(
+        "/api/v1/metrics/failures-heatmap?range=7d&tz=Not/AZone"
+    )
     assert bogus.status_code == 200
     assert bogus.json()["items"] == utc.json()["items"]

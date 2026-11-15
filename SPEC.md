@@ -202,7 +202,7 @@ flowchart LR
 
 | Component | Tech | Responsibility |
 |---|---|---|
-| `web` | React + TypeScript + Vite, Radix UI, TanStack Query and Table, one chart library | The console. Served as static files by nginx, which also proxies `/api`. |
+| `web` | React + TypeScript + Vite, Radix UI, TanStack Query and Table, one chart library | The console. Served as static files by nginx, which also proxies `/api/v1`. |
 | `api` | Python 3.12, FastAPI, psycopg 3 | The read API, authentication and sessions, RBAC, operator actions, onboarding, the SSE stream (it `LISTEN`s on Postgres) |
 | `collector` | Python 3.12, httpx, APScheduler | Polls Airflow, Airbyte and the warehouse. Links, classifies, redacts and upserts. Sends `NOTIFY`. |
 | `worker` | Python 3.12 | Alert evaluation, incident grouping, the notification outbox, quality checks, digests, retention |
@@ -210,7 +210,7 @@ flowchart LR
 
 Design decisions:
 
-- **Credentials stay server-side.** Only `collector`, `api` and `worker` hold credentials for external systems; the browser talks only to `/api`.
+- **Credentials stay server-side.** Only `collector`, `api` and `worker` hold credentials for external systems; the browser talks only to `/api/v1`.
 - **Idempotent ingest.** Every write is an upsert on natural keys, so any process can restart at any time.
 - **Singleton jobs use Postgres advisory locks** (collector polling, alert evaluation, retention). Any service can run multiple replicas safely; exactly one holds each lock.
 - **Live updates** flow collector → `NOTIFY` → api → SSE → browser. There's no separate message broker.
@@ -219,7 +219,7 @@ Design decisions:
   - A single VM with Docker Compose.
   - Kubernetes with the Helm chart.
   - The AWS reference: EKS or ECS, RDS PostgreSQL, Secrets Manager, ALB with ACM.
-- **The frontend can be served from a CDN** with `/api` proxied to the API origin. The SSE route (`/api/v1/stream`) needs a proxy that supports long-lived streaming responses; otherwise, point the browser at the API origin for the stream.
+- **The frontend can be served from a CDN** with `/api/v1` proxied to the API origin. The SSE route (`/api/v1/stream`) needs a proxy that supports long-lived streaming responses; otherwise, point the browser at the API origin for the stream.
 
 ---
 
@@ -599,7 +599,7 @@ Base path `/api/v1`. The OpenAPI schema is served at `/api/v1/openapi.json`, and
 | Saved views | `GET/POST/DELETE /views` |
 | Metrics | `GET /metrics` (Prometheus format; API token with the `metrics` scope) |
 
-Unversioned `/api/*` routes from earlier builds stay as aliases until the frontend uses `/api/v1` everywhere. Then they're removed.
+The console exposes its application API only under `/api/v1`; it does not publish unversioned aliases.
 
 ---
 

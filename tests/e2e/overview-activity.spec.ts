@@ -4,7 +4,7 @@ import { chooseSelectIndex, chooseSelectOption, expectSelectOptionCount, expectS
 test("tenant selection updates run choices and opens the selected log", async ({
   page,
 }) => {
-  await page.route("**/api/runs?*", async (route) => {
+  await page.route("**/api/v1/runs?*", async (route) => {
     const tenant = new URL(route.request().url()).searchParams.get("tenant");
     if (tenant !== "acme_retail" && tenant !== "orbit_logistics") {
       await route.continue();
@@ -41,7 +41,7 @@ test("tenant selection updates run choices and opens the selected log", async ({
   await expectSelectOptionCount(log, 2);
   const orbitRuns = page.waitForResponse(
     (response) =>
-      response.url().includes("/api/runs") &&
+      response.url().includes("/api/v1/runs") &&
       response.url().includes("tenant=orbit_logistics"),
   );
   await chooseSelectOption(tenant, "Orbit Logistics");

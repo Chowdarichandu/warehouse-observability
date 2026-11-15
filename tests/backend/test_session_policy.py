@@ -17,7 +17,7 @@ def request_with_cookie(token: str) -> Request:
         {
             "type": "http",
             "method": "GET",
-            "path": "/api/me",
+            "path": "/api/v1/me",
             "headers": [(b"cookie", f"obs_session={token}".encode())],
             "query_string": b"",
             "client": ("127.0.0.1", 1234),
@@ -31,7 +31,7 @@ def post_request() -> Request:
         {
             "type": "http",
             "method": "POST",
-            "path": "/api/auth/login",
+            "path": "/api/v1/auth/login",
             "headers": [(b"host", b"localhost")],
             "query_string": b"",
             "client": ("127.0.0.1", 1234),

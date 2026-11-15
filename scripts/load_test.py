@@ -13,10 +13,10 @@ from urllib.parse import urlsplit
 import httpx
 
 READ_PATHS = (
-    "/api/overview?range=24h",
-    "/api/tenants?page_size=25",
-    "/api/runs?range=24h&page_size=25",
-    "/api/freshness?page_size=25",
+    "/api/v1/overview?range=24h",
+    "/api/v1/tenants?page_size=25",
+    "/api/v1/runs?range=24h&page_size=25",
+    "/api/v1/freshness?page_size=25",
 )
 LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 
@@ -135,15 +135,15 @@ def authenticate(client: httpx.Client, session: str) -> str:
     """Return CSRF only for a demo session created by this tool; reuse OIDC sessions verbatim."""
     csrf = ""
     if session:
-        client.cookies.set("obs_session", session, path="/api")
+        client.cookies.set("obs_session", session, path="/api/v1")
     else:
-        config = client.get("/api/config")
+        config = client.get("/api/v1/config")
         if config.status_code != 200 or config.json().get("mode") != "demo":
             raise ValueError(
                 "Live staging requires OBS_LOAD_SESSION from a dedicated viewer account"
             )
         response = client.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             json={
                 "email": "viewer@demo.local",
                 "password": os.getenv("DEMO_PASSWORD", "demo"),
@@ -158,8 +158,8 @@ def authenticate(client: httpx.Client, session: str) -> str:
         if not demo_session:
             raise ValueError("Demo session cookie missing")
         client.cookies.clear()
-        client.cookies.set("obs_session", demo_session, path="/api")
-    response = client.get("/api/me")
+        client.cookies.set("obs_session", demo_session, path="/api/v1")
+    response = client.get("/api/v1/me")
     if response.status_code != 200 or response.json().get("role") != "viewer":
         raise ValueError("Use an authenticated viewer session for load tests")
     return csrf
@@ -197,7 +197,7 @@ def main() -> None:
                 )
             finally:
                 if csrf:
-                    client.post("/api/auth/logout", headers={"X-CSRF-Token": csrf})
+                    client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": csrf})
         print(json.dumps(asdict(summary), indent=2))
         raise SystemExit(0 if summary.passed else 1)
     except (ValueError, httpx.HTTPError):

@@ -10,7 +10,7 @@ target.write_text(json.dumps(spec, indent=2) + "\n")
 lines = [
     "# API reference",
     "",
-    "The API serves its OpenAPI contract at `/api/openapi.json` and the interactive reference at `/api/docs`.",
+    "The API serves its OpenAPI contract at `/api/v1/openapi.json` and the interactive reference at `/api/v1/docs`.",
     "",
     "## Routes",
     "",

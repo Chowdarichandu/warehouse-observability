@@ -2,8 +2,8 @@
 
 ## Service health
 
-- The API process health endpoint is `/api/health`.
-- The API liveness endpoint is `/api/health/live`.
+- The API process health endpoint is `/api/v1/health`.
+- The API liveness endpoint is `/api/v1/health/live`.
 - Collector and alerter heartbeats are shown in Platform health and checked by their container probes.
 - Monitor poll duration, poll errors, event lag and notification outbox depth.
 

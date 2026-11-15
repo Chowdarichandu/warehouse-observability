@@ -112,13 +112,13 @@ def test_recollecting_old_run_does_not_replace_latest_execution_status() -> None
 
 def test_graph_read_requires_authentication() -> None:
     with TestClient(app, base_url="https://localhost") as client:
-        assert client.get("/api/dependencies").status_code == 401
+        assert client.get("/api/v1/dependencies").status_code == 401
 
 
 def test_viewer_can_inspect_seeded_graph_and_unknown_tenant_returns_404(
     clients: dict,
 ) -> None:
-    response = clients["viewer"].get("/api/dependencies?tenant_id=acme_retail")
+    response = clients["viewer"].get("/api/v1/dependencies?tenant_id=acme_retail")
     assert response.status_code == 200, response.text
     graph = response.json()
     assert graph["nodes"] and graph["edges"]
@@ -126,7 +126,7 @@ def test_viewer_can_inspect_seeded_graph_and_unknown_tenant_returns_404(
     assert not graph["truncated"]
     assert (
         clients["viewer"]
-        .get("/api/dependencies?tenant_id=no_such_dependency_tenant")
+        .get("/api/v1/dependencies?tenant_id=no_such_dependency_tenant")
         .status_code
         == 404
     )
@@ -136,16 +136,17 @@ def test_tenant_picker_search_is_literal_paginated_and_authenticated(
     clients: dict,
 ) -> None:
     viewer = clients["viewer"]
-    response = viewer.get("/api/dependencies/tenants", params={"q": "acme_retail"})
+    response = viewer.get("/api/v1/dependencies/tenants", params={"q": "acme_retail"})
     assert response.status_code == 200, response.text
     assert response.json()["items"] == [
         {"tenant_id": "acme_retail", "display_name": "Acme Retail"}
     ]
     assert response.json()["page_size"] == 50
     assert (
-        viewer.get("/api/dependencies/tenants", params={"q": "%"}).json()["items"] == []
+        viewer.get("/api/v1/dependencies/tenants", params={"q": "%"}).json()["items"]
+        == []
     )
-    assert viewer.get("/api/dependencies/tenants?page=0").status_code == 422
-    assert viewer.get("/api/dependencies/tenants?page=1000001").status_code == 422
+    assert viewer.get("/api/v1/dependencies/tenants?page=0").status_code == 422
+    assert viewer.get("/api/v1/dependencies/tenants?page=1000001").status_code == 422
     with TestClient(app, base_url="https://localhost") as client:
-        assert client.get("/api/dependencies/tenants").status_code == 401
+        assert client.get("/api/v1/dependencies/tenants").status_code == 401

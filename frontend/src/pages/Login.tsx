@@ -56,7 +56,7 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
           <h1>Sign in</h1>
           <p>Sign in to your {APP_NAME} workspace.</p>
           {config.auth_provider === 'oidc' ? (
-            <a className="button primary login-submit" href="/api/auth/oidc/start">
+            <a className="button primary login-submit" href="/api/v1/auth/oidc/start">
               Continue with organization SSO <ArrowRight size={16} />
             </a>
           ) : (

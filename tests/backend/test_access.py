@@ -14,12 +14,12 @@ from obs.settings import settings
 
 def test_access_requires_authentication():
     with TestClient(app, base_url="https://localhost") as client:
-        assert client.get("/api/access").status_code == 401
+        assert client.get("/api/v1/access").status_code == 401
 
 
 @pytest.mark.parametrize("role", ["viewer", "operator", "admin"])
 def test_access_policy_describes_effective_role_without_secrets(clients, role):
-    response = clients[role].get("/api/access")
+    response = clients[role].get("/api/v1/access")
     assert response.status_code == 200
     result = response.json()
     assert (
@@ -73,14 +73,14 @@ def test_live_disabled_actions_are_distinct_from_role_grants(monkeypatch):
 
 def test_oidc_roles_are_managed_and_direct_role_edit_is_forbidden(clients, monkeypatch):
     monkeypatch.setattr(settings(), "auth_provider", "oidc")
-    result = clients["admin"].get("/api/access").json()
+    result = clients["admin"].get("/api/v1/access").json()
     assert result["identity"]["provider"] == "oidc"
     assert result["policy_source"] == "oidc_group_mapping"
     assert result["role_assignment_managed"]
     assert "access.assign_roles" not in result["capabilities"]
     assert "access.assign_roles" in result["role_capabilities"]
     assert "access.revoke_sessions" in result["capabilities"]
-    response = clients["admin"].patch("/api/users/0", json={"role": "admin"})
+    response = clients["admin"].patch("/api/v1/users/0", json={"role": "admin"})
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "sso_managed_roles"
 
@@ -89,11 +89,11 @@ def test_oidc_roles_are_managed_and_direct_role_edit_is_forbidden(clients, monke
 @pytest.mark.parametrize(
     "method,path,payload",
     [
-        ("patch", "/api/tenants/access_fixture", {"status": "paused"}),
-        ("patch", "/api/users/0", {"role": "admin"}),
-        ("post", "/api/users/0/revoke-sessions", None),
-        ("post", "/api/channels/access_fixture/test", None),
-        ("patch", "/api/quality/checks/0", {"enabled": True}),
+        ("patch", "/api/v1/tenants/access_fixture", {"status": "paused"}),
+        ("patch", "/api/v1/users/0", {"role": "admin"}),
+        ("post", "/api/v1/users/0/revoke-sessions", None),
+        ("post", "/api/v1/channels/access_fixture/test", None),
+        ("patch", "/api/v1/quality/checks/0", {"enabled": True}),
     ],
 )
 def test_non_admin_cannot_call_admin_mutations(clients, role, method, path, payload):
@@ -102,12 +102,12 @@ def test_non_admin_cannot_call_admin_mutations(clients, role, method, path, payl
 
 def test_viewer_cannot_retry_onboard_or_run_quality_checks(clients):
     for path, payload in [
-        ("/api/runs/access_fixture/retry", None),
+        ("/api/v1/runs/access_fixture/retry", None),
         (
-            "/api/onboarding",
+            "/api/v1/onboarding",
             {"tenant_id": "access_fixture", "display_name": "Access fixture"},
         ),
-        ("/api/quality/checks/0/run", None),
+        ("/api/v1/quality/checks/0/run", None),
     ]:
         assert clients["viewer"].post(path, json=payload).status_code == 403
 
@@ -127,11 +127,13 @@ def test_operator_retry_and_onboarding_reach_services_without_admin_role(
 
     monkeypatch.setattr(actions, "retry_action", retry)
     monkeypatch.setattr(actions, "start", onboard)
-    assert clients["operator"].post("/api/runs/access_fixture/retry").status_code == 200
+    assert (
+        clients["operator"].post("/api/v1/runs/access_fixture/retry").status_code == 200
+    )
     assert (
         clients["operator"]
         .post(
-            "/api/onboarding",
+            "/api/v1/onboarding",
             json={"tenant_id": "access_fixture", "display_name": "Access fixture"},
         )
         .status_code
@@ -168,10 +170,10 @@ def test_admin_can_revoke_sessions_with_audit_and_transaction_rollback(
                 conn.rollback()
 
     monkeypatch.setattr(actions, "connection", rolled_back)
-    response = clients["admin"].post(f"/api/users/{viewer}/revoke-sessions")
+    response = clients["admin"].post(f"/api/v1/users/{viewer}/revoke-sessions")
     assert response.status_code == 200
     assert evidence == {"active": 0, "audit": "admin@demo.local"}
-    assert clients["viewer"].get("/api/me").status_code == 200
+    assert clients["viewer"].get("/api/v1/me").status_code == 200
 
 
 def test_custom_role_capabilities_and_minimum_role_fail_closed(monkeypatch):
@@ -208,7 +210,7 @@ def test_custom_operator_cannot_resume_onboarding_without_tenant_permission():
     }
     try:
         client = TestClient(app, base_url="https://localhost")
-        response = client.post("/api/onboarding/system_engines/resume", json={})
+        response = client.post("/api/v1/onboarding/system_engines/resume", json={})
         assert response.status_code == 403
         client.close()
     finally:
@@ -287,7 +289,7 @@ def test_forgot_password_is_disabled_by_default_without_touching_accounts(monkey
 
 def test_admin_can_create_and_remove_user(clients):
     created = clients["admin"].post(
-        "/api/users",
+        "/api/v1/users",
         json={
             "email": "newhire@demo.local",
             "display_name": "New Hire",
@@ -301,24 +303,24 @@ def test_admin_can_create_and_remove_user(clients):
     # The new account can sign in with the generated temporary password.
     guest = TestClient(app, base_url="https://localhost")
     login = guest.post(
-        "/api/auth/login",
+        "/api/v1/auth/login",
         json={"email": "newhire@demo.local", "password": body["temporary_password"]},
     )
     assert login.status_code == 200, login.text
     guest.close()
     duplicate = clients["admin"].post(
-        "/api/users",
+        "/api/v1/users",
         json={"email": "newhire@demo.local", "display_name": "Dup", "role": "viewer"},
     )
     assert duplicate.status_code == 409
-    removed = clients["admin"].delete(f"/api/users/{user_id}")
+    removed = clients["admin"].delete(f"/api/v1/users/{user_id}")
     assert removed.status_code == 200
-    assert clients["admin"].delete(f"/api/users/{user_id}").status_code == 404
+    assert clients["admin"].delete(f"/api/v1/users/{user_id}").status_code == 404
 
 
 def test_create_user_with_chosen_password_returns_no_temporary(clients):
     created = clients["admin"].post(
-        "/api/users",
+        "/api/v1/users",
         json={
             "email": "chosen@demo.local",
             "display_name": "Chosen Password",
@@ -328,19 +330,19 @@ def test_create_user_with_chosen_password_returns_no_temporary(clients):
     )
     assert created.status_code == 200, created.text
     assert created.json()["temporary_password"] is None
-    clients["admin"].delete(f"/api/users/{created.json()['user_id']}")
+    clients["admin"].delete(f"/api/v1/users/{created.json()['user_id']}")
 
 
 def test_non_admin_cannot_create_or_remove_users(clients):
     payload = {"email": "nope@demo.local", "display_name": "Nope", "role": "viewer"}
-    assert clients["viewer"].post("/api/users", json=payload).status_code == 403
-    assert clients["operator"].post("/api/users", json=payload).status_code == 403
-    assert clients["viewer"].delete("/api/users/1").status_code == 403
+    assert clients["viewer"].post("/api/v1/users", json=payload).status_code == 403
+    assert clients["operator"].post("/api/v1/users", json=payload).status_code == 403
+    assert clients["viewer"].delete("/api/v1/users/1").status_code == 403
 
 
 def test_admin_cannot_remove_own_account(clients):
-    me = clients["admin"].get("/api/me").json()
-    response = clients["admin"].delete(f"/api/users/{me['user_id']}")
+    me = clients["admin"].get("/api/v1/me").json()
+    response = clients["admin"].delete(f"/api/v1/users/{me['user_id']}")
     assert response.status_code == 409
 
 
@@ -350,7 +352,7 @@ def _permissions_user_id(email: str) -> int:
 
 def test_admin_views_user_permissions(clients):
     operator = _permissions_user_id("operator@demo.local")
-    response = clients["admin"].get(f"/api/users/{operator}/permissions")
+    response = clients["admin"].get(f"/api/v1/users/{operator}/permissions")
     assert response.status_code == 200
     body = response.json()
     assert body["role"] == "operator"
@@ -441,7 +443,7 @@ def test_module_registry_filters_disabled_areas_and_honors_role_and_user_overrid
             "INSERT INTO obs.role_modules(role_name,module_id,granted_by) VALUES('test_viewer','hrms','test') ON CONFLICT DO NOTHING"
         )
     try:
-        body = clients["viewer"].get("/api/access").json()
+        body = clients["viewer"].get("/api/v1/access").json()
         assert [module["module_id"] for module in body["modules"]] == ["pravah", "hrms"]
 
         with connection() as conn:
@@ -491,12 +493,12 @@ def test_data_routers_enforce_the_pravah_module_on_direct_api_requests(clients):
             (viewer_id,),
         )
     try:
-        response = clients["viewer"].get("/api/overview")
+        response = clients["viewer"].get("/api/v1/overview")
         assert response.status_code == 403
         assert response.json()["error"]["code"] == "module_forbidden"
         # Account and access administration remain reachable so a denied user
         # can review their access and an administrator can restore a grant.
-        assert clients["viewer"].get("/api/access").status_code == 200
+        assert clients["viewer"].get("/api/v1/access").status_code == 200
     finally:
         with connection() as conn:
             if previous:
@@ -522,14 +524,16 @@ def test_admin_module_grant_endpoint_is_audited_and_non_admin_is_denied(clients)
         conn.execute("UPDATE obs.modules SET enabled=true WHERE module_id='finance'")
     try:
         viewer_denied = clients["viewer"].put(
-            "/api/access/roles/test_viewer/modules/finance"
+            "/api/v1/access/roles/test_viewer/modules/finance"
         )
         assert viewer_denied.status_code == 403
-        denied = clients["operator"].put("/api/access/roles/viewer/modules/finance")
+        denied = clients["operator"].put("/api/v1/access/roles/viewer/modules/finance")
         assert denied.status_code == 403
-        granted = clients["admin"].put("/api/access/roles/test_viewer/modules/finance")
+        granted = clients["admin"].put(
+            "/api/v1/access/roles/test_viewer/modules/finance"
+        )
         assert granted.status_code == 200, granted.text
-        viewer = clients["admin"].get("/api/access").json()
+        viewer = clients["admin"].get("/api/v1/access").json()
         assert {item["module_id"] for item in viewer["modules"]} == {
             "pravah",
             "hrms",
@@ -578,21 +582,23 @@ def test_admin_can_revoke_a_role_module_grant_and_api_access_updates(clients):
             VALUES('test_viewer','hrms','test') ON CONFLICT DO NOTHING"""
         )
     try:
-        before = clients["viewer"].get("/api/access").json()
+        before = clients["viewer"].get("/api/v1/access").json()
         assert [item["module_id"] for item in before["modules"]] == ["pravah", "hrms"]
 
         viewer_denied = clients["viewer"].delete(
-            "/api/access/roles/test_viewer/modules/hrms"
+            "/api/v1/access/roles/test_viewer/modules/hrms"
         )
         assert viewer_denied.status_code == 403
         denied = clients["operator"].delete(
-            "/api/access/roles/test_viewer/modules/hrms"
+            "/api/v1/access/roles/test_viewer/modules/hrms"
         )
         assert denied.status_code == 403
-        revoked = clients["admin"].delete("/api/access/roles/test_viewer/modules/hrms")
+        revoked = clients["admin"].delete(
+            "/api/v1/access/roles/test_viewer/modules/hrms"
+        )
         assert revoked.status_code == 200, revoked.text
         assert revoked.json()["effect"] == "revoke"
-        after = clients["viewer"].get("/api/access").json()
+        after = clients["viewer"].get("/api/v1/access").json()
         assert [item["module_id"] for item in after["modules"]] == ["pravah"]
         assert one(
             """SELECT 1 AS present FROM obs.audit_log
@@ -619,19 +625,20 @@ def test_revoke_removes_permission_from_live_requests(clients, monkeypatch):
     )
     try:
         response = clients["admin"].put(
-            f"/api/users/{operator}/permissions", json={"revokes": ["manage_tenants"]}
+            f"/api/v1/users/{operator}/permissions",
+            json={"revokes": ["manage_tenants"]},
         )
         assert response.status_code == 200
         assert "manage_tenants" not in response.json()["effective"]
         denied = clients["operator"].post(
-            "/api/onboarding",
+            "/api/v1/onboarding",
             json={"tenant_id": "access_fixture", "display_name": "Access fixture"},
         )
         assert denied.status_code == 403
         assert called == []
     finally:
         clients["admin"].put(
-            f"/api/users/{operator}/permissions", json={"grants": [], "revokes": []}
+            f"/api/v1/users/{operator}/permissions", json={"grants": [], "revokes": []}
         )
 
 
@@ -639,7 +646,7 @@ def test_grant_above_role_rank_is_recorded_but_not_effective(clients):
     operator = _permissions_user_id("operator@demo.local")
     try:
         response = clients["admin"].put(
-            f"/api/users/{operator}/permissions", json={"grants": ["manage_users"]}
+            f"/api/v1/users/{operator}/permissions", json={"grants": ["manage_users"]}
         )
         assert response.status_code == 200
         body = response.json()
@@ -647,7 +654,7 @@ def test_grant_above_role_rank_is_recorded_but_not_effective(clients):
         assert "manage_users" not in body["effective"]
     finally:
         clients["admin"].put(
-            f"/api/users/{operator}/permissions", json={"grants": [], "revokes": []}
+            f"/api/v1/users/{operator}/permissions", json={"grants": [], "revokes": []}
         )
 
 
@@ -656,33 +663,34 @@ def test_user_permissions_guards(clients):
     operator = _permissions_user_id("operator@demo.local")
     assert (
         clients["admin"]
-        .put(f"/api/users/{admin}/permissions", json={"revokes": ["manage_alerts"]})
+        .put(f"/api/v1/users/{admin}/permissions", json={"revokes": ["manage_alerts"]})
         .status_code
         == 409
     )
     assert (
         clients["admin"]
-        .put(f"/api/users/{operator}/permissions", json={"grants": ["fly_to_moon"]})
+        .put(f"/api/v1/users/{operator}/permissions", json={"grants": ["fly_to_moon"]})
         .status_code
         == 422
     )
     assert (
         clients["admin"]
         .put(
-            f"/api/users/{operator}/permissions",
+            f"/api/v1/users/{operator}/permissions",
             json={"grants": ["manage_alerts"], "revokes": ["manage_alerts"]},
         )
         .status_code
         == 422
     )
     assert (
-        clients["operator"].get(f"/api/users/{operator}/permissions").status_code == 403
+        clients["operator"].get(f"/api/v1/users/{operator}/permissions").status_code
+        == 403
     )
-    assert clients["admin"].get("/api/users/999999/permissions").status_code == 404
+    assert clients["admin"].get("/api/v1/users/999999/permissions").status_code == 404
 
 
 def test_users_list_reports_active_sessions(clients):
-    users = clients["admin"].get("/api/users?page=1&page_size=50").json()["items"]
+    users = clients["admin"].get("/api/v1/users?page=1&page_size=50").json()["items"]
     by_email = {u["email"]: u for u in users}
     # The signed-in fixture clients each hold an active server-side session.
     assert by_email["admin@demo.local"]["active_sessions"] >= 1

@@ -21,14 +21,14 @@ def test_password_change_requires_old_password_and_revokes_other_sessions():
         ):
             for client in (first, other):
                 login = client.post(
-                    "/api/auth/login",
+                    "/api/v1/auth/login",
                     json={"email": email, "password": "original password"},
                 )
                 assert login.status_code == 200
                 client.headers["X-CSRF-Token"] = login.json()["csrf_token"]
             assert (
                 first.post(
-                    "/api/auth/password",
+                    "/api/v1/auth/password",
                     json={
                         "current_password": "wrong",
                         "new_password": "a-new-long-password",
@@ -37,15 +37,15 @@ def test_password_change_requires_old_password_and_revokes_other_sessions():
                 == 403
             )
             changed = first.post(
-                "/api/auth/password",
+                "/api/v1/auth/password",
                 json={
                     "current_password": "original password",
                     "new_password": "a-new-long-password",
                 },
             )
             assert changed.status_code == 200
-            assert first.get("/api/me").status_code == 200
-            assert other.get("/api/me").status_code == 401
+            assert first.get("/api/v1/me").status_code == 200
+            assert other.get("/api/v1/me").status_code == 401
             with connection() as conn:
                 assert verify_password(
                     "a-new-long-password",

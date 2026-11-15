@@ -19,11 +19,11 @@ Offline demo uses synthetic rows and existing schema snapshots. Every demo resul
 
 ## API
 
-- `GET /api/quality/checks?tenant_id=&page=` lists definitions and their current latest evidence.
-- `POST /api/quality/checks` creates a built-in definition; `PUT /api/quality/checks/{id}` edits it without changing its tenant.
-- `PATCH /api/quality/checks/{id}` enables/disables with `{"enabled": true}`.
-- `POST /api/quality/checks/{id}/run` evaluates an enabled check. Concurrent requests return 409.
-- `GET /api/quality/results?tenant_id=&check_id=&page=` reads evidence history.
+- `GET /api/v1/quality/checks?tenant_id=&page=` lists definitions and their current latest evidence.
+- `POST /api/v1/quality/checks` creates a built-in definition; `PUT /api/v1/quality/checks/{id}` edits it without changing its tenant.
+- `PATCH /api/v1/quality/checks/{id}` enables/disables with `{"enabled": true}`.
+- `POST /api/v1/quality/checks/{id}/run` evaluates an enabled check. Concurrent requests return 409.
+- `GET /api/v1/quality/results?tenant_id=&check_id=&page=` reads evidence history.
 
 Example null-rate definition:
 

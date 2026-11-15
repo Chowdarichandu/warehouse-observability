@@ -45,7 +45,9 @@ def test_load_test_uses_only_bounded_read_endpoints_and_fails_on_server_errors()
 
     def handle(request):
         seen.append(request)
-        return httpx.Response(503 if request.url.path == "/api/runs" else 200, json={})
+        return httpx.Response(
+            503 if request.url.path == "/api/v1/runs" else 200, json={}
+        )
 
     with httpx.Client(
         base_url="https://localhost", transport=httpx.MockTransport(handle)
@@ -66,7 +68,7 @@ def test_load_test_uses_only_bounded_read_endpoints_and_fails_on_server_errors()
 
 def test_load_test_rejects_redirects_and_transport_failures():
     def handle(request):
-        if request.url.path == "/api/tenants":
+        if request.url.path == "/api/v1/tenants":
             raise httpx.ConnectError("sensitive upstream details", request=request)
         return httpx.Response(
             302, headers={"location": "https://untrusted.example.com"}
@@ -112,14 +114,14 @@ def test_load_budgets_are_checked_before_read_requests(overrides):
 
 def test_demo_load_login_requires_viewer_and_keeps_session_for_loopback():
     def handle(request):
-        if request.url.path == "/api/config":
+        if request.url.path == "/api/v1/config":
             return httpx.Response(200, json={"mode": "demo"})
-        if request.url.path == "/api/auth/login":
+        if request.url.path == "/api/v1/auth/login":
             return httpx.Response(
                 200,
                 json={"csrf_token": "fixture-csrf"},
                 headers={
-                    "set-cookie": "obs_session=fixture-session; Secure; Path=/api"
+                    "set-cookie": "obs_session=fixture-session; Secure; Path=/api/v1"
                 },
             )
         assert request.headers["cookie"] == "obs_session=fixture-session"
@@ -133,7 +135,7 @@ def test_demo_load_login_requires_viewer_and_keeps_session_for_loopback():
 
 def test_live_load_never_tries_password_login_without_explicit_viewer_session():
     def handle(request):
-        assert request.url.path == "/api/config"
+        assert request.url.path == "/api/v1/config"
         return httpx.Response(200, json={"mode": "live"})
 
     with httpx.Client(

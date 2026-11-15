@@ -14,7 +14,7 @@ def clients() -> dict[str, TestClient]:
     for role in ("admin", "operator", "viewer"):
         client = TestClient(app, base_url="https://localhost")
         response = client.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             json={
                 "email": f"{role}@demo.local",
                 "password": os.getenv("DEMO_PASSWORD", "demo"),

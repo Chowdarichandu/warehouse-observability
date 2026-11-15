@@ -24,7 +24,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   headers.set('X-CSRF-Token', csrf);
   try {
-    const response = await fetch(`/api${path}`, {
+    const response = await fetch(`/api/v1${path}`, {
       credentials: 'same-origin',
       cache: 'no-store',
       ...init,

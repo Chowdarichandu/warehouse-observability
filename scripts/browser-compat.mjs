@@ -10,10 +10,10 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://localhost:8080');
   await page.getByRole('button', { name: 'Sign in to workspace' }).waitFor();
-  await page.route('**/api/config', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Gateway unavailable</title>' }));
+  await page.route('**/api/v1/config', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Gateway unavailable</title>' }));
   await page.reload();
   await page.getByText('The console service returned an unexpected response. Please try again shortly.').waitFor();
-  await page.unroute('**/api/config');
+  await page.unroute('**/api/v1/config');
   await page.addInitScript(() => { Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true }); });
   await page.reload();
   await page.getByRole('button', { name: 'Sign in to workspace' }).waitFor();

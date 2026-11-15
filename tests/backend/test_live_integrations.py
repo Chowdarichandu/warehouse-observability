@@ -173,6 +173,7 @@ def test_airflow_version_auth_pagination_and_scoped_retry(live, monkeypatch, ver
             assert body["task_ids"] == ([["sync", 4]] if version == "v2" else ["sync"])
             return httpx.Response(200, json={"task_instances": []})
         assert request.headers["authorization"] == "Bearer reader"
+        # Airflow keeps its own versioned API at /api/v1 or /api/v2.
         assert request.url.path.startswith(f"/api/{version}/")
         return httpx.Response(200, json={"task_instances": [], "total_entries": 0})
 

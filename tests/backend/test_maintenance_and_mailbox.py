@@ -41,13 +41,13 @@ def test_windows_require_manage_tenants(clients, scratch_tenant):
     }
     assert (
         clients["viewer"]
-        .post(f"/api/tenants/{scratch_tenant}/maintenance-windows", json=payload)
+        .post(f"/api/v1/tenants/{scratch_tenant}/maintenance-windows", json=payload)
         .status_code
         == 403
     )
     assert (
         clients["viewer"]
-        .get(f"/api/tenants/{scratch_tenant}/maintenance-windows")
+        .get(f"/api/v1/tenants/{scratch_tenant}/maintenance-windows")
         .status_code
         == 200
     )
@@ -60,28 +60,28 @@ def test_window_create_list_delete(clients, scratch_tenant):
         "reason": "Nightly maintenance",
     }
     created = clients["operator"].post(
-        f"/api/tenants/{scratch_tenant}/maintenance-windows", json=payload
+        f"/api/v1/tenants/{scratch_tenant}/maintenance-windows", json=payload
     )
     assert created.status_code == 201, created.text
     window_id = created.json()["id"]
     listed = (
         clients["operator"]
-        .get(f"/api/tenants/{scratch_tenant}/maintenance-windows")
+        .get(f"/api/v1/tenants/{scratch_tenant}/maintenance-windows")
         .json()
     )
     assert [item["id"] for item in listed["items"]] == [window_id]
     inverted = clients["operator"].post(
-        f"/api/tenants/{scratch_tenant}/maintenance-windows",
+        f"/api/v1/tenants/{scratch_tenant}/maintenance-windows",
         json={**payload, "ends_at": "2026-11-12T00:00:00Z"},
     )
     assert inverted.status_code == 422
     removed = clients["operator"].delete(
-        f"/api/tenants/{scratch_tenant}/maintenance-windows/{window_id}"
+        f"/api/v1/tenants/{scratch_tenant}/maintenance-windows/{window_id}"
     )
     assert removed.status_code == 200
     assert (
         clients["operator"]
-        .get(f"/api/tenants/{scratch_tenant}/maintenance-windows")
+        .get(f"/api/v1/tenants/{scratch_tenant}/maintenance-windows")
         .json()["items"]
         == []
     )
@@ -118,13 +118,13 @@ def test_dev_mailbox_records_invites_and_is_admin_only(clients):
         conn.execute("DELETE FROM obs.dev_mailbox WHERE recipient=%s", (email,))
         conn.execute("DELETE FROM obs.users WHERE email=%s", (email,))
     created = clients["admin"].post(
-        "/api/users",
+        "/api/v1/users",
         json={"email": email, "display_name": "Mailbox Check", "role": "viewer"},
     )
     assert created.status_code == 200, created.text
     try:
-        assert clients["viewer"].get("/api/dev/mailbox").status_code == 403
-        mailbox = clients["admin"].get("/api/dev/mailbox").json()
+        assert clients["viewer"].get("/api/v1/dev/mailbox").status_code == 403
+        mailbox = clients["admin"].get("/api/v1/dev/mailbox").json()
         invite = next(item for item in mailbox["items"] if item["recipient"] == email)
         assert invite["subject"] == "Your Pravah account is ready"
         assert created.json()["temporary_password"] in invite["body"]

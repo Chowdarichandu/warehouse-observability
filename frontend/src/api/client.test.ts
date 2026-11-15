@@ -15,7 +15,7 @@ describe('API transport', () => {
       status: 'ok',
     });
     const [url, init] = fetcher.mock.calls[0];
-    expect(url).toBe('/api/health');
+    expect(url).toBe('/api/v1/health');
     expect(init.headers.get('X-CSRF-Token')).toBe('fixture-csrf');
     expect(init.headers.get('X-Test')).toBe('yes');
     expect(init.credentials).toBe('same-origin');

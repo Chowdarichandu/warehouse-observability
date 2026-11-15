@@ -86,7 +86,7 @@ export function Runs() {
         title="Pipeline runs"
         description="Every pipeline run, from Airflow execution to warehouse load."
         actions={
-          <a className="button" href={`/api/runs?${qs}&format=csv`}>
+          <a className="button" href={`/api/v1/runs?${qs}&format=csv`}>
             <Download size={14} />
             Export CSV
           </a>

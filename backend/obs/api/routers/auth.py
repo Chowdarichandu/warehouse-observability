@@ -94,7 +94,7 @@ def login(data: Login, request: Request, response: Response) -> dict:
         httponly=True,
         secure=settings().cookie_secure,
         samesite="lax",
-        path="/api",
+        path="/api/v1",
     )
     with connection() as conn:
         audit(conn, user["email"], "login", str(user["user_id"]))
@@ -149,7 +149,11 @@ def forgot_password(data: ForgotPasswordIn, request: Request) -> dict:
 @router.post("/auth/logout", response_model=Message)
 def logout(response: Response, user: dict = Depends(current_user)) -> dict:
     response.delete_cookie(
-        "obs_session", path="/api", secure=settings().cookie_secure, httponly=True, samesite="lax"
+        "obs_session",
+        path="/api/v1",
+        secure=settings().cookie_secure,
+        httponly=True,
+        samesite="lax",
     )
     with connection() as conn:
         conn.execute("UPDATE obs.sessions SET revoked_at=now() WHERE id=%s", (user["session_id"],))

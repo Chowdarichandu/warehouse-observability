@@ -49,7 +49,7 @@ jobs:
           web_pid=$!
           trap 'kill "$api_pid" "$collector_pid" "$alerter_pid" "$web_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 90); do
-            if curl --fail --silent http://localhost:8080/api/health > /dev/null; then break; fi
+            if curl --fail --silent http://localhost:8080/api/v1/health > /dev/null; then break; fi
             sleep 1
           done
           make e2e

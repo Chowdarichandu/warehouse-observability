@@ -10,7 +10,7 @@ def test_saved_views_are_private_audited_and_deletable(clients):
     admin, viewer = clients["admin"], clients["viewer"]
     name = f"Failed CDC {uuid4().hex[:8]}"
     saved = admin.post(
-        "/api/saved-views",
+        "/api/v1/saved-views",
         json={
             "name": name,
             "filters": {"status": "failed", "source": "mysql", "range": "7d"},
@@ -21,15 +21,16 @@ def test_saved_views_are_private_audited_and_deletable(clients):
     try:
         assert saved.json()["filters"]["status"] == "failed"
         assert any(
-            v["id"] == view_id for v in admin.get("/api/saved-views").json()["items"]
+            v["id"] == view_id for v in admin.get("/api/v1/saved-views").json()["items"]
         )
         assert all(
-            v["id"] != view_id for v in viewer.get("/api/saved-views").json()["items"]
+            v["id"] != view_id
+            for v in viewer.get("/api/v1/saved-views").json()["items"]
         )
-        assert viewer.delete(f"/api/saved-views/{view_id}").status_code == 404
+        assert viewer.delete(f"/api/v1/saved-views/{view_id}").status_code == 404
         assert (
             admin.post(
-                "/api/saved-views", json={"name": name, "filters": {}}
+                "/api/v1/saved-views", json={"name": name, "filters": {}}
             ).status_code
             == 409
         )
@@ -38,7 +39,7 @@ def test_saved_views_are_private_audited_and_deletable(clients):
             (str(view_id),),
         )["ok"]
     finally:
-        assert admin.delete(f"/api/saved-views/{view_id}").status_code == 200
+        assert admin.delete(f"/api/v1/saved-views/{view_id}").status_code == 200
 
 
 def test_saved_view_guards_and_redaction(clients):
@@ -53,9 +54,9 @@ def test_saved_view_guards_and_redaction(clients):
         },
         {"name": "test", "filters": {"q": "x" * 501}},
     ]:
-        assert viewer.post("/api/saved-views", json=body).status_code == 422
+        assert viewer.post("/api/v1/saved-views", json=body).status_code == 422
     saved = viewer.post(
-        "/api/saved-views",
+        "/api/v1/saved-views",
         json={
             "name": f"Private {uuid4().hex[:8]}",
             "filters": {"q": "password=super-secret-123"},
@@ -65,20 +66,20 @@ def test_saved_view_guards_and_redaction(clients):
     try:
         assert "super-secret-123" not in saved.text
         with TestClient(app, base_url="https://localhost") as anonymous:
-            assert anonymous.get("/api/saved-views").status_code == 401
+            assert anonymous.get("/api/v1/saved-views").status_code == 401
             anonymous.cookies.update(viewer.cookies)
             assert (
                 anonymous.post(
-                    "/api/saved-views", json={"name": "csrf", "filters": {}}
+                    "/api/v1/saved-views", json={"name": "csrf", "filters": {}}
                 ).status_code
                 == 403
             )
     finally:
-        viewer.delete(f"/api/saved-views/{saved.json()['id']}")
+        viewer.delete(f"/api/v1/saved-views/{saved.json()['id']}")
 
 
 def test_saved_view_limit_is_per_user(clients):
-    uid = clients["viewer"].get("/api/me").json()["user_id"]
+    uid = clients["viewer"].get("/api/v1/me").json()["user_id"]
     prefix = uuid4().hex
     with connection() as conn:
         for n in range(30):
@@ -89,7 +90,7 @@ def test_saved_view_limit_is_per_user(clients):
     try:
         assert (
             clients["viewer"]
-            .post("/api/saved-views", json={"name": "Over limit", "filters": {}})
+            .post("/api/v1/saved-views", json={"name": "Over limit", "filters": {}})
             .status_code
             == 409
         )
@@ -106,7 +107,8 @@ def test_timeline_is_bounded_chronological_and_run_scoped(clients):
         "SELECT run_key,tenant_id FROM obs.pipeline_runs WHERE tenant_id='acme_retail' AND status='failed' ORDER BY started_at DESC LIMIT 1"
     )
     response = clients["viewer"].get(
-        "/api/investigation/timeline", params={"run_key": run["run_key"], "range": "7d"}
+        "/api/v1/investigation/timeline",
+        params={"run_key": run["run_key"], "range": "7d"},
     )
     assert response.status_code == 200, response.text
     events = response.json()["items"]
@@ -118,16 +120,20 @@ def test_timeline_is_bounded_chronological_and_run_scoped(clients):
     assert "actor" not in response.text
     assert (
         clients["viewer"]
-        .get("/api/investigation/timeline?tenant=does_not_exist")
+        .get("/api/v1/investigation/timeline?tenant=does_not_exist")
         .status_code
         == 404
     )
     assert (
-        clients["viewer"].get("/api/investigation/timeline?range=forever").status_code
+        clients["viewer"]
+        .get("/api/v1/investigation/timeline?range=forever")
+        .status_code
         == 422
     )
     assert (
-        clients["viewer"].get("/api/investigation/timeline?run_key=missing").status_code
+        clients["viewer"]
+        .get("/api/v1/investigation/timeline?run_key=missing")
+        .status_code
         == 404
     )
 
@@ -143,7 +149,7 @@ def test_timeline_includes_uncertain_tenant_onboarding_without_payload(clients):
         )
     try:
         response = clients["viewer"].get(
-            "/api/investigation/timeline?tenant=acme_retail"
+            "/api/v1/investigation/timeline?tenant=acme_retail"
         )
         assert response.status_code == 200
         event = next(
@@ -169,7 +175,7 @@ def test_configured_console_origin_allows_proxy_actions_and_rejects_other_origin
     monkeypatch.setattr(auth, "settings", lambda: config)
     viewer = clients["viewer"]
     response = viewer.post(
-        "/api/saved-views",
+        "/api/v1/saved-views",
         headers={"Origin": config.console_url},
         json={"name": "Proxy " + uuid4().hex[:8], "filters": {}},
     )
@@ -177,11 +183,11 @@ def test_configured_console_origin_allows_proxy_actions_and_rejects_other_origin
     try:
         assert (
             viewer.post(
-                "/api/saved-views",
+                "/api/v1/saved-views",
                 headers={"Origin": "https://untrusted.example.test"},
                 json={"name": "Untrusted", "filters": {}},
             ).status_code
             == 403
         )
     finally:
-        viewer.delete(f"/api/saved-views/{response.json()['id']}")
+        viewer.delete(f"/api/v1/saved-views/{response.json()['id']}")

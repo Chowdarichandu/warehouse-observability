@@ -14,12 +14,12 @@ try {
   await page.getByRole('button', { name: 'Sign in to workspace' }).click();
   await expect(page.getByRole('heading', { name: 'Tenant health', exact: true })).toBeVisible();
   await expect(page.getByRole('status', { name: 'Loading' })).toHaveCount(0);
-  const response = await page.request.get(`${origin}/api/runs?tenant=acme_retail&status=failed`);
+  const response = await page.request.get(`${origin}/api/v1/runs?tenant=acme_retail&status=failed`);
   expect(response.ok()).toBeTruthy();
   const runs = await response.json();
   expect(runs.items.length).toBeGreaterThan(0);
   const key = encodeURIComponent(runs.items[0].run_key);
-  const logResponse = await page.request.get(`${origin}/api/runs/${key}/log`);
+  const logResponse = await page.request.get(`${origin}/api/v1/runs/${key}/log`);
   expect(logResponse.ok()).toBeTruthy();
   const log = await logResponse.json();
   expect(log.redacted).toBe(true);

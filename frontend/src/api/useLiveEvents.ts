@@ -7,7 +7,7 @@ export function useLiveEvents() {
   const [connected, setConnected] = useState(false);
   const [activity, setActivity] = useState<Activity[]>([]);
   useEffect(() => {
-    const stream = new EventSource('/api/stream', { withCredentials: true });
+    const stream = new EventSource('/api/v1/stream', { withCredentials: true });
     let timer: ReturnType<typeof setTimeout> | undefined;
     stream.addEventListener('stream.ready', () => {
       setConnected(true);

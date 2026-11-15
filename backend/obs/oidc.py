@@ -54,7 +54,7 @@ def start() -> Response:
                 "client_id": config.oidc_client_id,
                 "response_type": "code",
                 "scope": "openid email profile",
-                "redirect_uri": config.console_url.rstrip("/") + "/api/auth/oidc/callback",
+                "redirect_uri": config.console_url.rstrip("/") + "/api/v1/auth/oidc/callback",
                 "state": state,
                 "nonce": nonce,
                 "code_challenge": challenge,
@@ -70,7 +70,7 @@ def start() -> Response:
         secure=True,
         httponly=True,
         samesite="lax",
-        path="/api/auth/oidc",
+        path="/api/v1/auth/oidc",
     )
     return response
 
@@ -140,7 +140,7 @@ def callback(request: Request, code: str = "", state: str = "") -> Response:
         data={
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": config.console_url.rstrip("/") + "/api/auth/oidc/callback",
+            "redirect_uri": config.console_url.rstrip("/") + "/api/v1/auth/oidc/callback",
             "client_id": config.oidc_client_id,
             "client_secret": config.oidc_client_secret,
             "code_verifier": saved["verifier"],
@@ -179,7 +179,7 @@ def callback(request: Request, code: str = "", state: str = "") -> Response:
     user = identity(claims)
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie(
-        "obs_oidc_state", path="/api/auth/oidc", secure=True, httponly=True, samesite="lax"
+        "obs_oidc_state", path="/api/v1/auth/oidc", secure=True, httponly=True, samesite="lax"
     )
     response.set_cookie(
         "obs_session",
@@ -188,6 +188,6 @@ def callback(request: Request, code: str = "", state: str = "") -> Response:
         httponly=True,
         secure=True,
         samesite="lax",
-        path="/api",
+        path="/api/v1",
     )
     return response

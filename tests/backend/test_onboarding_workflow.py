@@ -393,7 +393,7 @@ def test_airflow_worker_profile_requires_tls_and_flags_without_console_secrets()
 def test_live_resume_explains_tenant_isolation_gate(clients, monkeypatch):
     monkeypatch.setattr(settings(), "mode", "live")
     response = clients["operator"].post(
-        "/api/onboarding/example_tenant/resume", json={"start_initial": True}
+        "/api/v1/onboarding/example_tenant/resume", json={"start_initial": True}
     )
     assert response.status_code == 503
     assert response.json()["error"]["message"] == (

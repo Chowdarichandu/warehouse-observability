@@ -254,7 +254,9 @@ def main() -> None:
     )
     for _ in range(600):
         try:
-            urllib.request.urlopen(f"http://127.0.0.1:{API_PORT}/api/health", timeout=1)
+            urllib.request.urlopen(
+                f"http://127.0.0.1:{API_PORT}/api/v1/health", timeout=1
+            )
             break
         except Exception:
             time.sleep(0.2)

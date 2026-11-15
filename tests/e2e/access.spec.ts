@@ -91,8 +91,8 @@ test("viewer can inspect their permissions without session management or privile
   await expect(
     page.getByRole("button", { name: /switch role|preview role/i }),
   ).toHaveCount(0);
-  const identity = await (await page.request.get("/api/me")).json();
-  const response = await page.request.patch("/api/users/0", {
+  const identity = await (await page.request.get("/api/v1/me")).json();
+  const response = await page.request.patch("/api/v1/users/0", {
     headers: { "X-CSRF-Token": identity.csrf_token },
     data: { role: "admin" },
   });
@@ -248,7 +248,7 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
   let roleCreated = false;
   let viewerId: number | undefined;
   let viewerContext: import("@playwright/test").BrowserContext | undefined;
-  const adminIdentity = await (await page.request.get("/api/me")).json();
+  const adminIdentity = await (await page.request.get("/api/v1/me")).json();
 
   try {
     await page.goto("/admin?section=roles");
@@ -270,7 +270,7 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
     await expect(roleCard).toContainText("Metrics dashboard only");
 
     const users = await (
-      await page.request.get("/api/users?page_size=200")
+      await page.request.get("/api/v1/users?page_size=200")
     ).json();
     viewerId = users.items.find(
       (user: { email: string }) => user.email === viewerEmail,
@@ -369,34 +369,34 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
       }
     }
 
-    const metrics = await viewerPage.request.get("/api/metrics/overview");
+    const metrics = await viewerPage.request.get("/api/v1/metrics/overview");
     expect(metrics.status()).toBe(200);
     expect(await metrics.json()).not.toHaveProperty("recent_failures");
     expect(
       (
-        await viewerPage.request.get("/api/metrics/tenants?page_size=200")
+        await viewerPage.request.get("/api/v1/metrics/tenants?page_size=200")
       ).status(),
     ).toBe(200);
     expect(
       (
-        await viewerPage.request.get("/api/tenants/acme_retail/metrics")
+        await viewerPage.request.get("/api/v1/tenants/acme_retail/metrics")
       ).status(),
     ).toBe(200);
     for (const endpoint of [
-      "/api/overview",
-      "/api/tenants",
-      "/api/runs",
-      "/api/users",
+      "/api/v1/overview",
+      "/api/v1/tenants",
+      "/api/v1/runs",
+      "/api/v1/users",
     ]) {
       const denied = await viewerPage.request.get(endpoint);
       expect(denied.status(), endpoint).toBe(403);
       expect((await denied.json()).error.code).toBe("metrics_only");
     }
     const viewerIdentity = await (
-      await viewerPage.request.get("/api/me")
+      await viewerPage.request.get("/api/v1/me")
     ).json();
     const deniedAction = await viewerPage.request.post(
-      "/api/runs/not-a-real-run/retry",
+      "/api/v1/runs/not-a-real-run/retry",
       {
         headers: { "X-CSRF-Token": viewerIdentity.csrf_token },
       },
@@ -414,7 +414,7 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
     );
     expect(mobileWidth).toBeLessThanOrEqual(390);
 
-    await page.request.patch(`/api/users/${viewerId}`, {
+    await page.request.patch(`/api/v1/users/${viewerId}`, {
       headers: { "X-CSRF-Token": adminIdentity.csrf_token },
       data: { role: "viewer" },
     });
@@ -424,13 +424,13 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
   } finally {
     await viewerContext?.close();
     if (viewerId) {
-      await page.request.patch(`/api/users/${viewerId}`, {
+      await page.request.patch(`/api/v1/users/${viewerId}`, {
         headers: { "X-CSRF-Token": adminIdentity.csrf_token },
         data: { role: "viewer" },
       });
     }
     if (roleCreated) {
-      await page.request.delete(`/api/roles/${roleName}`, {
+      await page.request.delete(`/api/v1/roles/${roleName}`, {
         headers: { "X-CSRF-Token": adminIdentity.csrf_token },
       });
     }

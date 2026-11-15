@@ -108,37 +108,39 @@ def test_quality_api_roles_validation_and_result_history(clients):
         clients[role] for role in ("admin", "operator", "viewer")
     )
     body = definition(name="Quality test " + uuid4().hex)
-    assert viewer.post("/api/quality/checks", json=body).status_code == 403
-    assert operator.post("/api/quality/checks", json=body).status_code == 403
+    assert viewer.post("/api/v1/quality/checks", json=body).status_code == 403
+    assert operator.post("/api/v1/quality/checks", json=body).status_code == 403
     assert (
         admin.post(
-            "/api/quality/checks", json={**body, "tenant_id": "not_registered"}
+            "/api/v1/quality/checks", json={**body, "tenant_id": "not_registered"}
         ).status_code
         == 404
     )
-    created = admin.post("/api/quality/checks", json=body)
+    created = admin.post("/api/v1/quality/checks", json=body)
     assert created.status_code == 201, created.text
     check = created.json()
     try:
-        assert admin.post("/api/quality/checks", json=body).status_code == 409
-        assert viewer.post(f"/api/quality/checks/{check['id']}/run").status_code == 403
-        result = operator.post(f"/api/quality/checks/{check['id']}/run")
+        assert admin.post("/api/v1/quality/checks", json=body).status_code == 409
+        assert (
+            viewer.post(f"/api/v1/quality/checks/{check['id']}/run").status_code == 403
+        )
+        result = operator.post(f"/api/v1/quality/checks/{check['id']}/run")
         assert result.status_code == 200, result.text
         assert result.json()["simulated"] is True
         assert result.json()["status"] == "fail"
         assert result.json()["sampled_rows"] == 100
         assert result.json()["details"]["violations"] == 8
-        history = viewer.get(f"/api/quality/results?check_id={check['id']}")
+        history = viewer.get(f"/api/v1/quality/results?check_id={check['id']}")
         assert history.status_code == 200 and history.json()["total"] == 1
         edited = admin.put(
-            f"/api/quality/checks/{check['id']}",
+            f"/api/v1/quality/checks/{check['id']}",
             json={**body, "params": {"column": "amount", "max_null_rate": 0.1}},
         )
         assert edited.status_code == 200, edited.text
         # Preserve old evidence in history without using it as validation of a new definition.
-        history = viewer.get(f"/api/quality/results?check_id={check['id']}")
+        history = viewer.get(f"/api/v1/quality/results?check_id={check['id']}")
         assert history.json()["total"] == 1
-        listed = viewer.get("/api/quality/checks?tenant_id=acme_retail").json()
+        listed = viewer.get("/api/v1/quality/checks?tenant_id=acme_retail").json()
         assert (
             next(item for item in listed["items"] if item["id"] == check["id"])[
                 "latest_result"
@@ -146,21 +148,22 @@ def test_quality_api_roles_validation_and_result_history(clients):
             is None
         )
         assert (
-            operator.post(f"/api/quality/checks/{check['id']}/run").json()["status"]
+            operator.post(f"/api/v1/quality/checks/{check['id']}/run").json()["status"]
             == "pass"
         )
         assert (
             admin.patch(
-                f"/api/quality/checks/{check['id']}", json={"enabled": False}
+                f"/api/v1/quality/checks/{check['id']}", json={"enabled": False}
             ).status_code
             == 200
         )
         assert (
-            operator.post(f"/api/quality/checks/{check['id']}/run").status_code == 409
+            operator.post(f"/api/v1/quality/checks/{check['id']}/run").status_code
+            == 409
         )
         assert (
             admin.put(
-                f"/api/quality/checks/{check['id']}",
+                f"/api/v1/quality/checks/{check['id']}",
                 json={**body, "tenant_id": "northwind"},
             ).status_code
             == 422

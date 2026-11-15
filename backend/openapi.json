@@ -5,13 +5,13 @@
     "version": "0.2.0"
   },
   "paths": {
-    "/api/health": {
+    "/api/v1/health": {
       "get": {
         "tags": [
           "Health"
         ],
         "summary": "Health",
-        "operationId": "health_api_health_get",
+        "operationId": "health_api_v1_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -20,7 +20,7 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Health Api Health Get"
+                  "title": "Response Health Api V1 Health Get"
                 }
               }
             }
@@ -28,13 +28,13 @@
         }
       }
     },
-    "/api/health/live": {
+    "/api/v1/health/live": {
       "get": {
         "tags": [
           "Health"
         ],
         "summary": "Liveness",
-        "operationId": "liveness_api_health_live_get",
+        "operationId": "liveness_api_v1_health_live_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -43,7 +43,7 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Liveness Api Health Live Get"
+                  "title": "Response Liveness Api V1 Health Live Get"
                 }
               }
             }
@@ -51,13 +51,13 @@
         }
       }
     },
-    "/api/config": {
+    "/api/v1/config": {
       "get": {
         "tags": [
           "Configuration"
         ],
         "summary": "Runtime Config",
-        "operationId": "runtime_config_api_config_get",
+        "operationId": "runtime_config_api_v1_config_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -72,13 +72,13 @@
         }
       }
     },
-    "/api/auth/change-password": {
+    "/api/v1/auth/change-password": {
       "post": {
         "tags": [
           "Authentication"
         ],
         "summary": "Change Password",
-        "operationId": "change_password_api_auth_change_password_post",
+        "operationId": "change_password_api_v1_auth_change_password_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -183,13 +183,13 @@
         }
       }
     },
-    "/api/auth/password": {
+    "/api/v1/auth/password": {
       "post": {
         "tags": [
           "Authentication"
         ],
         "summary": "Change Password",
-        "operationId": "change_password_api_auth_password_post",
+        "operationId": "change_password_api_v1_auth_password_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -294,13 +294,13 @@
         }
       }
     },
-    "/api/auth/login": {
+    "/api/v1/auth/login": {
       "post": {
         "tags": [
           "Authentication"
         ],
         "summary": "Login",
-        "operationId": "login_api_auth_login_post",
+        "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -405,13 +405,13 @@
         }
       }
     },
-    "/api/auth/forgot-password": {
+    "/api/v1/auth/forgot-password": {
       "post": {
         "tags": [
           "Authentication"
         ],
         "summary": "Forgot Password",
-        "operationId": "forgot_password_api_auth_forgot_password_post",
+        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -516,13 +516,13 @@
         }
       }
     },
-    "/api/auth/logout": {
+    "/api/v1/auth/logout": {
       "post": {
         "tags": [
           "Authentication"
         ],
         "summary": "Logout",
-        "operationId": "logout_api_auth_logout_post",
+        "operationId": "logout_api_v1_auth_logout_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -617,13 +617,13 @@
         }
       }
     },
-    "/api/me": {
+    "/api/v1/me": {
       "get": {
         "tags": [
           "Authentication"
         ],
         "summary": "Me",
-        "operationId": "me_api_me_get",
+        "operationId": "me_api_v1_me_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -718,13 +718,13 @@
         }
       }
     },
-    "/api/auth/oidc/start": {
+    "/api/v1/auth/oidc/start": {
       "get": {
         "tags": [
           "Authentication"
         ],
         "summary": "Oidc Start",
-        "operationId": "oidc_start_api_auth_oidc_start_get",
+        "operationId": "oidc_start_api_v1_auth_oidc_start_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -817,13 +817,13 @@
         }
       }
     },
-    "/api/auth/oidc/callback": {
+    "/api/v1/auth/oidc/callback": {
       "get": {
         "tags": [
           "Authentication"
         ],
         "summary": "Oidc Callback",
-        "operationId": "oidc_callback_api_auth_oidc_callback_get",
+        "operationId": "oidc_callback_api_v1_auth_oidc_callback_get",
         "parameters": [
           {
             "name": "code",
@@ -938,13 +938,13 @@
         }
       }
     },
-    "/api/overview": {
+    "/api/v1/overview": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Overview",
-        "operationId": "overview_api_overview_get",
+        "operationId": "overview_api_v1_overview_get",
         "parameters": [
           {
             "name": "range",
@@ -1085,14 +1085,14 @@
         }
       }
     },
-    "/api/metrics/overview": {
+    "/api/v1/metrics/overview": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Metrics Overview",
         "description": "Return aggregate dashboard metrics without run-level or platform detail.",
-        "operationId": "metrics_overview_api_metrics_overview_get",
+        "operationId": "metrics_overview_api_v1_metrics_overview_get",
         "parameters": [
           {
             "name": "range",
@@ -1233,14 +1233,14 @@
         }
       }
     },
-    "/api/metrics/tenants": {
+    "/api/v1/metrics/tenants": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Metrics Tenants",
         "description": "Expose tenant labels and metric summaries, excluding run identifiers and logs.",
-        "operationId": "metrics_tenants_api_metrics_tenants_get",
+        "operationId": "metrics_tenants_api_v1_metrics_tenants_get",
         "parameters": [
           {
             "name": "page",
@@ -1360,13 +1360,13 @@
         }
       }
     },
-    "/api/tenants": {
+    "/api/v1/tenants": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Tenants",
-        "operationId": "tenants_api_tenants_get",
+        "operationId": "tenants_api_v1_tenants_get",
         "parameters": [
           {
             "name": "q",
@@ -1506,13 +1506,13 @@
         }
       }
     },
-    "/api/tenants/{id}": {
+    "/api/v1/tenants/{id}": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Tenant Detail",
-        "operationId": "tenant_detail_api_tenants__id__get",
+        "operationId": "tenant_detail_api_v1_tenants__id__get",
         "parameters": [
           {
             "name": "id",
@@ -1622,7 +1622,7 @@
           "Audited actions"
         ],
         "summary": "Update Tenant",
-        "operationId": "update_tenant_api_tenants__id__patch",
+        "operationId": "update_tenant_api_v1_tenants__id__patch",
         "parameters": [
           {
             "name": "id",
@@ -1738,13 +1738,13 @@
         }
       }
     },
-    "/api/tenants/{id}/maintenance-windows": {
+    "/api/v1/tenants/{id}/maintenance-windows": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Maintenance Windows",
-        "operationId": "maintenance_windows_api_tenants__id__maintenance_windows_get",
+        "operationId": "maintenance_windows_api_v1_tenants__id__maintenance_windows_get",
         "parameters": [
           {
             "name": "id",
@@ -1877,7 +1877,7 @@
           "Audited actions"
         ],
         "summary": "Create Maintenance Window",
-        "operationId": "create_maintenance_window_api_tenants__id__maintenance_windows_post",
+        "operationId": "create_maintenance_window_api_v1_tenants__id__maintenance_windows_post",
         "parameters": [
           {
             "name": "id",
@@ -1993,13 +1993,13 @@
         }
       }
     },
-    "/api/tenants/{id}/timeline": {
+    "/api/v1/tenants/{id}/timeline": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Timeline",
-        "operationId": "timeline_api_tenants__id__timeline_get",
+        "operationId": "timeline_api_v1_tenants__id__timeline_get",
         "parameters": [
           {
             "name": "id",
@@ -2172,13 +2172,13 @@
         }
       }
     },
-    "/api/runs": {
+    "/api/v1/runs": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Runs",
-        "operationId": "runs_api_runs_get",
+        "operationId": "runs_api_v1_runs_get",
         "parameters": [
           {
             "name": "tenant",
@@ -2441,14 +2441,14 @@
         }
       }
     },
-    "/api/tenants/{id}/metrics": {
+    "/api/v1/tenants/{id}/metrics": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Tenant Metrics",
         "description": "Duration and queue aggregates over EVERY run in the range.\n\nThe tenant page used to derive these from the latest-200 timeline page,\nso initial loads silently vanished once CDC runs filled the page. This\nendpoint aggregates the full range in SQL instead.",
-        "operationId": "tenant_metrics_api_tenants__id__metrics_get",
+        "operationId": "tenant_metrics_api_v1_tenants__id__metrics_get",
         "parameters": [
           {
             "name": "id",
@@ -2598,13 +2598,13 @@
         }
       }
     },
-    "/api/runs/{run_key}/log": {
+    "/api/v1/runs/{run_key}/log": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Log",
-        "operationId": "log_api_runs__run_key__log_get",
+        "operationId": "log_api_v1_runs__run_key__log_get",
         "parameters": [
           {
             "name": "run_key",
@@ -2710,13 +2710,13 @@
         }
       }
     },
-    "/api/runs/{run_key}": {
+    "/api/v1/runs/{run_key}": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Run Detail",
-        "operationId": "run_detail_api_runs__run_key__get",
+        "operationId": "run_detail_api_v1_runs__run_key__get",
         "parameters": [
           {
             "name": "run_key",
@@ -2822,13 +2822,13 @@
         }
       }
     },
-    "/api/errors/groups": {
+    "/api/v1/errors/groups": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Groups",
-        "operationId": "groups_api_errors_groups_get",
+        "operationId": "groups_api_v1_errors_groups_get",
         "parameters": [
           {
             "name": "range",
@@ -2992,13 +2992,13 @@
         }
       }
     },
-    "/api/errors/groups/{fingerprint}": {
+    "/api/v1/errors/groups/{fingerprint}": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Group",
-        "operationId": "group_api_errors_groups__fingerprint__get",
+        "operationId": "group_api_v1_errors_groups__fingerprint__get",
         "parameters": [
           {
             "name": "fingerprint",
@@ -3171,13 +3171,13 @@
         }
       }
     },
-    "/api/metrics/durations": {
+    "/api/v1/metrics/durations": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Durations",
-        "operationId": "durations_api_metrics_durations_get",
+        "operationId": "durations_api_v1_metrics_durations_get",
         "parameters": [
           {
             "name": "range",
@@ -3355,13 +3355,13 @@
         }
       }
     },
-    "/api/metrics/mttr": {
+    "/api/v1/metrics/mttr": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Mttr",
-        "operationId": "mttr_api_metrics_mttr_get",
+        "operationId": "mttr_api_v1_metrics_mttr_get",
         "parameters": [
           {
             "name": "range",
@@ -3525,13 +3525,13 @@
         }
       }
     },
-    "/api/metrics/failures-heatmap": {
+    "/api/v1/metrics/failures-heatmap": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Heatmap",
-        "operationId": "heatmap_api_metrics_failures_heatmap_get",
+        "operationId": "heatmap_api_v1_metrics_failures_heatmap_get",
         "parameters": [
           {
             "name": "range",
@@ -3715,13 +3715,13 @@
         }
       }
     },
-    "/api/metrics/failures-breakdown": {
+    "/api/v1/metrics/failures-breakdown": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Failures Breakdown",
-        "operationId": "failures_breakdown_api_metrics_failures_breakdown_get",
+        "operationId": "failures_breakdown_api_v1_metrics_failures_breakdown_get",
         "parameters": [
           {
             "name": "group_by",
@@ -3900,13 +3900,13 @@
         }
       }
     },
-    "/api/freshness": {
+    "/api/v1/freshness": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Freshness",
-        "operationId": "freshness_api_freshness_get",
+        "operationId": "freshness_api_v1_freshness_get",
         "parameters": [
           {
             "name": "page",
@@ -4026,14 +4026,14 @@
         }
       }
     },
-    "/api/forecast": {
+    "/api/v1/forecast": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Forecast",
         "description": "SLA breach forecast (SPEC \u00a72): for each active tenant, project when\nfreshness breaches the SLA if no further run succeeds, using the data\nage, the SLA, and the tenant's observed run interval.",
-        "operationId": "forecast_api_forecast_get",
+        "operationId": "forecast_api_v1_forecast_get",
         "parameters": [
           {
             "name": "page",
@@ -4153,14 +4153,14 @@
         }
       }
     },
-    "/api/dev/mailbox": {
+    "/api/v1/dev/mailbox": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Dev Mailbox",
         "description": "SPEC \u00a713 dev mailbox: account emails captured in demo mode.",
-        "operationId": "dev_mailbox_api_dev_mailbox_get",
+        "operationId": "dev_mailbox_api_v1_dev_mailbox_get",
         "parameters": [
           {
             "name": "page",
@@ -4280,13 +4280,13 @@
         }
       }
     },
-    "/api/volume-anomalies": {
+    "/api/v1/volume-anomalies": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Volume",
-        "operationId": "volume_api_volume_anomalies_get",
+        "operationId": "volume_api_v1_volume_anomalies_get",
         "parameters": [
           {
             "name": "page",
@@ -4406,13 +4406,13 @@
         }
       }
     },
-    "/api/schema-changes": {
+    "/api/v1/schema-changes": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Schema",
-        "operationId": "schema_api_schema_changes_get",
+        "operationId": "schema_api_v1_schema_changes_get",
         "parameters": [
           {
             "name": "page",
@@ -4532,13 +4532,13 @@
         }
       }
     },
-    "/api/alerts": {
+    "/api/v1/alerts": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Alerts",
-        "operationId": "alerts_api_alerts_get",
+        "operationId": "alerts_api_v1_alerts_get",
         "parameters": [
           {
             "name": "state",
@@ -4684,13 +4684,13 @@
         }
       }
     },
-    "/api/alert-rules": {
+    "/api/v1/alert-rules": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Rules",
-        "operationId": "rules_api_alert_rules_get",
+        "operationId": "rules_api_v1_alert_rules_get",
         "parameters": [
           {
             "name": "page",
@@ -4810,13 +4810,13 @@
         }
       }
     },
-    "/api/channels": {
+    "/api/v1/channels": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Channels",
-        "operationId": "channels_api_channels_get",
+        "operationId": "channels_api_v1_channels_get",
         "parameters": [
           {
             "name": "page",
@@ -4936,13 +4936,13 @@
         }
       }
     },
-    "/api/onboarding/{tenant_id}": {
+    "/api/v1/onboarding/{tenant_id}": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Onboarding",
-        "operationId": "onboarding_api_onboarding__tenant_id__get",
+        "operationId": "onboarding_api_v1_onboarding__tenant_id__get",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5048,13 +5048,13 @@
         }
       }
     },
-    "/api/platform/health": {
+    "/api/v1/platform/health": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Platform",
-        "operationId": "platform_api_platform_health_get",
+        "operationId": "platform_api_v1_platform_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5149,13 +5149,13 @@
         }
       }
     },
-    "/api/search": {
+    "/api/v1/search": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Search",
-        "operationId": "search_api_search_get",
+        "operationId": "search_api_v1_search_get",
         "parameters": [
           {
             "name": "q",
@@ -5286,13 +5286,13 @@
         }
       }
     },
-    "/api/audit": {
+    "/api/v1/audit": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Audit",
-        "operationId": "audit_api_audit_get",
+        "operationId": "audit_api_v1_audit_get",
         "parameters": [
           {
             "name": "page",
@@ -5412,13 +5412,13 @@
         }
       }
     },
-    "/api/users": {
+    "/api/v1/users": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Users",
-        "operationId": "users_api_users_get",
+        "operationId": "users_api_v1_users_get",
         "parameters": [
           {
             "name": "page",
@@ -5542,7 +5542,7 @@
           "Audited actions"
         ],
         "summary": "Create User",
-        "operationId": "create_user_api_users_post",
+        "operationId": "create_user_api_v1_users_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -5647,13 +5647,13 @@
         }
       }
     },
-    "/api/operations": {
+    "/api/v1/operations": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Operations",
-        "operationId": "operations_api_operations_get",
+        "operationId": "operations_api_v1_operations_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5748,13 +5748,13 @@
         }
       }
     },
-    "/api/deliveries": {
+    "/api/v1/deliveries": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Deliveries",
-        "operationId": "deliveries_api_deliveries_get",
+        "operationId": "deliveries_api_v1_deliveries_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5849,13 +5849,13 @@
         }
       }
     },
-    "/api/warehouse": {
+    "/api/v1/warehouse": {
       "get": {
         "tags": [
           "Console"
         ],
         "summary": "Warehouse",
-        "operationId": "warehouse_api_warehouse_get",
+        "operationId": "warehouse_api_v1_warehouse_get",
         "parameters": [
           {
             "name": "tenant",
@@ -5961,13 +5961,13 @@
         }
       }
     },
-    "/api/runs/{run_key}/retry": {
+    "/api/v1/runs/{run_key}/retry": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Retry",
-        "operationId": "retry_api_runs__run_key__retry_post",
+        "operationId": "retry_api_v1_runs__run_key__retry_post",
         "parameters": [
           {
             "name": "run_key",
@@ -6073,13 +6073,13 @@
         }
       }
     },
-    "/api/tenants/{id}/maintenance-windows/{window_id}": {
+    "/api/v1/tenants/{id}/maintenance-windows/{window_id}": {
       "delete": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Delete Maintenance Window",
-        "operationId": "delete_maintenance_window_api_tenants__id__maintenance_windows__window_id__delete",
+        "operationId": "delete_maintenance_window_api_v1_tenants__id__maintenance_windows__window_id__delete",
         "parameters": [
           {
             "name": "id",
@@ -6195,13 +6195,13 @@
         }
       }
     },
-    "/api/tenants/{id}/resync": {
+    "/api/v1/tenants/{id}/resync": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Resync",
-        "operationId": "resync_api_tenants__id__resync_post",
+        "operationId": "resync_api_v1_tenants__id__resync_post",
         "parameters": [
           {
             "name": "id",
@@ -6307,13 +6307,13 @@
         }
       }
     },
-    "/api/alerts/{id}/ack": {
+    "/api/v1/alerts/{id}/ack": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Ack",
-        "operationId": "ack_api_alerts__id__ack_post",
+        "operationId": "ack_api_v1_alerts__id__ack_post",
         "parameters": [
           {
             "name": "id",
@@ -6419,13 +6419,13 @@
         }
       }
     },
-    "/api/alerts/{id}/resolve": {
+    "/api/v1/alerts/{id}/resolve": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Resolve",
-        "operationId": "resolve_api_alerts__id__resolve_post",
+        "operationId": "resolve_api_v1_alerts__id__resolve_post",
         "parameters": [
           {
             "name": "id",
@@ -6531,13 +6531,13 @@
         }
       }
     },
-    "/api/alert-rules/{id}": {
+    "/api/v1/alert-rules/{id}": {
       "put": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Update Rule",
-        "operationId": "update_rule_api_alert_rules__id__put",
+        "operationId": "update_rule_api_v1_alert_rules__id__put",
         "parameters": [
           {
             "name": "id",
@@ -6653,13 +6653,13 @@
         }
       }
     },
-    "/api/channels/{id}/test": {
+    "/api/v1/channels/{id}/test": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Test Channel",
-        "operationId": "test_channel_api_channels__id__test_post",
+        "operationId": "test_channel_api_v1_channels__id__test_post",
         "parameters": [
           {
             "name": "id",
@@ -6765,13 +6765,13 @@
         }
       }
     },
-    "/api/onboarding/preflight": {
+    "/api/v1/onboarding/preflight": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Preflight",
-        "operationId": "preflight_api_onboarding_preflight_post",
+        "operationId": "preflight_api_v1_onboarding_preflight_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -6876,13 +6876,13 @@
         }
       }
     },
-    "/api/onboarding": {
+    "/api/v1/onboarding": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Onboard",
-        "operationId": "onboard_api_onboarding_post",
+        "operationId": "onboard_api_v1_onboarding_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -6987,13 +6987,13 @@
         }
       }
     },
-    "/api/users/{id}": {
+    "/api/v1/users/{id}": {
       "patch": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Update User",
-        "operationId": "update_user_api_users__id__patch",
+        "operationId": "update_user_api_v1_users__id__patch",
         "parameters": [
           {
             "name": "id",
@@ -7113,7 +7113,7 @@
           "Audited actions"
         ],
         "summary": "Delete User",
-        "operationId": "delete_user_api_users__id__delete",
+        "operationId": "delete_user_api_v1_users__id__delete",
         "parameters": [
           {
             "name": "id",
@@ -7219,13 +7219,13 @@
         }
       }
     },
-    "/api/roles": {
+    "/api/v1/roles": {
       "get": {
         "tags": [
           "Audited actions"
         ],
         "summary": "List Roles",
-        "operationId": "list_roles_api_roles_get",
+        "operationId": "list_roles_api_v1_roles_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -7236,7 +7236,7 @@
                     "$ref": "#/components/schemas/RoleOut"
                   },
                   "type": "array",
-                  "title": "Response List Roles Api Roles Get"
+                  "title": "Response List Roles Api V1 Roles Get"
                 }
               }
             }
@@ -7328,7 +7328,7 @@
           "Audited actions"
         ],
         "summary": "Create Role",
-        "operationId": "create_role_api_roles_post",
+        "operationId": "create_role_api_v1_roles_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7433,13 +7433,13 @@
         }
       }
     },
-    "/api/roles/{name}": {
+    "/api/v1/roles/{name}": {
       "delete": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Delete Role",
-        "operationId": "delete_role_api_roles__name__delete",
+        "operationId": "delete_role_api_v1_roles__name__delete",
         "parameters": [
           {
             "name": "name",
@@ -7545,13 +7545,13 @@
         }
       }
     },
-    "/api/users/{id}/reset-password": {
+    "/api/v1/users/{id}/reset-password": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Reset Password",
-        "operationId": "reset_password_api_users__id__reset_password_post",
+        "operationId": "reset_password_api_v1_users__id__reset_password_post",
         "parameters": [
           {
             "name": "id",
@@ -7657,13 +7657,13 @@
         }
       }
     },
-    "/api/users/{id}/permissions": {
+    "/api/v1/users/{id}/permissions": {
       "get": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Get User Permissions",
-        "operationId": "get_user_permissions_api_users__id__permissions_get",
+        "operationId": "get_user_permissions_api_v1_users__id__permissions_get",
         "parameters": [
           {
             "name": "id",
@@ -7773,7 +7773,7 @@
           "Audited actions"
         ],
         "summary": "Set User Permissions",
-        "operationId": "set_user_permissions_api_users__id__permissions_put",
+        "operationId": "set_user_permissions_api_v1_users__id__permissions_put",
         "parameters": [
           {
             "name": "id",
@@ -7889,13 +7889,13 @@
         }
       }
     },
-    "/api/operations/{id}/reconcile": {
+    "/api/v1/operations/{id}/reconcile": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Reconcile",
-        "operationId": "reconcile_api_operations__id__reconcile_post",
+        "operationId": "reconcile_api_v1_operations__id__reconcile_post",
         "parameters": [
           {
             "name": "id",
@@ -8011,13 +8011,13 @@
         }
       }
     },
-    "/api/users/{id}/revoke-sessions": {
+    "/api/v1/users/{id}/revoke-sessions": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Revoke Sessions",
-        "operationId": "revoke_sessions_api_users__id__revoke_sessions_post",
+        "operationId": "revoke_sessions_api_v1_users__id__revoke_sessions_post",
         "parameters": [
           {
             "name": "id",
@@ -8123,13 +8123,13 @@
         }
       }
     },
-    "/api/tenants/{id}/workflow": {
+    "/api/v1/tenants/{id}/workflow": {
       "get": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Workflow",
-        "operationId": "workflow_api_tenants__id__workflow_get",
+        "operationId": "workflow_api_v1_tenants__id__workflow_get",
         "parameters": [
           {
             "name": "id",
@@ -8235,13 +8235,13 @@
         }
       }
     },
-    "/api/tenants/{id}/trigger": {
+    "/api/v1/tenants/{id}/trigger": {
       "post": {
         "tags": [
           "Audited actions"
         ],
         "summary": "Trigger",
-        "operationId": "trigger_api_tenants__id__trigger_post",
+        "operationId": "trigger_api_v1_tenants__id__trigger_post",
         "parameters": [
           {
             "name": "id",
@@ -8357,13 +8357,13 @@
         }
       }
     },
-    "/api/stream": {
+    "/api/v1/stream": {
       "get": {
         "tags": [
           "Live events"
         ],
         "summary": "Stream",
-        "operationId": "stream_api_stream_get",
+        "operationId": "stream_api_v1_stream_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8461,13 +8461,13 @@
         }
       }
     },
-    "/api/dependencies/tenants": {
+    "/api/v1/dependencies/tenants": {
       "get": {
         "tags": [
           "Dependencies"
         ],
         "summary": "Dependency Tenants",
-        "operationId": "dependency_tenants_api_dependencies_tenants_get",
+        "operationId": "dependency_tenants_api_v1_dependencies_tenants_get",
         "parameters": [
           {
             "name": "q",
@@ -8587,13 +8587,13 @@
         }
       }
     },
-    "/api/dependencies": {
+    "/api/v1/dependencies": {
       "get": {
         "tags": [
           "Dependencies"
         ],
         "summary": "Dependencies",
-        "operationId": "dependencies_api_dependencies_get",
+        "operationId": "dependencies_api_v1_dependencies_get",
         "parameters": [
           {
             "name": "tenant_id",
@@ -8701,13 +8701,13 @@
         }
       }
     },
-    "/api/saved-views": {
+    "/api/v1/saved-views": {
       "get": {
         "tags": [
           "Investigation"
         ],
         "summary": "Saved Views",
-        "operationId": "saved_views_api_saved_views_get",
+        "operationId": "saved_views_api_v1_saved_views_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8806,7 +8806,7 @@
           "Investigation"
         ],
         "summary": "Save View",
-        "operationId": "save_view_api_saved_views_post",
+        "operationId": "save_view_api_v1_saved_views_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8911,13 +8911,13 @@
         }
       }
     },
-    "/api/saved-views/{view_id}": {
+    "/api/v1/saved-views/{view_id}": {
       "delete": {
         "tags": [
           "Investigation"
         ],
         "summary": "Delete View",
-        "operationId": "delete_view_api_saved_views__view_id__delete",
+        "operationId": "delete_view_api_v1_saved_views__view_id__delete",
         "parameters": [
           {
             "name": "view_id",
@@ -9023,13 +9023,13 @@
         }
       }
     },
-    "/api/investigation/timeline": {
+    "/api/v1/investigation/timeline": {
       "get": {
         "tags": [
           "Investigation"
         ],
         "summary": "Timeline",
-        "operationId": "timeline_api_investigation_timeline_get",
+        "operationId": "timeline_api_v1_investigation_timeline_get",
         "parameters": [
           {
             "name": "tenant",
@@ -9190,13 +9190,13 @@
         }
       }
     },
-    "/api/incidents": {
+    "/api/v1/incidents": {
       "get": {
         "tags": [
           "Incidents"
         ],
         "summary": "Incidents",
-        "operationId": "incidents_api_incidents_get",
+        "operationId": "incidents_api_v1_incidents_get",
         "parameters": [
           {
             "name": "state",
@@ -9336,13 +9336,13 @@
         }
       }
     },
-    "/api/incidents/{incident_id}": {
+    "/api/v1/incidents/{incident_id}": {
       "get": {
         "tags": [
           "Incidents"
         ],
         "summary": "Incident",
-        "operationId": "incident_api_incidents__incident_id__get",
+        "operationId": "incident_api_v1_incidents__incident_id__get",
         "parameters": [
           {
             "name": "incident_id",
@@ -9449,13 +9449,13 @@
         }
       }
     },
-    "/api/incidents/{incident_id}/ack": {
+    "/api/v1/incidents/{incident_id}/ack": {
       "post": {
         "tags": [
           "Incidents"
         ],
         "summary": "Acknowledge",
-        "operationId": "acknowledge_api_incidents__incident_id__ack_post",
+        "operationId": "acknowledge_api_v1_incidents__incident_id__ack_post",
         "parameters": [
           {
             "name": "incident_id",
@@ -9562,13 +9562,13 @@
         }
       }
     },
-    "/api/incidents/{incident_id}/resolve": {
+    "/api/v1/incidents/{incident_id}/resolve": {
       "post": {
         "tags": [
           "Incidents"
         ],
         "summary": "Resolve",
-        "operationId": "resolve_api_incidents__incident_id__resolve_post",
+        "operationId": "resolve_api_v1_incidents__incident_id__resolve_post",
         "parameters": [
           {
             "name": "incident_id",
@@ -9692,13 +9692,13 @@
         }
       }
     },
-    "/api/incidents/{incident_id}/assign": {
+    "/api/v1/incidents/{incident_id}/assign": {
       "post": {
         "tags": [
           "Incidents"
         ],
         "summary": "Assign",
-        "operationId": "assign_api_incidents__incident_id__assign_post",
+        "operationId": "assign_api_v1_incidents__incident_id__assign_post",
         "parameters": [
           {
             "name": "incident_id",
@@ -9815,13 +9815,13 @@
         }
       }
     },
-    "/api/incidents/{incident_id}/notes": {
+    "/api/v1/incidents/{incident_id}/notes": {
       "post": {
         "tags": [
           "Incidents"
         ],
         "summary": "Note",
-        "operationId": "note_api_incidents__incident_id__notes_post",
+        "operationId": "note_api_v1_incidents__incident_id__notes_post",
         "parameters": [
           {
             "name": "incident_id",
@@ -9938,13 +9938,13 @@
         }
       }
     },
-    "/api/quality/checks": {
+    "/api/v1/quality/checks": {
       "get": {
         "tags": [
           "Data quality"
         ],
         "summary": "Checks",
-        "operationId": "checks_api_quality_checks_get",
+        "operationId": "checks_api_v1_quality_checks_get",
         "parameters": [
           {
             "name": "tenant_id",
@@ -10072,7 +10072,7 @@
           "Data quality"
         ],
         "summary": "Create",
-        "operationId": "create_api_quality_checks_post",
+        "operationId": "create_api_v1_quality_checks_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -10177,13 +10177,13 @@
         }
       }
     },
-    "/api/quality/checks/{id}": {
+    "/api/v1/quality/checks/{id}": {
       "put": {
         "tags": [
           "Data quality"
         ],
         "summary": "Update",
-        "operationId": "update_api_quality_checks__id__put",
+        "operationId": "update_api_v1_quality_checks__id__put",
         "parameters": [
           {
             "name": "id",
@@ -10303,7 +10303,7 @@
           "Data quality"
         ],
         "summary": "Toggle",
-        "operationId": "toggle_api_quality_checks__id__patch",
+        "operationId": "toggle_api_v1_quality_checks__id__patch",
         "parameters": [
           {
             "name": "id",
@@ -10419,13 +10419,13 @@
         }
       }
     },
-    "/api/quality/checks/{id}/run": {
+    "/api/v1/quality/checks/{id}/run": {
       "post": {
         "tags": [
           "Data quality"
         ],
         "summary": "Run",
-        "operationId": "run_api_quality_checks__id__run_post",
+        "operationId": "run_api_v1_quality_checks__id__run_post",
         "parameters": [
           {
             "name": "id",
@@ -10531,13 +10531,13 @@
         }
       }
     },
-    "/api/quality/results": {
+    "/api/v1/quality/results": {
       "get": {
         "tags": [
           "Data quality"
         ],
         "summary": "Results",
-        "operationId": "results_api_quality_results_get",
+        "operationId": "results_api_v1_quality_results_get",
         "parameters": [
           {
             "name": "tenant_id",
@@ -10677,13 +10677,13 @@
         }
       }
     },
-    "/api/access": {
+    "/api/v1/access": {
       "get": {
         "tags": [
           "Workspace access"
         ],
         "summary": "Access",
-        "operationId": "access_api_access_get",
+        "operationId": "access_api_v1_access_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10778,14 +10778,14 @@
         }
       }
     },
-    "/api/access/roles/{role_name}/modules/{module_id}": {
+    "/api/v1/access/roles/{role_name}/modules/{module_id}": {
       "put": {
         "tags": [
           "Workspace access"
         ],
         "summary": "Grant Role Module",
         "description": "Grant a product area to a reusable workspace role.",
-        "operationId": "grant_role_module_api_access_roles__role_name__modules__module_id__put",
+        "operationId": "grant_role_module_api_v1_access_roles__role_name__modules__module_id__put",
         "parameters": [
           {
             "name": "role_name",
@@ -10905,7 +10905,7 @@
         ],
         "summary": "Revoke Role Module",
         "description": "Remove a product-area grant from a reusable workspace role.",
-        "operationId": "revoke_role_module_api_access_roles__role_name__modules__module_id__delete",
+        "operationId": "revoke_role_module_api_v1_access_roles__role_name__modules__module_id__delete",
         "parameters": [
           {
             "name": "role_name",
@@ -11020,14 +11020,14 @@
         }
       }
     },
-    "/api/access/users/{id}/modules/{module_id}": {
+    "/api/v1/access/users/{id}/modules/{module_id}": {
       "put": {
         "tags": [
           "Workspace access"
         ],
         "summary": "Set User Module",
         "description": "Apply a per-user module override with an append-only audit event.",
-        "operationId": "set_user_module_api_access_users__id__modules__module_id__put",
+        "operationId": "set_user_module_api_v1_access_users__id__modules__module_id__put",
         "parameters": [
           {
             "name": "id",
@@ -11152,13 +11152,13 @@
         }
       }
     },
-    "/api/pipelines/catalog": {
+    "/api/v1/pipelines/catalog": {
       "get": {
         "tags": [
           "Pipeline catalog"
         ],
         "summary": "Catalog",
-        "operationId": "catalog_api_pipelines_catalog_get",
+        "operationId": "catalog_api_v1_pipelines_catalog_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -11253,13 +11253,13 @@
         }
       }
     },
-    "/api/onboarding/{tenant_id}/resume": {
+    "/api/v1/onboarding/{tenant_id}/resume": {
       "post": {
         "tags": [
           "Onboarding"
         ],
         "summary": "Resume Onboarding",
-        "operationId": "resume_onboarding_api_onboarding__tenant_id__resume_post",
+        "operationId": "resume_onboarding_api_v1_onboarding__tenant_id__resume_post",
         "parameters": [
           {
             "name": "tenant_id",

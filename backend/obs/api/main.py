@@ -80,8 +80,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Pravah API",
     version="0.2.0",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
+    docs_url="/api/v1/docs",
+    openapi_url="/api/v1/openapi.json",
     redoc_url=None,
     lifespan=lifespan,
 )
@@ -154,18 +154,18 @@ async def headers(
     return response
 
 
-@app.get("/api/health", tags=["Health"])
+@app.get("/api/v1/health", tags=["Health"])
 def health() -> dict:
     one("SELECT 1 AS ok")
     return {"status": "ok", "mode": settings().mode, "version": "0.2.0"}
 
 
-@app.get("/api/health/live", tags=["Health"])
+@app.get("/api/v1/health/live", tags=["Health"])
 def liveness() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/api/config", response_model=RuntimeConfig, tags=["Configuration"])
+@app.get("/api/v1/config", response_model=RuntimeConfig, tags=["Configuration"])
 def runtime_config() -> dict:
     config = settings()
     return {
@@ -194,7 +194,7 @@ for router in (
     )
     app.include_router(
         router,
-        prefix="/api",
+        prefix="/api/v1",
         dependencies=module_dependencies,
         responses={
             code: {"model": ErrorEnvelope} for code in (400, 401, 403, 404, 409, 422, 429, 500)

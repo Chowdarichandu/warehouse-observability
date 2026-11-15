@@ -72,7 +72,7 @@ test("search, navigation, typography, and administration work together", async (
     ),
   ).toBeVisible();
   await permissionsDialog.getByRole("button", { name: "Close" }).click();
-  await page.route("**/api/users/*/reset-password", async (route) => {
+  await page.route("**/api/v1/users/*/reset-password", async (route) => {
     await route.fulfill({
       json: {
         message: "Password reset",
