@@ -1,3 +1,4 @@
+import './login.css';
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, ShieldCheck, Workflow } from 'lucide-react';
@@ -11,6 +12,8 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
   const client = useQueryClient();
   const [forgotOpen, setForgotOpen] = useState(false);
   useEffect(() => {
+    const theme = localStorage.getItem('obs-theme') === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
     document.title = `Sign in · ${APP_NAME}`;
   }, []);
   const forgot = useMutation({

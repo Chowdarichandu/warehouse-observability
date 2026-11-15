@@ -336,11 +336,38 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
     ).toBeVisible();
     await chooseSelectOption(metricsTenant, "All tenants");
     await expect(viewerPage).not.toHaveURL(/activity_tenant=/);
-    await viewerPage.screenshot({
-      path: path.resolve("../docs/screenshots/metrics-only.png"),
-      fullPage: true,
-      animations: "disabled",
-    });
+    const screenshotDirectory = path.resolve("../docs/screenshots");
+    for (const viewport of [
+      { width: 1440, height: 1000 },
+      { width: 390, height: 844 },
+    ]) {
+      for (const theme of ["light", "dark"] as const) {
+        await viewerPage.setViewportSize(viewport);
+        await viewerPage.evaluate(
+          (savedTheme) => localStorage.setItem("obs-theme", savedTheme),
+          theme,
+        );
+        await viewerPage.reload();
+        await expect(viewerPage.locator("html")).toHaveAttribute(
+          "data-theme",
+          theme,
+        );
+        await expect(
+          viewerPage.getByRole("heading", {
+            name: "Metrics overview",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await viewerPage.screenshot({
+          path: path.join(
+            screenshotDirectory,
+            `metrics-only-${theme}-${viewport.width}.png`,
+          ),
+          fullPage: true,
+          animations: "disabled",
+        });
+      }
+    }
 
     const metrics = await viewerPage.request.get("/api/metrics/overview");
     expect(metrics.status()).toBe(200);
@@ -382,23 +409,10 @@ test("metrics-only role assignment limits the UI and API to aggregate metrics", 
       viewerPage.getByText("Metrics-only access", { exact: true }),
     ).toBeVisible();
 
-    await viewerPage.goto("/");
-    await viewerPage.setViewportSize({ width: 390, height: 844 });
-    await expect(
-      viewerPage.getByRole("heading", {
-        name: "Metrics overview",
-        exact: true,
-      }),
-    ).toBeVisible();
     const mobileWidth = await viewerPage.evaluate(
       () => document.documentElement.scrollWidth,
     );
     expect(mobileWidth).toBeLessThanOrEqual(390);
-    await viewerPage.screenshot({
-      path: path.resolve("../docs/screenshots/metrics-only-mobile.png"),
-      fullPage: true,
-      animations: "disabled",
-    });
 
     await page.request.patch(`/api/users/${viewerId}`, {
       headers: { "X-CSRF-Token": adminIdentity.csrf_token },

@@ -1,29 +1,40 @@
-export const STATUS_COLORS: Record<string, string> = {
-  healthy: '#18956f',
-  success: '#18956f',
-  pass: '#18956f',
-  enabled: '#18956f',
-  up: '#18956f',
-  degraded: '#c48a16',
-  warning: '#c48a16',
-  acked: '#c48a16',
-  medium: '#c48a16',
-  down: '#df5356',
-  failed: '#df5356',
-  fail: '#df5356',
-  error: '#df5356',
-  critical: '#df5356',
-  high: '#df5356',
-  firing: '#df5356',
-  running: '#488bd0',
-  started: '#488bd0',
-  configured: '#83909e',
-  queued: '#488bd0',
-  onboarding: '#83909e',
-  paused: '#83909e',
-  cancelled: '#83909e',
-  skipped: '#83909e',
-  offboarded: '#83909e',
-  resolved: '#18956f',
-  low: '#83909e',
+import { cssColor } from '../styles/colors';
+
+const statusTokens: Record<string, string> = {
+  healthy: '--ok',
+  success: '--ok',
+  pass: '--ok',
+  enabled: '--ok',
+  up: '--ok',
+  resolved: '--ok',
+  degraded: '--warn',
+  warning: '--warn',
+  acked: '--warn',
+  medium: '--warn',
+  down: '--bad',
+  failed: '--bad',
+  fail: '--bad',
+  error: '--bad',
+  critical: '--bad',
+  high: '--bad',
+  firing: '--bad',
+  running: '--run',
+  started: '--run',
+  queued: '--run',
+  configured: '--idle',
+  onboarding: '--idle',
+  paused: '--idle',
+  cancelled: '--idle',
+  skipped: '--idle',
+  offboarded: '--idle',
+  low: '--idle',
 };
+
+/** Resolve status colors from the active theme when the screen renders. */
+export const STATUS_COLORS: Record<string, string> = new Proxy(Object.create(null), {
+  get: (_target, status: string | symbol) => {
+    if (typeof status !== 'string') return undefined;
+    const token = statusTokens[status.toLowerCase()];
+    return token ? cssColor(token) : cssColor('--ink-500');
+  },
+});

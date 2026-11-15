@@ -1,0 +1,118 @@
+.chart-label {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.insight-banner {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  background: color-mix(in srgb, var(--ok) 4.71%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ok) 13.3%, transparent);
+  border-radius: 7px;
+  padding: 20px;
+  color: var(--ok);
+  margin-bottom: 20px;
+}
+.insight-banner strong {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--title);
+}
+.insight-banner p {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.count-pill {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 6.67%, transparent);
+  padding: 3px 8px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.sparkline {
+  display: flex;
+  height: 32px;
+  align-items: flex-end;
+  gap: 3px;
+}
+.sparkline i {
+  width: 7px;
+  background: var(--ok);
+  border-radius: 2px 2px 0 0;
+}
+.group-description {
+  padding: 0 20px 20px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.group-description > div {
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.mttr-list {
+  padding: 0 20px 10px;
+}
+.mttr-list > div {
+  display: grid;
+  grid-template-columns: 110px 1fr 120px;
+  gap: 15px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mttr-list a {
+  text-transform: capitalize;
+  font-size: 10px;
+}
+.mttr-track {
+  background: var(--subtle);
+  height: 5px;
+  border-radius: 4px;
+}
+.mttr-track i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--run);
+}
+.mttr-list strong {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: right;
+}
+.mttr-list small {
+  display: block;
+  font-size: 8px;
+  font-weight: 400;
+  margin-top: 5px;
+  color: var(--muted);
+}
+
+@media (max-width: 1250px) {
+  .mttr-list > div {
+    grid-template-columns: 90px 1fr 95px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 720px) {
+  .insight-banner {
+    padding: 16px;
+    gap: 12px;
+  }
+  .insight-banner strong {
+    font-size: 14px;
+  }
+  .insight-banner p {
+    font-size: 9px;
+  }
+  .insight-banner > svg {
+    flex-shrink: 0;
+  }
+}

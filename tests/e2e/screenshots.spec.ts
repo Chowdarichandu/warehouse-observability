@@ -1,21 +1,49 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
-test("capture all console screens from the running workspace", async ({
+test("capture every console screen across light/dark desktop and mobile themes", async ({
   page,
 }) => {
+  test.setTimeout(420_000);
+  await page.clock.install({ time: new Date("2026-11-15T12:00:00.000Z") });
   const directory = path.resolve("../docs/screenshots");
   mkdirSync(directory, { recursive: true });
+
+  const viewports = [
+    { width: 1440, height: 1000 },
+    { width: 390, height: 844 },
+  ];
+  const themes = ["light", "dark"] as const;
+  for (const viewport of viewports) {
+    for (const theme of themes) {
+      const loginPage = await page.context().newPage();
+      await loginPage.clock.install({
+        time: new Date("2026-11-15T12:00:00.000Z"),
+      });
+      await loginPage.setViewportSize(viewport);
+      await loginPage.addInitScript(
+        (savedTheme) => localStorage.setItem("obs-theme", savedTheme),
+        theme,
+      );
+      await loginPage.goto("/");
+      await expect(
+        loginPage.getByRole("heading", { name: "Sign in", exact: true }),
+      ).toBeVisible();
+      await loginPage.screenshot({
+        path: path.join(directory, `login-${theme}-${viewport.width}.png`),
+        fullPage: true,
+        animations: "disabled",
+      });
+      await loginPage.close();
+    }
+  }
+
+  await page.setViewportSize(viewports[0]);
   await page.goto("/");
   await expect(
     page.getByRole("button", { name: "Sign in to workspace" }),
   ).toBeVisible();
-  await page.screenshot({
-    path: path.join(directory, "login.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
   await page.getByLabel("Email address").fill("admin@demo.local");
   await page
     .getByLabel("Password", { exact: true })
@@ -24,6 +52,7 @@ test("capture all console screens from the running workspace", async ({
   await expect(
     page.getByRole("heading", { name: "Tenant health", exact: true }),
   ).toBeVisible();
+
   const response = await page.request.get(
     "/api/runs?tenant=acme_retail&status=failed",
   );
@@ -36,42 +65,47 @@ test("capture all console screens from the running workspace", async ({
   expect(detailResponse.ok()).toBeTruthy();
   const detail = await detailResponse.json();
   expect(detail.previous_runs.length).toBeGreaterThan(0);
+
   const screens = [
-    { url: "/", file: "overview.png" },
-    { url: "/tenants", file: "tenants.png" },
-    { url: "/tenants/acme_retail", file: "tenant-detail.png" },
-    { url: "/runs?status=failed&range=7d", file: "runs.png" },
+    { slug: "overview", url: "/" },
+    { slug: "tenants", url: "/tenants" },
+    { slug: "tenant-detail", url: "/tenants/acme_retail" },
+    { slug: "orchestration", url: "/pipelines" },
+    { slug: "runs", url: "/runs?status=failed&range=7d" },
     {
+      slug: "run-detail",
       url: `/runs/${encodeURIComponent(failed.items[0].run_key)}`,
-      file: "run-detail.png",
     },
-    { url: "/dependencies?tenant=acme_retail", file: "dependencies.png" },
-    { url: "/quality", file: "quality.png" },
-    { url: "/warehouse", file: "warehouse.png" },
-    { url: "/activity?tenant=acme_retail&range=1h", file: "activity.png" },
+    { slug: "dependencies", url: "/dependencies?tenant=acme_retail" },
+    { slug: "quality", url: "/quality" },
+    { slug: "warehouse", url: "/warehouse" },
+    { slug: "activity", url: "/activity?tenant=acme_retail&range=1h" },
     {
+      slug: "comparison",
       url: `/runs/${encodeURIComponent(failed.items[0].run_key)}?compare=${encodeURIComponent(detail.previous_runs[0].run_key)}`,
-      file: "comparison.png",
     },
-    { url: "/errors?range=7d", file: "errors.png" },
-    { url: "/freshness", file: "freshness.png" },
-    { url: "/alerts", file: "alerts.png" },
-    { url: "/onboarding", file: "onboarding.png" },
-    { url: "/platform", file: "platform.png" },
-    { url: "/admin", file: "admin.png" },
-    { url: "/admin?section=roles", file: "admin-roles.png" },
-    { url: "/admin?section=operations", file: "admin-operations.png" },
-    { url: "/admin?section=activity", file: "admin-activity.png" },
-    { url: "/admin?section=audit", file: "admin-audit.png" },
-    { url: "/search?q=binlog", file: "search.png" },
-    { url: "/styleguide", file: "styleguide.png" },
-    { url: "/?tv=1", file: "tv-mode.png" },
+    { slug: "errors", url: "/errors?range=7d" },
+    { slug: "freshness", url: "/freshness" },
+    { slug: "alerts", url: "/alerts" },
+    { slug: "incidents", url: "/incidents" },
+    { slug: "onboarding", url: "/onboarding" },
+    { slug: "platform", url: "/platform" },
+    { slug: "access", url: "/access" },
+    { slug: "account", url: "/account" },
+    { slug: "dev-mailbox", url: "/dev/mailbox" },
+    { slug: "admin", url: "/admin" },
+    { slug: "admin-roles", url: "/admin?section=roles" },
+    { slug: "admin-operations", url: "/admin?section=operations" },
+    { slug: "admin-activity", url: "/admin?section=activity" },
+    { slug: "admin-audit", url: "/admin?section=audit" },
+    { slug: "search", url: "/search?q=binlog" },
+    { slug: "styleguide", url: "/styleguide" },
+    { slug: "tv-mode", url: "/?tv=1" },
   ];
-  const ready = async () => {
+
+  const ready = async (url: string) => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    // The styleguide intentionally renders loading and error specimens as
-    // component examples; they do not indicate that the route is still busy.
-    if (new URL(page.url()).pathname !== "/styleguide") {
+    if (new URL(url, page.url()).pathname !== "/styleguide") {
       await expect(page.getByRole("status", { name: "Loading" })).toHaveCount(
         0,
       );
@@ -87,61 +121,35 @@ test("capture all console screens from the running workspace", async ({
     }
     await page.evaluate(() => window.scrollTo(0, 0));
   };
-  for (const screen of screens) {
-    await page.goto(screen.url);
-    await ready();
-    await page.screenshot({
-      path: path.join(directory, screen.file),
-      fullPage: true,
-      animations: "disabled",
-    });
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    for (const theme of themes) {
+      await page.goto("/");
+      await ready("/");
+      const currentTheme = await page
+        .locator("html")
+        .getAttribute("data-theme");
+      if (currentTheme !== theme) {
+        await page.getByLabel("Toggle color theme").click();
+      }
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      for (const screen of screens) {
+        await page.goto(screen.url);
+        await ready(screen.url);
+        if (screen.slug === "tenants" && viewport.width === 390) {
+          await expect(page.locator(".health-grid-mobile")).toBeVisible();
+          await expect(page.locator(".health-grid-desktop")).toBeHidden();
+        }
+        await page.screenshot({
+          path: path.join(
+            directory,
+            `${screen.slug}-${theme}-${viewport.width}.png`,
+          ),
+          fullPage: true,
+          animations: "disabled",
+        });
+      }
+    }
   }
-  await page.goto("/");
-  await ready();
-  await page.getByLabel("Toggle color theme").click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.screenshot({
-    path: path.join(directory, "overview-dark.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
-  await page.getByLabel("Toggle color theme").click();
-  await page.goto("/styleguide");
-  await ready();
-  await page.getByRole("button", { name: "Switch to dark theme" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.screenshot({
-    path: path.join(directory, "styleguide-dark.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
-  await page.getByRole("button", { name: "Switch to light theme" }).click();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/tenants");
-  await ready();
-  await expect(page.locator(".health-grid-mobile")).toBeVisible();
-  await expect(
-    page.locator(".health-grid-mobile .health-card").first(),
-  ).toBeVisible();
-  await expect(page.locator(".health-grid-desktop")).toBeHidden();
-  await page.screenshot({
-    path: path.join(directory, "mobile.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
-  await page.goto("/");
-  await ready();
-  await page.screenshot({
-    path: path.join(directory, "overview-mobile.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
-  await page.getByLabel("Toggle color theme").click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await ready();
-  await page.screenshot({
-    path: path.join(directory, "overview-dark-mobile.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
 });

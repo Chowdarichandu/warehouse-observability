@@ -99,7 +99,7 @@
 }
 .access-permission-icon.available {
   color: var(--green);
-  background: #15826712;
+  background: color-mix(in srgb, var(--ok) 7.06%, transparent);
 }
 .access-permission > div {
   flex: 1;
@@ -230,9 +230,9 @@
   scroll-margin-top: 90px;
 }
 .access-confirm .button.danger {
-  color: #c45555;
-  border-color: #c4555540;
-  background: #c4555508;
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 25.1%, transparent);
+  background: color-mix(in srgb, var(--bad) 3.14%, transparent);
 }
 @media (max-width: 800px) {
   .access-identity-grid {

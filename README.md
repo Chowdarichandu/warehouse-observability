@@ -2,7 +2,7 @@
 
 **Warehouse observability for multi-tenant Airbyte and Airflow pipelines.**
 
-![Pravah overview](docs/screenshots/overview.png)
+![Pravah overview](docs/screenshots/overview-light-1440.png)
 
 Pravah follows every sync from source to warehouse:
 

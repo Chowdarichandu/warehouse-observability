@@ -1,3 +1,4 @@
+import { cssColor, cssFont } from '../styles/colors';
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart, HeatmapChart } from 'echarts/charts';
@@ -54,9 +55,9 @@ export function EChart({ option, height = 240 }: { option: EChartsCoreOption; he
         animationDuration: 240,
         animationDurationUpdate: 260,
         textStyle: {
-          fontFamily: 'IBM Plex Sans, system-ui, sans-serif',
+          fontFamily: cssFont(),
           fontSize: 11,
-          color: '#81909f',
+          color: cssColor('--run'),
         },
         grid: { left: 46, right: 24, top: 30, bottom: 36, containLabel: true },
         ...option,
@@ -66,7 +67,7 @@ export function EChart({ option, height = 240 }: { option: EChartsCoreOption; he
           confine: true,
           backgroundColor: 'rgba(13, 24, 36, 0.96)',
           borderWidth: 0,
-          textStyle: { color: '#e8eff6', fontSize: 12 },
+          textStyle: { color: cssColor('--run-soft'), fontSize: 12 },
           extraCssText:
             'border-radius: 10px; box-shadow: 0 14px 34px rgba(5, 12, 22, 0.35); padding: 10px 12px;',
         },

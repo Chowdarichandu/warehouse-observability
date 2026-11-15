@@ -1,3 +1,32 @@
+.dag-phase,
+.dag-unobserved,
+.dag-observed,
+.dag-card-foot,
+.dag-card > code,
+.catalog-note,
+.source-branch-heading {
+  font-size: 12px;
+}
+.dag-unobserved {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--subtle);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 550;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.dag-card > p,
+.coordinator-explainer p,
+.catalog-intro,
+.catalog-intro > div {
+  font-size: 13px;
+}
+
 .catalog-intro {
   display: flex;
   align-items: center;
@@ -97,7 +126,7 @@
 }
 .coordinator-explainer {
   padding: 21px 24px;
-  border-left: 2px solid #72b9a5;
+  border-left: 2px solid var(--ok);
 }
 .coordinator-explainer h2 {
   font-size: 23px;
@@ -139,12 +168,12 @@
   gap: 16px;
 }
 .dag-mongo .dag-icon {
-  color: #6d7ead;
-  background: #edf1fa;
+  color: var(--run);
+  background: var(--run-soft);
 }
 :root[data-theme='dark'] .dag-mongo .dag-icon {
-  background: #28364c;
-  color: #a7badd;
+  background: var(--sunken);
+  color: var(--run);
 }
 .catalog-note {
   display: flex;

@@ -1,0 +1,56 @@
+.freshness-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.freshness-meter small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.anomaly-card,
+.schema-card {
+  padding: 0 20px 22px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.anomaly-card > p {
+  margin: 10px 0;
+}
+.anomaly-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--bad);
+  margin-top: 20px;
+  font-size: 29px;
+  letter-spacing: -0.5px;
+}
+.anomaly-value small {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.schema-card > p {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 17px 10px;
+  margin: 20px 0 14px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ok) 4.31%, transparent);
+}
+.forecast-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.forecast-list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+.forecast-list li:last-child {
+  border-bottom: 0;
+}

@@ -645,7 +645,7 @@ A page passes at 17/20 or higher, with no zeros.
 
 ### 11.2 Gates (CI)
 
-- **Lint:** no raw hex values, no arbitrary Tailwind values, no inline styles in components except computed geometry (chart and timeline positions).
+- **Lint:** no raw hex values or font families, no `text-transform: uppercase`, no arbitrary Tailwind values, and no inline styles in components except computed geometry (chart and timeline positions). The token lint runs as part of `make lint`.
 - **Accessibility:** axe finds zero serious or critical issues on every page, in light and dark.
 - **Visual regression:** Playwright screenshots for every page in §7, at 1440 and 390 px, light and dark, on seeded demo data with a frozen clock. Diffs are reviewed in the PR.
 - **Layout stability:** CLS under 0.01 on Overview during a 60-second live session.

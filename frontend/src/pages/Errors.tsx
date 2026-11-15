@@ -1,3 +1,5 @@
+import './errors.css';
+import { cssColor } from '../styles/colors';
 import { useQuery } from '@tanstack/react-query';
 import { Select } from '../components/Select';
 import { ArrowRight, Layers3, Search } from 'lucide-react';
@@ -249,12 +251,12 @@ export function Errors() {
                   type: 'category',
                   data: Array.from({ length: 24 }, (_, i) => `${i}`),
                   splitArea: { show: true },
-                  axisLabel: { color: '#81909f', fontSize: 10 },
+                  axisLabel: { color: cssColor('--run'), fontSize: 10 },
                 },
                 yAxis: {
                   type: 'category',
                   data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                  axisLabel: { color: '#81909f' },
+                  axisLabel: { color: cssColor('--run') },
                 },
                 visualMap: {
                   min: 0,
@@ -265,8 +267,15 @@ export function Errors() {
                   itemHeight: 100,
                   itemWidth: 8,
                   text: ['More', 'Less'],
-                  textStyle: { color: '#81909f' },
-                  inRange: { color: ['#eaf2ee', '#a4c9b5', '#e3ad76', '#d45e5f'] },
+                  textStyle: { color: cssColor('--run') },
+                  inRange: {
+                    color: [
+                      cssColor('--ok-soft'),
+                      cssColor('--ok'),
+                      cssColor('--warn-fill'),
+                      cssColor('--bad'),
+                    ],
+                  },
                 },
                 series: [
                   {
@@ -281,7 +290,11 @@ export function Errors() {
                           ?.failures || 0,
                       ];
                     }),
-                    itemStyle: { borderColor: '#ffffff55', borderWidth: 2, borderRadius: 3 },
+                    itemStyle: {
+                      borderColor: cssColor('--surface', 0.3333),
+                      borderWidth: 2,
+                      borderRadius: 3,
+                    },
                   },
                 ],
               }}
@@ -338,19 +351,22 @@ export function Errors() {
                 height={280}
                 option={{
                   grid: { left: 120, right: 25, top: 15, bottom: 30 },
-                  xAxis: { type: 'value', splitLine: { lineStyle: { color: '#81909f22' } } },
+                  xAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: cssColor('--run', 0.1333) } },
+                  },
                   yAxis: {
                     type: 'category',
                     data: breakdown.data.items.map((row) =>
                       tenantNames ? displayTenant(row.name) : row.name,
                     ),
-                    axisLabel: { color: '#81909f', fontSize: 9 },
+                    axisLabel: { color: cssColor('--run'), fontSize: 9 },
                   },
                   series: [
                     {
                       type: 'bar',
                       barMaxWidth: 18,
-                      itemStyle: { color: '#9cb7c6', borderRadius: [0, 3, 3, 0] },
+                      itemStyle: { color: cssColor('--run'), borderRadius: [0, 3, 3, 0] },
                       data: breakdown.data.items.map((row) => row.count),
                     },
                   ],
@@ -377,15 +393,18 @@ export function Errors() {
             yAxis: {
               type: 'category',
               data: groups.map((g) => g.error_class),
-              axisLabel: { color: '#81909f', fontSize: 10 },
+              axisLabel: { color: cssColor('--run'), fontSize: 10 },
             },
-            xAxis: { type: 'value', splitLine: { lineStyle: { color: '#81909f22' } } },
+            xAxis: {
+              type: 'value',
+              splitLine: { lineStyle: { color: cssColor('--run', 0.1333) } },
+            },
             series: [
               {
                 type: 'bar',
                 data: groups.map((g) => g.occurrences),
                 barMaxWidth: 18,
-                itemStyle: { color: '#d66c6b', borderRadius: [0, 3, 3, 0] },
+                itemStyle: { color: cssColor('--bad'), borderRadius: [0, 3, 3, 0] },
               },
             ],
           }}

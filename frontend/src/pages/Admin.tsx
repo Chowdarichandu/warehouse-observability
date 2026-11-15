@@ -1,0 +1,899 @@
+import './system.css';
+import { useState } from 'react';
+import { Select } from '../components/Select';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { Copy, Eye, EyeOff, KeyRound, Plus, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Operations } from './Operations';
+import { Activity } from '../components/Investigation';
+import { api } from '../api/client';
+import type { Schema } from '../api/client';
+import { useApp } from '../AppContext';
+import {
+  Empty,
+  ErrorState,
+  Loading,
+  PageHeader,
+  Pagination,
+  Panel,
+  Time,
+  useFilters,
+} from '../components/ui';
+
+const PERMISSION_LABELS: Record<string, string> = {
+  view_console: 'View console',
+  metrics_only: 'Metrics dashboard only',
+  trigger_pipelines: 'Trigger & retry pipelines',
+  manage_tenants: 'Onboard & edit tenants',
+  manage_alerts: 'Acknowledge & resolve alerts',
+  manage_users: 'Manage users & roles',
+  manage_platform: 'Platform operations',
+  view_module_hrms: 'HRMS module access',
+  view_module_finance: 'Finance module access',
+  view_module_sap: 'SAP module access',
+  view_module_pos: 'POS module access',
+  view_module_inventory: 'Inventory module access',
+  view_module_support: 'Support module access',
+  view_module_hospitality: 'Hospitality module access',
+};
+
+function RolesPanel({ roles }: { roles: Schema<'RoleOut'>[] }) {
+  const { notify } = useApp();
+  const client = useQueryClient();
+  const [name, setName] = useState('');
+  const [baseLevel, setBaseLevel] = useState('operator');
+  const [description, setDescription] = useState('');
+  const [picked, setPicked] = useState<string[]>(['trigger_pipelines']);
+  const metricsOnly = picked.includes('metrics_only');
+  const create = useMutation({
+    mutationFn: () =>
+      api<Schema<'RoleOut'>>('/roles', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: name.trim(),
+          base_level: baseLevel,
+          permissions: picked,
+          description: description || null,
+        }),
+      }),
+    onSuccess: (role) => {
+      notify(`Role ${role.name} created. Assign it from the user table above.`);
+      setName('');
+      setDescription('');
+      setPicked(['trigger_pipelines']);
+      setBaseLevel('operator');
+      void client.invalidateQueries({ queryKey: ['roles'] });
+    },
+    onError: (e) => notify(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (roleName: string) =>
+      api<Schema<'Message'>>(`/roles/${encodeURIComponent(roleName)}`, { method: 'DELETE' }),
+    onSuccess: (r) => {
+      notify(r.message);
+      void client.invalidateQueries();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const toggle = (permission: string) => {
+    if (permission === 'metrics_only') {
+      if (metricsOnly) setPicked([]);
+      else {
+        setBaseLevel('viewer');
+        setPicked(['metrics_only']);
+      }
+      return;
+    }
+    setPicked((prev) =>
+      prev.includes(permission) ? prev.filter((x) => x !== permission) : [...prev, permission],
+    );
+  };
+  return (
+    <Panel
+      title="Roles & permissions"
+      subtitle="Create a named role, choose its access level and product modules, then assign it from the user table above."
+    >
+      <div className="roles-list">
+        {roles.map((role) => (
+          <div className="role-card" key={role.name}>
+            <div className="role-card-head">
+              <strong>{role.name}</strong>
+              <span className="tag">
+                {role.system ? 'BUILT-IN' : `CUSTOM · ${role.base_level.toUpperCase()} ACCESS`}
+              </span>
+              {!role.system && (
+                <button
+                  className="icon-button"
+                  aria-label={`Delete role ${role.name}`}
+                  disabled={remove.isPending}
+                  onClick={() => remove.mutate(role.name)}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            {role.description && <p className="role-desc">{role.description}</p>}
+            <div className="role-perms">
+              {role.permissions.map((permission) => (
+                <span className="tag" key={permission}>
+                  {PERMISSION_LABELS[permission] || permission}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <form
+        className="role-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <div className="role-form-heading">
+          <div>
+            <h4>
+              <Plus size={15} /> Create a role
+            </h4>
+            <p>Give the role a clear name, access level, and the permissions it needs.</p>
+          </div>
+          <span className="tag">CUSTOM ROLE</span>
+        </div>
+        <div className="role-form-grid">
+          <label>
+            Role name
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. support_engineer"
+              required
+              minLength={2}
+            />
+          </label>
+          <label>
+            Access level
+            <Select
+              value={baseLevel}
+              disabled={metricsOnly}
+              onChange={(e) => setBaseLevel(e.target.value)}
+            >
+              <option value="viewer">Viewer — look, don’t touch</option>
+              <option value="operator">Operator — run day-to-day work</option>
+              <option value="admin">Admin — full control</option>
+            </Select>
+          </label>
+          <label className="role-description-field">
+            What is this role for? (optional)
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. On-call support engineers"
+            />
+          </label>
+        </div>
+        <fieldset className="role-perms-picker">
+          <legend>Permissions — tick what this role can do</legend>
+          {Object.entries(PERMISSION_LABELS).map(([permission, label]) => (
+            <label key={permission} className="check-row">
+              <input
+                type="checkbox"
+                checked={permission === 'view_console' || picked.includes(permission)}
+                disabled={
+                  permission === 'view_console' || (metricsOnly && permission !== 'metrics_only')
+                }
+                onChange={() => toggle(permission)}
+              />
+              {label}
+              {permission === 'view_console' && <small> (always on)</small>}
+              {permission === 'metrics_only' && <small> (dashboard and account only)</small>}
+            </label>
+          ))}
+        </fieldset>
+        <div className="role-form-actions">
+          <span className="muted">You can assign this role from the Users tab.</span>
+          <button className="button primary" disabled={create.isPending || name.trim().length < 2}>
+            <Plus size={14} /> Create role
+          </button>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
+const ROLE_RANK: Record<string, number> = { viewer: 0, operator: 1, admin: 2 };
+
+function PermissionsDialog({
+  target,
+  onClose,
+}: {
+  target: { id: number; email: string };
+  onClose: () => void;
+}) {
+  const { notify } = useApp();
+  const client = useQueryClient();
+  const view = useQuery({
+    queryKey: ['user-permissions', target.id],
+    queryFn: () => api<Schema<'UserPermissionsOut'>>(`/users/${target.id}/permissions`),
+  });
+  const [desired, setDesired] = useState<Set<string> | null>(null);
+  const data = view.data;
+  const current = desired ?? new Set(data?.effective ?? []);
+  const save = useMutation({
+    mutationFn: (body: Schema<'UserPermissionsIn'>) =>
+      api<Schema<'UserPermissionsOut'>>(`/users/${target.id}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      notify('Permissions updated.');
+      void client.invalidateQueries({ queryKey: ['users'] });
+      onClose();
+    },
+    onError: (e) => notify(e.message),
+  });
+  const toggle = (permission: string) =>
+    setDesired((prev) => {
+      const next = new Set(prev ?? data?.effective ?? []);
+      if (next.has(permission)) next.delete(permission);
+      else next.add(permission);
+      return next;
+    });
+  const submit = () => {
+    if (!data) return;
+    const bundle = new Set(data.bundle);
+    save.mutate({
+      grants: [...current].filter((p) => !bundle.has(p)),
+      revokes: data.bundle.filter((p) => !current.has(p)),
+    });
+  };
+  return (
+    <div className="modal-scrim" role="presentation" onClick={onClose}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="User permissions"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <h3>Permissions</h3>
+          <button className="icon-button" aria-label="Close" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+        {view.isPending ? (
+          <Loading />
+        ) : view.error ? (
+          <ErrorState error={view.error} />
+        ) : (
+          data && (
+            <>
+              <p>
+                {target.email} — role: {data.role}
+                {data.role_name ? ` (${data.role_name})` : ''}. Tick what this one user can do;
+                changes apply on top of their role and to nobody else. Permissions from a higher
+                tier can't be added here — change the user's role for those.
+              </p>
+              <div className="role-perms-picker">
+                {data.permissions.map((meta) => {
+                  const inBundle = data.bundle.includes(meta.name);
+                  const checked = current.has(meta.name);
+                  const metricsConflict =
+                    meta.name === 'metrics_only' &&
+                    (data.role !== 'viewer' ||
+                      data.bundle.some(
+                        (permission) => !['view_console', 'metrics_only'].includes(permission),
+                      ));
+                  const metricsRestricted = current.has('metrics_only');
+                  const locked =
+                    (ROLE_RANK[meta.min_role] ?? 0) > (ROLE_RANK[data.role] ?? 0) ||
+                    metricsConflict ||
+                    (metricsRestricted && !['view_console', 'metrics_only'].includes(meta.name));
+                  const tag = locked
+                    ? metricsConflict || metricsRestricted
+                      ? 'Viewer metrics-only scope'
+                      : `Needs ${meta.min_role} role`
+                    : meta.name === 'view_console'
+                      ? 'Always on'
+                      : checked && !inBundle
+                        ? 'Added for this user'
+                        : !checked && inBundle
+                          ? 'Removed for this user'
+                          : inBundle
+                            ? 'From role'
+                            : '';
+                  return (
+                    <label key={meta.name} className="check-row">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={locked || meta.name === 'view_console' || save.isPending || !data}
+                        onChange={() => toggle(meta.name)}
+                      />
+                      <span>{PERMISSION_LABELS[meta.name] || meta.name}</span>
+                      {tag && <span className="tag">{tag}</span>}
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="modal-actions">
+                <button className="button" onClick={onClose}>
+                  Cancel
+                </button>
+                <button className="button primary" disabled={save.isPending} onClick={submit}>
+                  {save.isPending ? 'Saving…' : 'Save permissions'}
+                </button>
+              </div>
+            </>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function Admin() {
+  const { isAdmin, notify, runtime, user: currentUser } = useApp();
+  const { page, set, params } = useFilters();
+  const section = ['users', 'roles', 'operations', 'activity', 'audit'].includes(
+    params.get('section') || '',
+  )
+    ? params.get('section')!
+    : 'users';
+  const client = useQueryClient();
+  const users = useQuery({
+    queryKey: ['users'],
+    queryFn: () => api<Schema<'Page_User_'>>('/users'),
+    enabled: isAdmin,
+  });
+  const audit = useQuery({
+    queryKey: ['audit', page],
+    queryFn: () => api<Schema<'Page_AuditEntry_'>>(`/audit?page=${page}`),
+    enabled: isAdmin,
+  });
+  const [resetInfo, setResetInfo] = useState<{ temporary: string; email?: string } | null>(null);
+  const [revealTemporary, setRevealTemporary] = useState(false);
+  const [permTarget, setPermTarget] = useState<{ id: number; email: string } | null>(null);
+  const [roleChange, setRoleChange] = useState<{ id: number; email: string; value: string } | null>(
+    null,
+  );
+  const [resetTarget, setResetTarget] = useState<{ id: number; email: string } | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const createUser = useMutation({
+    mutationFn: (body: Schema<'UserCreate'>) =>
+      api<Schema<'UserCreateResult'>>('/users', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (r, body) => {
+      notify(r.message);
+      setAddOpen(false);
+      if (r.temporary_password) {
+        setRevealTemporary(false);
+        setResetInfo({ temporary: r.temporary_password, email: body.email });
+      }
+      void client.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (e) => notify(e.message),
+  });
+  const [removeTarget, setRemoveTarget] = useState<{ id: number; email: string } | null>(null);
+  const removeUser = useMutation({
+    mutationFn: (id: number) => api<Schema<'Message'>>(`/users/${id}`, { method: 'DELETE' }),
+    onSuccess: (r) => {
+      notify(r.message);
+      setRemoveTarget(null);
+      void client.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (e) => notify(e.message),
+  });
+  const roles = useQuery({
+    queryKey: ['roles'],
+    queryFn: () => api<Schema<'RoleOut'>[]>('/roles'),
+    enabled: isAdmin,
+  });
+  const customRoles = (roles.data ?? []).filter((r) => !r.system);
+  const reset = useMutation({
+    mutationFn: (id: number) =>
+      api<Schema<'PasswordResetResult'>>(`/users/${id}/reset-password`, { method: 'POST' }),
+    onSuccess: (r, id) => {
+      setRevealTemporary(false);
+      setResetInfo({
+        temporary: r.temporary_password,
+        email: users.data?.items.find((account) => account.user_id === id)?.email,
+      });
+    },
+    onError: (e) => notify(e.message),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: { role?: string; role_name?: string } }) =>
+      api<Schema<'Message'>>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    onSuccess: (r) => {
+      notify(r.message);
+      void client.invalidateQueries();
+    },
+    onError: (e) => notify(e.message),
+  });
+  if (!isAdmin)
+    return (
+      <>
+        <PageHeader title="Administration" description="Workspace access and audit history." />
+        <div className="notice info">
+          <ShieldCheck size={21} />
+          <p>This page requires the Admin role.</p>
+        </div>
+      </>
+    );
+  return (
+    <>
+      <PageHeader
+        title="Administration"
+        description="Manage workspace access and review a complete history of actions."
+      />
+      <div className="admin-intro">
+        <div>
+          <strong>Workspace controls</strong>
+          <span>Manage identities, permissions, operational outcomes, and audit records.</span>
+        </div>
+        <Link to="/access" className="button">
+          View access policy
+        </Link>
+      </div>
+      <nav className="admin-tabs" aria-label="Administration sections">
+        {[
+          ['users', 'Users'],
+          ['roles', 'Roles'],
+          ['operations', 'Operations'],
+          ['activity', 'Activity'],
+          ['audit', 'Audit trail'],
+        ].map(([id, label]) => (
+          <button
+            type="button"
+            key={id}
+            aria-current={section === id ? 'page' : undefined}
+            onClick={() => set('section', id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      {section === 'users' && (
+        <Panel
+          title="Users & roles"
+          subtitle="Viewers inspect. Operators act. Administrators manage access and settings."
+          action={
+            <button
+              className="button small primary"
+              disabled={runtime.auth_provider === 'oidc'}
+              onClick={() => setAddOpen(!addOpen)}
+            >
+              <Plus size={13} /> Add user
+            </button>
+          }
+        >
+          {addOpen && (
+            <form
+              className="settings-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const data = new FormData(e.currentTarget);
+                const roleValue = String(data.get('role'));
+                const chosen = String(data.get('initial_password') || '').trim();
+                const builtin = ['viewer', 'operator', 'admin'].includes(roleValue);
+                createUser.mutate({
+                  email: String(data.get('email')),
+                  display_name: String(data.get('display_name')),
+                  role: (builtin ? roleValue : 'viewer') as 'viewer' | 'operator' | 'admin',
+                  ...(builtin ? {} : { role_name: roleValue }),
+                  ...(chosen ? { initial_password: chosen } : {}),
+                });
+              }}
+            >
+              <label>
+                Email
+                <input type="email" name="email" required placeholder="person@company.example" />
+              </label>
+              <label>
+                Display name
+                <input name="display_name" required placeholder="Full name" />
+              </label>
+              <label>
+                Role
+                <Select name="role" defaultValue="viewer">
+                  <optgroup label="Built-in roles">
+                    {['viewer', 'operator', 'admin'].map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customRoles.length > 0 && (
+                    <optgroup label="Custom roles">
+                      {customRoles.map((role) => (
+                        <option key={role.name} value={role.name}>
+                          {role.name} ({role.base_level})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </Select>
+              </label>
+              <label>
+                Password (optional)
+                <input
+                  name="initial_password"
+                  minLength={8}
+                  placeholder="Leave blank to generate one"
+                />
+              </label>
+              <button className="button primary" disabled={createUser.isPending}>
+                <Plus size={14} /> Create user
+              </button>
+            </form>
+          )}
+          {users.isPending ? (
+            <Loading />
+          ) : users.error ? (
+            <ErrorState error={users.error} />
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Authentication</th>
+                    <th>Password</th>
+                    <th>Permissions</th>
+                    <th>Manage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.data.items.map((user) => (
+                    <tr key={user.user_id}>
+                      <td>
+                        <strong>{user.display_name}</strong>
+                      </td>
+                      <td>{user.email}</td>
+                      <td>
+                        <Select
+                          aria-label={`Role for ${user.email}`}
+                          value={user.role_name || user.role}
+                          disabled={update.isPending || runtime.auth_provider === 'oidc'}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === (user.role_name || user.role)) return;
+                            setRoleChange({ id: user.user_id, email: user.email, value });
+                          }}
+                        >
+                          <optgroup label="Built-in roles">
+                            {['viewer', 'operator', 'admin'].map((role) => (
+                              <option key={role} value={role}>
+                                {role}
+                              </option>
+                            ))}
+                          </optgroup>
+                          {customRoles.length > 0 && (
+                            <optgroup label="Custom roles">
+                              {customRoles.map((role) => (
+                                <option key={role.name} value={role.name}>
+                                  {role.name} ({role.base_level})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </Select>
+                      </td>
+                      <td>
+                        <span className="tag">
+                          {runtime.auth_provider === 'oidc' ? 'ORGANIZATION SSO' : 'LOCAL · ARGON2'}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="button small"
+                          disabled={reset.isPending || runtime.auth_provider === 'oidc'}
+                          onClick={() => setResetTarget({ id: user.user_id, email: user.email })}
+                        >
+                          <KeyRound size={13} /> Reset
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          className="button small"
+                          disabled={
+                            user.user_id === currentUser.user_id || runtime.auth_provider === 'oidc'
+                          }
+                          title={
+                            user.user_id === currentUser.user_id
+                              ? 'You cannot change your own permissions'
+                              : `Permissions for ${user.email}`
+                          }
+                          onClick={() => setPermTarget({ id: user.user_id, email: user.email })}
+                        >
+                          <ShieldCheck size={13} /> Permissions
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          className="button small"
+                          disabled={
+                            removeUser.isPending ||
+                            user.user_id === currentUser.user_id ||
+                            runtime.auth_provider === 'oidc'
+                          }
+                          title={
+                            user.user_id === currentUser.user_id
+                              ? 'You cannot remove your own account'
+                              : `Remove ${user.email}`
+                          }
+                          onClick={() => setRemoveTarget({ id: user.user_id, email: user.email })}
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      )}
+      {section === 'roles' &&
+        (roles.isPending ? (
+          <Loading />
+        ) : roles.error ? (
+          <ErrorState error={roles.error} />
+        ) : (
+          roles.data && <RolesPanel roles={roles.data} />
+        ))}
+      {permTarget && <PermissionsDialog target={permTarget} onClose={() => setPermTarget(null)} />}
+      {section === 'operations' && <Operations />}
+      {section === 'activity' && <Activity embedded />}
+      {roleChange && (
+        <div className="modal-scrim" role="presentation" onClick={() => setRoleChange(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Change role"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Change role</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setRoleChange(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Change {roleChange.email}'s role to <strong>{roleChange.value}</strong>? Their access
+              changes straight away.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setRoleChange(null)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={update.isPending}
+                onClick={() => {
+                  const change = roleChange;
+                  setRoleChange(null);
+                  update.mutate({
+                    id: change.id,
+                    body: ['viewer', 'operator', 'admin'].includes(change.value)
+                      ? { role: change.value }
+                      : { role_name: change.value },
+                  });
+                }}
+              >
+                Change role
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {resetTarget && (
+        <div className="modal-scrim" role="presentation" onClick={() => setResetTarget(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reset password"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Reset password</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setResetTarget(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Reset the password for {resetTarget.email}? Their existing sessions will be revoked,
+              and you'll get a temporary password to share with them.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setResetTarget(null)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={reset.isPending}
+                onClick={() => {
+                  const target = resetTarget;
+                  setResetTarget(null);
+                  reset.mutate(target.id);
+                }}
+              >
+                Reset password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {removeTarget && (
+        <div className="modal-scrim" role="presentation" onClick={() => setRemoveTarget(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Remove user"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Remove user</h3>
+              <button
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setRemoveTarget(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              Remove <strong>{removeTarget.email}</strong>? They will no longer be able to sign in,
+              and this cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="button" onClick={() => setRemoveTarget(null)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={removeUser.isPending}
+                onClick={() => removeUser.mutate(removeTarget.id)}
+              >
+                <Trash2 size={14} /> {removeUser.isPending ? 'Removing…' : 'Remove user'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {resetInfo && (
+        <div className="modal-scrim" role="presentation" onClick={() => setResetInfo(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Temporary password"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Temporary password</h3>
+              <button className="icon-button" aria-label="Close" onClick={() => setResetInfo(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <p>
+              {resetInfo.email ? (
+                <>
+                  For <strong>{resetInfo.email}</strong>.{' '}
+                </>
+              ) : null}
+              This one-time password is shown only in this dialog. Share it securely, then ask the
+              user to change it after signing in.
+            </p>
+            <p className="temp-password mono" aria-live="polite">
+              {revealTemporary ? resetInfo.temporary : '••••••••••••'}
+            </p>
+            <div className="modal-actions">
+              <button
+                className="button"
+                aria-pressed={revealTemporary}
+                onClick={() => setRevealTemporary((shown) => !shown)}
+              >
+                {revealTemporary ? <EyeOff size={14} /> : <Eye size={14} />}
+                {revealTemporary ? 'Hide password' : 'Reveal password'}
+              </button>
+              <button
+                className="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(resetInfo.temporary);
+                    notify('Temporary password copied. Share it securely.');
+                  } catch {
+                    notify(
+                      'Clipboard access is unavailable. Reveal the password to copy it manually.',
+                    );
+                  }
+                }}
+              >
+                <Copy size={14} /> Copy password
+              </button>
+              <button
+                className="button primary"
+                onClick={() => {
+                  setRevealTemporary(false);
+                  setResetInfo(null);
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {section === 'audit' && (
+        <Panel
+          title="Audit trail"
+          subtitle="Every successful mutation records its actor, target, and timestamp."
+        >
+          {audit.isPending ? (
+            <Loading />
+          ) : audit.error ? (
+            <ErrorState error={audit.error} />
+          ) : audit.data.items.length ? (
+            <>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Actor</th>
+                      <th>Action</th>
+                      <th>Target</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {audit.data.items.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>
+                          <Time value={entry.at} />
+                        </td>
+                        <td className="mono">{entry.actor}</td>
+                        <td>
+                          <span className="tag">{entry.action.replaceAll('_', ' ')}</span>
+                        </td>
+                        <td className="mono truncate-cell" title={entry.target || ''}>
+                          {entry.target || '—'}
+                        </td>
+                        <td className="mono truncate-cell">{JSON.stringify(entry.details)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                total={audit.data.total}
+                page={page}
+                onChange={(p) => set('page', String(p))}
+              />
+            </>
+          ) : (
+            <Empty title="No actions recorded yet" />
+          )}
+        </Panel>
+      )}
+    </>
+  );
+}

@@ -1,3 +1,5 @@
+import './runs.css';
+import { cssColor } from '../styles/colors';
 import { useEffect, useRef, useState } from 'react';
 import { Select } from '../components/Select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -388,17 +390,20 @@ export function RunDetail() {
             label="Records synced by stream"
             option={{
               grid: { left: 110, right: 40, top: 10, bottom: 30 },
-              xAxis: { type: 'value', splitLine: { lineStyle: { color: '#81909f22' } } },
+              xAxis: {
+                type: 'value',
+                splitLine: { lineStyle: { color: cssColor('--run', 0.1333) } },
+              },
               yAxis: {
                 type: 'category',
                 data: streams.map((s) => s.stream_name),
-                axisLabel: { color: '#81909f' },
+                axisLabel: { color: cssColor('--run') },
               },
               series: [
                 {
                   type: 'bar',
                   barMaxWidth: 14,
-                  itemStyle: { color: '#4e9c86', borderRadius: [0, 3, 3, 0] },
+                  itemStyle: { color: cssColor('--ok'), borderRadius: [0, 3, 3, 0] },
                   data: streams.map((s) => s.records),
                 },
               ],

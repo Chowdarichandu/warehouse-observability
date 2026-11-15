@@ -29,6 +29,7 @@ gallery:
 	$(PY) scripts/gallery.py
 
 lint:
+	python3 scripts/lint_tokens.py
 	.venv/bin/ruff check backend/obs tests/backend scripts
 	.venv/bin/ruff format --check backend/obs tests/backend scripts
 	cd frontend && npm run lint

@@ -1,3 +1,4 @@
+import './alerts.css';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Select } from '../components/Select';

@@ -1,3 +1,4 @@
+import './freshness.css';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, GitBranch, Plus, Table2 } from 'lucide-react';
 import { api } from '../api/client';

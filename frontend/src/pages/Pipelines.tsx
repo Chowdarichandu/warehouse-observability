@@ -1,3 +1,4 @@
+import './pipelines.css';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
@@ -14,7 +15,6 @@ import type { Schema } from '../api/client';
 import { useApp } from '../AppContext';
 import { StatusPill } from '../components/StatusPill';
 import { Empty, ErrorState, Loading, PageHeader, Panel, Time, plural } from '../components/ui';
-import './pipelines.css';
 
 export function Pipelines() {
   const { can } = useApp();

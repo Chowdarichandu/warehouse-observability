@@ -1,3 +1,4 @@
+import './onboarding.css';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
@@ -26,7 +27,6 @@ import { Field } from '../components/onboarding/Field';
 import { OnboardingProgress } from '../components/onboarding/Progress';
 import { blankDraft, initialDraft, slugify, validateDraft } from '../components/onboarding/draft';
 import type { DraftErrors, OnboardDraft } from '../components/onboarding/draft';
-import './onboarding.css';
 
 const STAGES = [
   { title: 'Tenant details', description: 'Identity, ownership & service level' },

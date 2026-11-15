@@ -1,3 +1,4 @@
+import './dev-mailbox.css';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { Schema } from '../api/client';

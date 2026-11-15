@@ -1,213 +1,632 @@
-# Pravah screens
+# Pravah screen captures
 
-Screen captures from the offline demo. All tenant names and data are fictional.
+Each screen has four fresh captures: light and dark at 1440 px and 390 px. All tenant names and data are fictional.
 
 ## Pipeline overview
 
-Tenant health, KPIs, durations, failures, and live activity.
+Workspace health, pipeline performance, and live activity.
 
-[![Pipeline overview](overview.png)](overview.png)
+**Light · 1440 px**
+
+[![Pipeline overview · Light · 1440 px](overview-light-1440.png)](overview-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Pipeline overview · Dark · 1440 px](overview-dark-1440.png)](overview-dark-1440.png)
+
+**Light · 390 px**
+
+[![Pipeline overview · Light · 390 px](overview-light-390.png)](overview-light-390.png)
+
+**Dark · 390 px**
+
+[![Pipeline overview · Dark · 390 px](overview-dark-390.png)](overview-dark-390.png)
+
 
 ## Tenants
 
-Client health, pipeline states, freshness, and service levels.
+Tenant health, pipeline states, freshness, and service levels.
 
-[![Tenants](tenants.png)](tenants.png)
+**Light · 1440 px**
+
+[![Tenants · Light · 1440 px](tenants-light-1440.png)](tenants-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Tenants · Dark · 1440 px](tenants-dark-1440.png)](tenants-dark-1440.png)
+
+**Light · 390 px**
+
+[![Tenants · Light · 390 px](tenants-light-390.png)](tenants-light-390.png)
+
+**Dark · 390 px**
+
+[![Tenants · Dark · 390 px](tenants-dark-390.png)](tenants-dark-390.png)
+
 
 ## Tenant investigation
 
-Acme's CDC incident, timeline, metrics, and configuration.
+Workflow status, source history, metrics, and maintenance.
 
-[![Tenant investigation](tenant-detail.png)](tenant-detail.png)
+**Light · 1440 px**
+
+[![Tenant investigation · Light · 1440 px](tenant-detail-light-1440.png)](tenant-detail-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Tenant investigation · Dark · 1440 px](tenant-detail-dark-1440.png)](tenant-detail-dark-1440.png)
+
+**Light · 390 px**
+
+[![Tenant investigation · Light · 390 px](tenant-detail-light-390.png)](tenant-detail-light-390.png)
+
+**Dark · 390 px**
+
+[![Tenant investigation · Dark · 390 px](tenant-detail-dark-390.png)](tenant-detail-dark-390.png)
+
+
+## Pipeline orchestration
+
+DAG catalog, dependencies, and gated workflow actions.
+
+**Light · 1440 px**
+
+[![Pipeline orchestration · Light · 1440 px](orchestration-light-1440.png)](orchestration-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Pipeline orchestration · Dark · 1440 px](orchestration-dark-1440.png)](orchestration-dark-1440.png)
+
+**Light · 390 px**
+
+[![Pipeline orchestration · Light · 390 px](orchestration-light-390.png)](orchestration-light-390.png)
+
+**Dark · 390 px**
+
+[![Pipeline orchestration · Dark · 390 px](orchestration-dark-390.png)](orchestration-dark-390.png)
+
 
 ## Pipeline runs
 
 Filtered run explorer with pagination and CSV export.
 
-[![Pipeline runs](runs.png)](runs.png)
+**Light · 1440 px**
+
+[![Pipeline runs · Light · 1440 px](runs-light-1440.png)](runs-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Pipeline runs · Dark · 1440 px](runs-dark-1440.png)](runs-dark-1440.png)
+
+**Light · 390 px**
+
+[![Pipeline runs · Light · 390 px](runs-light-390.png)](runs-light-390.png)
+
+**Dark · 390 px**
+
+[![Pipeline runs · Dark · 390 px](runs-dark-390.png)](runs-dark-390.png)
+
 
 ## Run investigation
 
-Classified error, recommended fix, and redacted log.
+Classified errors, recommendations, and redacted logs.
 
-[![Run investigation](run-detail.png)](run-detail.png)
+**Light · 1440 px**
 
-## Error intelligence
+[![Run investigation · Light · 1440 px](run-detail-light-1440.png)](run-detail-light-1440.png)
 
-Root-cause groups, failure heatmap, and recovery metrics.
+**Dark · 1440 px**
 
-[![Error intelligence](errors.png)](errors.png)
+[![Run investigation · Dark · 1440 px](run-detail-dark-1440.png)](run-detail-dark-1440.png)
 
-## Freshness & volume
+**Light · 390 px**
 
-Source SLAs, Orbit's volume drop, and schema drift.
+[![Run investigation · Light · 390 px](run-detail-light-390.png)](run-detail-light-390.png)
 
-[![Freshness & volume](freshness.png)](freshness.png)
+**Dark · 390 px**
+
+[![Run investigation · Dark · 390 px](run-detail-dark-390.png)](run-detail-dark-390.png)
+
 
 ## Pipeline dependencies
 
-Configured routes, observed execution links, and potential downstream impact.
+Observed links and downstream impact.
 
-[![Pipeline dependencies](dependencies.png)](dependencies.png)
+**Light · 1440 px**
+
+[![Pipeline dependencies · Light · 1440 px](dependencies-light-1440.png)](dependencies-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Pipeline dependencies · Dark · 1440 px](dependencies-dark-1440.png)](dependencies-dark-1440.png)
+
+**Light · 390 px**
+
+[![Pipeline dependencies · Light · 390 px](dependencies-light-390.png)](dependencies-light-390.png)
+
+**Dark · 390 px**
+
+[![Pipeline dependencies · Dark · 390 px](dependencies-dark-390.png)](dependencies-dark-390.png)
+
 
 ## Data quality
 
-Sample-based checks, aggregate evidence, and result history.
+Checks, evidence, and result history.
 
-[![Data quality](quality.png)](quality.png)
+**Light · 1440 px**
 
-## Activity
+[![Data quality · Light · 1440 px](quality-light-1440.png)](quality-light-1440.png)
 
-A chronological view of run, alert, onboarding, action, and quality events.
+**Dark · 1440 px**
 
-[![Activity](activity.png)](activity.png)
+[![Data quality · Dark · 1440 px](quality-dark-1440.png)](quality-dark-1440.png)
 
-## Run comparison
+**Light · 390 px**
 
-Side-by-side run metrics and per-stream record differences.
+[![Data quality · Light · 390 px](quality-light-390.png)](quality-light-390.png)
 
-[![Run comparison](comparison.png)](comparison.png)
+**Dark · 390 px**
 
-## Pipeline orchestration
+[![Data quality · Dark · 390 px](quality-dark-390.png)](quality-dark-390.png)
 
-Seven configured DAGs and their source branches.
-
-[![Pipeline orchestration](orchestration.png)](orchestration.png)
-
-## Access & roles
-
-Effective permissions, role guide, and account management.
-
-[![Access & roles](access.png)](access.png)
-
-## Account settings
-
-Sign-in settings and secure password change.
-
-[![Account settings](account.png)](account.png)
-
-## Alerts
-
-Alert lifecycle, notification channels, and built-in rules.
-
-[![Alerts](alerts.png)](alerts.png)
-
-## Onboarding
-
-The guided setup flow and CDC pre-flight checks.
-
-[![Onboarding](onboarding.png)](onboarding.png)
-
-## Platform
-
-Component history, Airflow pools, collectors, and database health.
-
-[![Platform](platform.png)](platform.png)
 
 ## Warehouse catalog
 
-Table-level freshness, volume, schema history, and warehouse health.
+Table freshness, volume, schema history, and health.
 
-[![Warehouse catalog](warehouse.png)](warehouse.png)
+**Light · 1440 px**
 
-## Administration
+[![Warehouse catalog · Light · 1440 px](warehouse-light-1440.png)](warehouse-light-1440.png)
 
-Users, roles, operation outcomes, notification deliveries, and audit history.
+**Dark · 1440 px**
 
-[![Administration](admin.png)](admin.png)
+[![Warehouse catalog · Dark · 1440 px](warehouse-dark-1440.png)](warehouse-dark-1440.png)
 
-## Role administration
+**Light · 390 px**
 
-Custom role permissions and the built-in access matrix.
+[![Warehouse catalog · Light · 390 px](warehouse-light-390.png)](warehouse-light-390.png)
 
-[![Role administration](admin-roles.png)](admin-roles.png)
+**Dark · 390 px**
 
-## Role administration on mobile
+[![Warehouse catalog · Dark · 390 px](warehouse-dark-390.png)](warehouse-dark-390.png)
 
-Custom role permissions in the narrow-screen layout.
-
-[![Role administration on mobile](admin-roles-mobile.png)](admin-roles-mobile.png)
-
-## Operations and delivery
-
-Durable action outcomes and notification delivery history.
-
-[![Operations and delivery](admin-operations.png)](admin-operations.png)
 
 ## Administration activity
 
 Recent workspace actions and account changes.
 
-[![Administration activity](admin-activity.png)](admin-activity.png)
+**Light · 1440 px**
+
+[![Administration activity · Light · 1440 px](activity-light-1440.png)](activity-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Administration activity · Dark · 1440 px](activity-dark-1440.png)](activity-dark-1440.png)
+
+**Light · 390 px**
+
+[![Administration activity · Light · 390 px](activity-light-390.png)](activity-light-390.png)
+
+**Dark · 390 px**
+
+[![Administration activity · Dark · 390 px](activity-dark-390.png)](activity-dark-390.png)
+
+
+## Run comparison
+
+Side-by-side run metrics and stream differences.
+
+**Light · 1440 px**
+
+[![Run comparison · Light · 1440 px](comparison-light-1440.png)](comparison-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Run comparison · Dark · 1440 px](comparison-dark-1440.png)](comparison-dark-1440.png)
+
+**Light · 390 px**
+
+[![Run comparison · Light · 390 px](comparison-light-390.png)](comparison-light-390.png)
+
+**Dark · 390 px**
+
+[![Run comparison · Dark · 390 px](comparison-dark-390.png)](comparison-dark-390.png)
+
+
+## Error intelligence
+
+Root-cause groups, failure heatmap, and recovery metrics.
+
+**Light · 1440 px**
+
+[![Error intelligence · Light · 1440 px](errors-light-1440.png)](errors-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Error intelligence · Dark · 1440 px](errors-dark-1440.png)](errors-dark-1440.png)
+
+**Light · 390 px**
+
+[![Error intelligence · Light · 390 px](errors-light-390.png)](errors-light-390.png)
+
+**Dark · 390 px**
+
+[![Error intelligence · Dark · 390 px](errors-dark-390.png)](errors-dark-390.png)
+
+
+## Freshness and volume
+
+Source SLAs, volume changes, and schema drift.
+
+**Light · 1440 px**
+
+[![Freshness and volume · Light · 1440 px](freshness-light-1440.png)](freshness-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Freshness and volume · Dark · 1440 px](freshness-dark-1440.png)](freshness-dark-1440.png)
+
+**Light · 390 px**
+
+[![Freshness and volume · Light · 390 px](freshness-light-390.png)](freshness-light-390.png)
+
+**Dark · 390 px**
+
+[![Freshness and volume · Dark · 390 px](freshness-dark-390.png)](freshness-dark-390.png)
+
+
+## Alerts
+
+Alert lifecycle, notification channels, and rules.
+
+**Light · 1440 px**
+
+[![Alerts · Light · 1440 px](alerts-light-1440.png)](alerts-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Alerts · Dark · 1440 px](alerts-dark-1440.png)](alerts-dark-1440.png)
+
+**Light · 390 px**
+
+[![Alerts · Light · 390 px](alerts-light-390.png)](alerts-light-390.png)
+
+**Dark · 390 px**
+
+[![Alerts · Dark · 390 px](alerts-dark-390.png)](alerts-dark-390.png)
+
+
+## Incidents
+
+Grouped alerts, notes, assignment, and resolution.
+
+**Light · 1440 px**
+
+[![Incidents · Light · 1440 px](incidents-light-1440.png)](incidents-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Incidents · Dark · 1440 px](incidents-dark-1440.png)](incidents-dark-1440.png)
+
+**Light · 390 px**
+
+[![Incidents · Light · 390 px](incidents-light-390.png)](incidents-light-390.png)
+
+**Dark · 390 px**
+
+[![Incidents · Dark · 390 px](incidents-dark-390.png)](incidents-dark-390.png)
+
+
+## Onboarding
+
+Tenant setup, source validation, and initial workflow.
+
+**Light · 1440 px**
+
+[![Onboarding · Light · 1440 px](onboarding-light-1440.png)](onboarding-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Onboarding · Dark · 1440 px](onboarding-dark-1440.png)](onboarding-dark-1440.png)
+
+**Light · 390 px**
+
+[![Onboarding · Light · 390 px](onboarding-light-390.png)](onboarding-light-390.png)
+
+**Dark · 390 px**
+
+[![Onboarding · Dark · 390 px](onboarding-dark-390.png)](onboarding-dark-390.png)
+
+
+## Platform
+
+Airflow, Airbyte, collectors, and database health.
+
+**Light · 1440 px**
+
+[![Platform · Light · 1440 px](platform-light-1440.png)](platform-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Platform · Dark · 1440 px](platform-dark-1440.png)](platform-dark-1440.png)
+
+**Light · 390 px**
+
+[![Platform · Light · 390 px](platform-light-390.png)](platform-light-390.png)
+
+**Dark · 390 px**
+
+[![Platform · Dark · 390 px](platform-dark-390.png)](platform-dark-390.png)
+
+
+## Access and roles
+
+Effective permissions, role guide, and sessions.
+
+**Light · 1440 px**
+
+[![Access and roles · Light · 1440 px](access-light-1440.png)](access-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Access and roles · Dark · 1440 px](access-dark-1440.png)](access-dark-1440.png)
+
+**Light · 390 px**
+
+[![Access and roles · Light · 390 px](access-light-390.png)](access-light-390.png)
+
+**Dark · 390 px**
+
+[![Access and roles · Dark · 390 px](access-dark-390.png)](access-dark-390.png)
+
+
+## Account settings
+
+Profile and secure password change.
+
+**Light · 1440 px**
+
+[![Account settings · Light · 1440 px](account-light-1440.png)](account-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Account settings · Dark · 1440 px](account-dark-1440.png)](account-dark-1440.png)
+
+**Light · 390 px**
+
+[![Account settings · Light · 390 px](account-light-390.png)](account-light-390.png)
+
+**Dark · 390 px**
+
+[![Account settings · Dark · 390 px](account-dark-390.png)](account-dark-390.png)
+
+
+## Dev mailbox
+
+Captured password reset and invite messages.
+
+**Light · 1440 px**
+
+[![Dev mailbox · Light · 1440 px](dev-mailbox-light-1440.png)](dev-mailbox-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Dev mailbox · Dark · 1440 px](dev-mailbox-dark-1440.png)](dev-mailbox-dark-1440.png)
+
+**Light · 390 px**
+
+[![Dev mailbox · Light · 390 px](dev-mailbox-light-390.png)](dev-mailbox-light-390.png)
+
+**Dark · 390 px**
+
+[![Dev mailbox · Dark · 390 px](dev-mailbox-dark-390.png)](dev-mailbox-dark-390.png)
+
+
+## Administration
+
+Users, access, operations, and audit history.
+
+**Light · 1440 px**
+
+[![Administration · Light · 1440 px](admin-light-1440.png)](admin-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Administration · Dark · 1440 px](admin-dark-1440.png)](admin-dark-1440.png)
+
+**Light · 390 px**
+
+[![Administration · Light · 390 px](admin-light-390.png)](admin-light-390.png)
+
+**Dark · 390 px**
+
+[![Administration · Dark · 390 px](admin-dark-390.png)](admin-dark-390.png)
+
+
+## Role administration
+
+Custom roles and the built-in access matrix.
+
+**Light · 1440 px**
+
+[![Role administration · Light · 1440 px](admin-roles-light-1440.png)](admin-roles-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Role administration · Dark · 1440 px](admin-roles-dark-1440.png)](admin-roles-dark-1440.png)
+
+**Light · 390 px**
+
+[![Role administration · Light · 390 px](admin-roles-light-390.png)](admin-roles-light-390.png)
+
+**Dark · 390 px**
+
+[![Role administration · Dark · 390 px](admin-roles-dark-390.png)](admin-roles-dark-390.png)
+
+
+## Operations and delivery
+
+Durable actions and notification deliveries.
+
+**Light · 1440 px**
+
+[![Operations and delivery · Light · 1440 px](admin-operations-light-1440.png)](admin-operations-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Operations and delivery · Dark · 1440 px](admin-operations-dark-1440.png)](admin-operations-dark-1440.png)
+
+**Light · 390 px**
+
+[![Operations and delivery · Light · 390 px](admin-operations-light-390.png)](admin-operations-light-390.png)
+
+**Dark · 390 px**
+
+[![Operations and delivery · Dark · 390 px](admin-operations-dark-390.png)](admin-operations-dark-390.png)
+
+
+## Administration activity
+
+Recent identity and configuration actions.
+
+**Light · 1440 px**
+
+[![Administration activity · Light · 1440 px](admin-activity-light-1440.png)](admin-activity-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Administration activity · Dark · 1440 px](admin-activity-dark-1440.png)](admin-activity-dark-1440.png)
+
+**Light · 390 px**
+
+[![Administration activity · Light · 390 px](admin-activity-light-390.png)](admin-activity-light-390.png)
+
+**Dark · 390 px**
+
+[![Administration activity · Dark · 390 px](admin-activity-dark-390.png)](admin-activity-dark-390.png)
+
 
 ## Audit history
 
 Recorded access and configuration changes.
 
-[![Audit history](admin-audit.png)](admin-audit.png)
+**Light · 1440 px**
+
+[![Audit history · Light · 1440 px](admin-audit-light-1440.png)](admin-audit-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Audit history · Dark · 1440 px](admin-audit-dark-1440.png)](admin-audit-dark-1440.png)
+
+**Light · 390 px**
+
+[![Audit history · Light · 390 px](admin-audit-light-390.png)](admin-audit-light-390.png)
+
+**Dark · 390 px**
+
+[![Audit history · Dark · 390 px](admin-audit-dark-390.png)](admin-audit-dark-390.png)
+
 
 ## Global search
 
-Full-text search over classified errors and redacted logs.
+Search over tenants, errors, and redacted logs.
 
-[![Global search](search.png)](search.png)
+**Light · 1440 px**
 
-## Metrics-only access
+[![Global search · Light · 1440 px](search-light-1440.png)](search-light-1440.png)
 
-Aggregate workspace metrics viewed with a least-privilege role.
+**Dark · 1440 px**
 
-[![Metrics-only access](metrics-only.png)](metrics-only.png)
+[![Global search · Dark · 1440 px](search-dark-1440.png)](search-dark-1440.png)
 
-## Metrics-only access on mobile
+**Light · 390 px**
 
-Aggregate workspace metrics in the narrow-screen layout.
+[![Global search · Light · 390 px](search-light-390.png)](search-light-390.png)
 
-[![Metrics-only access on mobile](metrics-only-mobile.png)](metrics-only-mobile.png)
+**Dark · 390 px**
+
+[![Global search · Dark · 390 px](search-dark-390.png)](search-dark-390.png)
+
 
 ## Design system
 
-Pravah interface tokens and component states.
+Pravah tokens and component states.
 
-[![Design system](styleguide.png)](styleguide.png)
+**Light · 1440 px**
 
-## Design system, dark theme
+[![Design system · Light · 1440 px](styleguide-light-1440.png)](styleguide-light-1440.png)
 
-Pravah tokens and component states in dark mode.
+**Dark · 1440 px**
 
-[![Design system, dark theme](styleguide-dark.png)](styleguide-dark.png)
+[![Design system · Dark · 1440 px](styleguide-dark-1440.png)](styleguide-dark-1440.png)
+
+**Light · 390 px**
+
+[![Design system · Light · 390 px](styleguide-light-390.png)](styleguide-light-390.png)
+
+**Dark · 390 px**
+
+[![Design system · Dark · 390 px](styleguide-dark-390.png)](styleguide-dark-390.png)
+
 
 ## TV mode
 
-Overview without navigation, for a shared office screen.
+Overview for a shared workspace display.
 
-[![TV mode](tv-mode.png)](tv-mode.png)
+**Light · 1440 px**
 
-## Dark theme
+[![TV mode · Light · 1440 px](tv-mode-light-1440.png)](tv-mode-light-1440.png)
 
-The overview in dark mode.
+**Dark · 1440 px**
 
-[![Dark theme](overview-dark.png)](overview-dark.png)
+[![TV mode · Dark · 1440 px](tv-mode-dark-1440.png)](tv-mode-dark-1440.png)
 
-## Mobile overview
+**Light · 390 px**
 
-The Pravah overview at a narrow viewport in light mode.
+[![TV mode · Light · 390 px](tv-mode-light-390.png)](tv-mode-light-390.png)
 
-[![Mobile overview](overview-mobile.png)](overview-mobile.png)
+**Dark · 390 px**
 
-## Mobile overview, dark theme
+[![TV mode · Dark · 390 px](tv-mode-dark-390.png)](tv-mode-dark-390.png)
 
-The Pravah overview at a narrow viewport in dark mode.
 
-[![Mobile overview, dark theme](overview-dark-mobile.png)](overview-dark-mobile.png)
+## Metrics-only access
 
-## Mobile
+Aggregate data shown to a least-privilege role.
 
-Tenant health and service levels on a narrow viewport.
+**Light · 1440 px**
 
-[![Mobile](mobile.png)](mobile.png)
+[![Metrics-only access · Light · 1440 px](metrics-only-light-1440.png)](metrics-only-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Metrics-only access · Dark · 1440 px](metrics-only-dark-1440.png)](metrics-only-dark-1440.png)
+
+**Light · 390 px**
+
+[![Metrics-only access · Light · 390 px](metrics-only-light-390.png)](metrics-only-light-390.png)
+
+**Dark · 390 px**
+
+[![Metrics-only access · Dark · 390 px](metrics-only-dark-390.png)](metrics-only-dark-390.png)
+
 
 ## Sign in
 
-Local demo accounts with Viewer, Operator, and Admin roles.
+Pravah sign-in at desktop and mobile sizes.
 
-[![Sign in](login.png)](login.png)
+**Light · 1440 px**
+
+[![Sign in · Light · 1440 px](login-light-1440.png)](login-light-1440.png)
+
+**Dark · 1440 px**
+
+[![Sign in · Dark · 1440 px](login-dark-1440.png)](login-dark-1440.png)
+
+**Light · 390 px**
+
+[![Sign in · Light · 390 px](login-light-390.png)](login-light-390.png)
+
+**Dark · 390 px**
+
+[![Sign in · Dark · 390 px](login-dark-390.png)](login-dark-390.png)

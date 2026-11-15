@@ -4,6 +4,7 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Adopt design tokens across the UI, lint raw colors and typography, load screen styles with their routes, and split the largest screen modules into smaller lazy-loaded components.
 - Use Pravah branding in the sign-in screen, workspace header and browser titles. Planned modules now stay non-interactive until their screens are available, and live onboarding messages explain the tenant-isolation gate.
 - Move the screenshot gallery into `docs/screenshots/` so the README hero image and gallery links render on GitHub. Generate runtime configuration reference types and hide credential defaults, merge the duplicate environment guide, and rename the EC2 unit to `pravah.service`.
 - Fix hosted demo deploys failing their healthcheck on a fresh database: the start script now starts the API right after migrations and seeds afterwards, instead of blocking the server behind a seed that takes minutes over the network. The demo seed also commits in sections instead of one long transaction, so the API's startup inserts never wait on it and an interrupted seed resumes instead of restarting from zero.

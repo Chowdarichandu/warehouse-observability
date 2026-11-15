@@ -40,18 +40,30 @@ def test_set_based_health_preserves_original_semantics() -> None:
                 )
                 if name in {"no_sources", "never_succeeded"}:
                     continue
-                conn.execute(
-                    """INSERT INTO obs.pipeline_runs(run_key,tenant_id,source_type,load_type,status,
-                    started_at,ended_at,duration_s)
-                    VALUES(%s,%s,'mysql','cdc','success',now()-(%s+1)*interval '1 minute',
-                    now()-%s*interval '1 minute',60)""",
-                    (
-                        tenant + ":success",
-                        tenant,
-                        100 if name == "warning" else 10,
-                        100 if name == "warning" else 10,
-                    ),
-                )
+                if name == "stuck":
+                    # The optimized stuck-run view uses an hour-of-day baseline.
+                    # Keep this baseline in the same UTC hour as the running row
+                    # so the fixture remains valid across hour boundaries.
+                    conn.execute(
+                        """INSERT INTO obs.pipeline_runs(run_key,tenant_id,source_type,load_type,status,
+                        started_at,ended_at,duration_s)
+                        VALUES(%s,%s,'mysql','cdc','success',
+                        date_trunc('hour', now()-interval '6 minutes'),now()-interval '2 minutes',60)""",
+                        (tenant + ":success", tenant),
+                    )
+                else:
+                    conn.execute(
+                        """INSERT INTO obs.pipeline_runs(run_key,tenant_id,source_type,load_type,status,
+                        started_at,ended_at,duration_s)
+                        VALUES(%s,%s,'mysql','cdc','success',now()-(%s+1)*interval '1 minute',
+                        now()-%s*interval '1 minute',60)""",
+                        (
+                            tenant + ":success",
+                            tenant,
+                            100 if name == "warning" else 10,
+                            100 if name == "warning" else 10,
+                        ),
+                    )
                 if name in {
                     "recent_failure",
                     "failed_cdc",
