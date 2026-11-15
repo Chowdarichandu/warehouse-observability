@@ -57,7 +57,7 @@ test("live sign-in presents organization SSO without demo credentials", async ({
     0,
   );
   await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("PRODUCTION", { exact: true })).toBeVisible();
+  await expect(page.getByText("Production", { exact: true })).toBeVisible();
 });
 
 test("navigation, keyboard search and reduced motion remain accessible", async ({
@@ -126,16 +126,16 @@ test("product navigation only shows modules granted to the signed-in user", asyn
     page.getByRole("heading", { name: "Tenant health", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: /Observability/ }).click();
+  await page.getByRole("button", { name: /Pravah/ }).click();
   const menu = page.locator("#workspace-product-menu");
   await expect(menu).toBeVisible();
   await expect(menu).toHaveCSS("width", "248px");
-  await expect(menu.getByRole("button", { name: /SAP/ })).toBeVisible();
+  await expect(menu.getByText("SAP", { exact: true })).toBeVisible();
+  await expect(menu.getByText("Planned", { exact: true })).toBeVisible();
   await expect(menu.getByText("HRMS", { exact: true })).toHaveCount(0);
   await expect(menu.getByText("Finance", { exact: true })).toHaveCount(0);
-  await menu.getByRole("button", { name: /SAP/ }).click();
-  await expect(menu).toHaveCount(0);
-  await expect(page.getByRole("status")).toContainText(
-    "SAP access is assigned. This module is not available yet.",
+  await expect(menu.locator("[aria-label*='SAP']")).toHaveAttribute(
+    "aria-label",
+    "SAP, planned; no screens available",
   );
 });

@@ -10,7 +10,7 @@ test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Welcome back" }),
+    page.getByRole("heading", { name: "Sign in", exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: path.join(screenshots, "login.png"),
