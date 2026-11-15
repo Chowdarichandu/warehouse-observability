@@ -335,7 +335,14 @@ def seed() -> None:
                       SELECT 1 FROM obs.dev_mailbox WHERE recipient=%s AND subject=%s)""",
                 (recipient, subject, body, age, recipient, subject),
             )
-        if conn.execute("SELECT count(*) AS n FROM obs.pipeline_runs").fetchone()["n"]:
+        # Commit the bootstrap rows (users, rules, channels, mailbox) before
+        # the long history build: on hosted deploys the API starts beside the
+        # seed, and its own bootstrap inserts must never wait on this
+        # transaction (a statement timeout there fails application startup).
+        conn.commit()
+        if conn.execute("SELECT count(DISTINCT tenant_id) AS n FROM obs.pipeline_runs").fetchone()[
+            "n"
+        ] >= len(TENANTS):
             from obs.quality.demo import seed_quality
 
             _seed_cedar_windows(conn, now)
@@ -490,6 +497,10 @@ def seed() -> None:
                         "INSERT INTO obs.schema_snapshots VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                         (tenant, table, Jsonb(snapshot), digest, checked),
                     )
+            # One commit per tenant: a hosted seed runs for minutes over the
+            # network, and section commits keep transactions short and let an
+            # interrupted seed resume instead of rolling back to zero.
+            conn.commit()
         for load in ("initial", "cdc"):
             run = make_run(
                 "bluefin_health",
@@ -538,6 +549,7 @@ def seed() -> None:
                         "running",
                     ),
                 )
+        conn.commit()
         components = [
             "airflow_scheduler",
             "airflow_metadb",
@@ -565,6 +577,7 @@ def seed() -> None:
                     "INSERT INTO obs.platform_health VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                     (comp, "degraded" if was_broken else "up", Jsonb(details), checked),
                 )
+        conn.commit()
         for comp in ("airflow", "airbyte", "warehouse", "demo_ticker"):
             conn.execute(
                 "INSERT INTO obs.collector_state(component,watermark,last_success_at,last_poll_ms) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
