@@ -1,4 +1,4 @@
-.PHONY: install up demo live down reset seed types test e2e lint build verify load-test recovery-drill
+.PHONY: install up demo live down reset seed types test e2e lint build verify gallery config-docs load-test recovery-drill
 PY := .venv/bin/python
 
 install:
@@ -11,7 +11,11 @@ up demo live down reset seed:
 
 types:
 	$(PY) scripts/openapi.py
+	$(PY) scripts/configuration_docs.py
 	cd frontend && npm run types
+
+config-docs:
+	$(PY) scripts/configuration_docs.py
 
 test:
 	$(PY) -m pytest tests/backend -q
@@ -19,6 +23,10 @@ test:
 
 e2e:
 	cd frontend && npm run e2e
+
+gallery:
+	cd frontend && npm run e2e -- ../tests/e2e/screenshots.spec.ts ../tests/e2e/access.spec.ts ../tests/e2e/presentation-screens.spec.ts
+	$(PY) scripts/gallery.py
 
 lint:
 	.venv/bin/ruff check backend/obs tests/backend scripts
@@ -29,6 +37,7 @@ lint:
 # excludes AWS and staging-only checks; those remain explicit checklist items.
 verify: lint test build
 	$(PY) scripts/openapi.py
+	$(PY) scripts/configuration_docs.py --check
 	git diff --exit-code -- backend/openapi.json frontend/src/api/generated.ts docs/api.md
 
 build:
