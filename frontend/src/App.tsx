@@ -135,7 +135,15 @@ const NAV = [
   },
 ];
 
-const PRODUCT_MODULES = [
+type ProductModule = {
+  mark: string;
+  name: string;
+  description: string;
+  moduleId: string;
+  route?: string;
+};
+
+const PRODUCT_MODULES: ProductModule[] = [
   {
     mark: 'H',
     name: 'HRMS',
@@ -178,7 +186,7 @@ const PRODUCT_MODULES = [
     description: 'Hospitality operations',
     moduleId: 'hospitality',
   },
-] as const;
+];
 
 function ActivityRedirect() {
   const [params] = useSearchParams();
@@ -352,6 +360,10 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
     NAV.flatMap((g) => g.items).find((v) =>
       v.path === '/' ? location.pathname === '/' : location.pathname.startsWith(v.path),
     )?.label || 'Search';
+  useEffect(() => {
+    const count = firing.data?.total ?? 0;
+    document.title = `${count > 0 ? `(${count}) ` : ''}${section} · ${APP_NAME}`;
+  }, [firing.data?.total, section]);
   return (
     <AppContext.Provider
       value={{
@@ -382,7 +394,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 </span>
                 <span>
                   {APP_NAME}
-                  <small>OPERATIONS PLATFORM</small>
+                  <small>Pipeline observability</small>
                 </span>
               </NavLink>
               <button
@@ -402,9 +414,9 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
               aria-haspopup="true"
               title="Product navigation"
             >
-              <span className="workspace-avatar">O</span>
+              <span className="workspace-avatar">P</span>
               <div>
-                <strong>Observability</strong>
+                <strong>{APP_NAME}</strong>
                 <small>{runtime.environment}</small>
               </div>
               <ChevronDown size={14} className="switch-chevron" />
@@ -415,36 +427,40 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 id="workspace-product-menu"
                 aria-label="Product modules"
               >
-                <span className="product-menu-label">YOUR MODULES</span>
+                <span className="product-menu-label">Your modules</span>
                 <NavLink to="/" className="product-active">
-                  <span className="workspace-avatar">O</span>
+                  <span className="workspace-avatar">P</span>
                   <span>
-                    <strong>Observability</strong>
-                    <small>Monitor data operations</small>
+                    <strong>{APP_NAME}</strong>
+                    <small>Pipeline observability</small>
                   </span>
                   <span className="product-current">Open</span>
                 </NavLink>
-                {availableModules.map((module) => (
-                  <button
-                    type="button"
-                    className="product-planned"
-                    key={module.moduleId}
-                    title={`${module.name} module is not available yet`}
-                    onClick={() => {
-                      setPanel('none');
-                      setToast(
-                        `${module.name} access is assigned. This module is not available yet.`,
-                      );
-                    }}
-                  >
-                    <span className="workspace-avatar planned">{module.mark}</span>
-                    <span>
-                      <strong>{module.name}</strong>
-                      <small>{module.description}</small>
-                    </span>
-                    <span className="product-planned-tag">Planned</span>
-                  </button>
-                ))}
+                {availableModules.map((module) =>
+                  module.route ? (
+                    <NavLink to={module.route} className="product-planned" key={module.moduleId}>
+                      <span className="workspace-avatar planned">{module.mark}</span>
+                      <span>
+                        <strong>{module.name}</strong>
+                        <small>{module.description}</small>
+                      </span>
+                      <span className="product-current">Open</span>
+                    </NavLink>
+                  ) : (
+                    <div
+                      className="product-planned"
+                      key={module.moduleId}
+                      aria-label={`${module.name}, planned; no screens available`}
+                    >
+                      <span className="workspace-avatar planned">{module.mark}</span>
+                      <span>
+                        <strong>{module.name}</strong>
+                        <small>{module.description}</small>
+                      </span>
+                      <span className="product-planned-tag">Planned</span>
+                    </div>
+                  ),
+                )}
                 <p className="product-menu-note">Module access is managed by your administrator.</p>
               </div>
             )}
@@ -520,7 +536,7 @@ function Workspace({ user, runtime }: { user: Schema<'User'>; runtime: Schema<'R
                 <Menu size={19} />
               </button>
               <Workflow size={15} />
-              <NavLink to="/">Observability</NavLink>
+              <NavLink to="/">{APP_NAME}</NavLink>
               <span className="slash">/</span>
               <strong>{section}</strong>
             </div>

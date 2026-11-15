@@ -146,9 +146,7 @@ def disabled_reason(capability: Capability, config: Settings) -> str:
         return "Role assignments are managed through your identity provider groups."
     if config.mode == "live":
         if capability.id == "onboarding.start":
-            return (
-                "Live onboarding requires staging validation of tenant isolation and DAG recovery."
-            )
+            return "Live onboarding is turned off. An admin can turn it on after the tenant isolation check passes."
         if (
             capability.gate in {"live_actions", "registry", "quality_run"}
             and not config.live_actions_enabled

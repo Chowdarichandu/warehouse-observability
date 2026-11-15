@@ -18,6 +18,6 @@ def resume_onboarding(
         fail(
             503,
             "onboarding_validation_required",
-            "Live onboarding requires staging validation before resuming.",
+            "Live onboarding is turned off. An admin can turn it on after the tenant isolation check passes.",
         )
     return resume(tenant_id, user["email"], start_initial=body.start_initial)
