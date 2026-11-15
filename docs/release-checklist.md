@@ -2,7 +2,7 @@
 
 Use this checklist for each environment promotion. Attach command output, links to CI runs, and timestamped evidence to the release record. Use the same immutable image digests in dev, staging and production.
 
-The repository can prove the offline gate with `make verify`, a clean `make reset && make demo`, and the browser walkthrough. Those checks do not prove AWS, OIDC, provider delivery, or staging data parity. Keep the command output and the environment-specific evidence together in the release record.
+- [ ] `make verify`, a clean `make reset && make demo`, and the browser walkthrough pass; attach their output and the environment-specific evidence to the release record.
 
 ## Before staging
 
