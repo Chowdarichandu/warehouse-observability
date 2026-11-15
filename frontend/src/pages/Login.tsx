@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Database, GitBranch, Layers3, ShieldCheck, Workflow } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Workflow } from 'lucide-react';
 import { api, setCsrf } from '../api/client';
 import type { Schema } from '../api/client';
 import { APP_NAME } from '../config';
@@ -10,6 +10,9 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
   const [password, setPassword] = useState('');
   const client = useQueryClient();
   const [forgotOpen, setForgotOpen] = useState(false);
+  useEffect(() => {
+    document.title = `Sign in · ${APP_NAME}`;
+  }, []);
   const forgot = useMutation({
     mutationFn: () =>
       api<Schema<'ForgotPasswordResult'>>('/auth/forgot-password', {
@@ -30,48 +33,14 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
   });
   return (
     <div className="login-page">
-      <div className="login-story">
-        <div className="brand">
-          <span className="brand-icon">
-            <Workflow size={23} />
-          </span>
-          <span>{APP_NAME}</span>
-        </div>
-        <div className="login-copy">
-          <span className="eyebrow">WAREHOUSE OBSERVABILITY</span>
-          <h1>
-            Pipeline
-            <br />
-            operations.
-          </h1>
-          <p>
-            Run health, data freshness, and alert history,
-            <br />
-            in one place for the data team.
-          </p>
-          <div className="pipeline-art">
-            <div>
-              <Database />
-              <span>Sources</span>
-            </div>
-            <i />
-            <div>
-              <GitBranch />
-              <span>Airbyte</span>
-            </div>
-            <i />
-            <div>
-              <Layers3 />
-              <span>Warehouse</span>
-            </div>
-          </div>
-          <div className="login-health">
-            <span className="pulse-dot" /> MySQL and MongoDB ingestion monitoring.
-          </div>
-        </div>
-        <div className="login-footer">
-          MySQL & MongoDB <span>→</span> Airbyte <span>→</span> Airflow <span>→</span> Warehouse
-        </div>
+      <div className="login-brand">
+        <span className="brand-icon">
+          <Workflow size={23} />
+        </span>
+        <span>{APP_NAME}</span>
+      </div>
+      <div className="demo-label">
+        <span /> {config.environment}
       </div>
       <main className="login-form-wrap">
         <form
@@ -81,11 +50,8 @@ export function Login({ config }: { config: Schema<'RuntimeConfig'> }) {
             login.mutate();
           }}
         >
-          <div className="demo-label">
-            <span /> {config.environment.toUpperCase()}
-          </div>
-          <h2>Welcome back</h2>
-          <p>Sign in to your pipeline workspace.</p>
+          <h1>Sign in</h1>
+          <p>Sign in to your {APP_NAME} workspace.</p>
           {config.auth_provider === 'oidc' ? (
             <a className="button primary login-submit" href="/api/auth/oidc/start">
               Continue with organization SSO <ArrowRight size={16} />

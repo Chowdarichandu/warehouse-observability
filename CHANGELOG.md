@@ -4,6 +4,7 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Use Pravah branding in the sign-in screen, workspace header and browser titles. Planned modules now stay non-interactive until their screens are available, and live onboarding messages explain the tenant-isolation gate.
 - Fix hosted demo deploys failing their healthcheck on a fresh database: the start script now starts the API right after migrations and seeds afterwards, instead of blocking the server behind a seed that takes minutes over the network. The demo seed also commits in sections instead of one long transaction, so the API's startup inserts never wait on it and an interrupted seed resumes instead of restarting from zero.
 - Show the planned product modules (HRMS, Finance, SAP, POS, Inventory, Support, Hospitality) in the product picker: migration 017 enables them in the registry, so admins see them and access is still gated per role and per user.
 - Move the sidebar Collapse control to the top of the sidebar, next to the brand.

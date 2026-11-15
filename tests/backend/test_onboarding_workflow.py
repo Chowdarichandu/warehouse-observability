@@ -9,6 +9,7 @@ from obs.db import connection, one, rows
 from obs.onboarding import workflow
 from obs.provision import resource
 from obs.integrations.http import UpstreamError
+from obs.settings import settings
 
 
 @pytest.fixture
@@ -387,3 +388,14 @@ def test_airflow_worker_profile_requires_tls_and_flags_without_console_secrets()
         Settings(**{**values, "live_actions_enabled": False})
     with pytest.raises(ValidationError, match="JWT_SECRET"):
         Settings(**{**values, "service_kind": "console"})
+
+
+def test_live_resume_explains_tenant_isolation_gate(clients, monkeypatch):
+    monkeypatch.setattr(settings(), "mode", "live")
+    response = clients["operator"].post(
+        "/api/onboarding/example_tenant/resume", json={"start_initial": True}
+    )
+    assert response.status_code == 503
+    assert response.json()["error"]["message"] == (
+        "Live onboarding is turned off. An admin can turn it on after the tenant isolation check passes."
+    )

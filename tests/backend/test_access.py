@@ -57,6 +57,9 @@ def test_live_disabled_actions_are_distinct_from_role_grants(monkeypatch):
         and not policy["pipelines.retry"]["enabled"]
     )
     assert "Live actions" in policy["pipelines.retry"]["reason"]
+    assert policy["onboarding.start"]["reason"] == (
+        "Live onboarding is turned off. An admin can turn it on after the tenant isolation check passes."
+    )
     assert policy["workspace.read"]["enabled"] and policy["alerts.respond"]["enabled"]
     monkeypatch.setattr(config, "live_actions_enabled", True)
     monkeypatch.setattr(config, "registry_dags_enabled", False)
