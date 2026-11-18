@@ -358,8 +358,11 @@ strong {
 .live-indicator.disconnected {
   color: var(--warn);
 }
-.live-indicator.disconnected > span {
-  background: var(--warn);
+.live-indicator > span {
+  inline-size: var(--space-2);
+  block-size: var(--space-2);
+  border-radius: 50%;
+  background: currentColor;
 }
 .theme-toggle {
   border: none;
@@ -1847,11 +1850,19 @@ input {
 .sidebar-head .brand {
   flex: 1;
   min-width: 0;
+  gap: var(--space-2);
+  padding-inline: var(--space-4) var(--space-2);
 }
-.collapse-toggle-top {
-  width: auto;
-  margin: 0 12px 0 0;
-  padding: 7px;
+.sidebar-head .brand small {
+  letter-spacing: normal;
+}
+.sidebar-head .collapse-toggle-top {
+  flex-shrink: 0;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  margin: 0 var(--space-3) 0 0;
+  padding: var(--space-1);
 }
 .sidebar.collapsed .sidebar-head {
   flex-direction: column;
@@ -2520,7 +2531,6 @@ input[type='radio'] {
 }
 .kpi-value,
 .detail-kpis strong,
-.pulse-summary h2,
 .review-card strong {
   font-variant-numeric: tabular-nums;
 }
@@ -2677,14 +2687,6 @@ tbody tr:hover {
     color: var(--green);
     font-weight: 600;
   }
-}
-.pulse-journey-top .tag {
-  margin-left: auto;
-  border-color: var(--ok);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: var(--green);
 }
 .executive-metrics .kpi-card {
   border: 0;
@@ -3115,21 +3117,6 @@ table td {
 .has-tip.tip-below:focus-visible::after {
   transform: translate(-50%, 0);
 }
-.health-distribution > .has-tip:first-child::after {
-  left: 0;
-  transform: translate(0, 4px);
-}
-.health-distribution > .has-tip:first-child:hover::after {
-  transform: translate(0, 0);
-}
-.health-distribution > .has-tip:last-child::after {
-  left: auto;
-  right: 0;
-  transform: translate(0, 4px);
-}
-.health-distribution > .has-tip:last-child:hover::after {
-  transform: translate(0, 0);
-}
 .dag-card-head .has-tip::after {
   left: auto;
   right: -6px;
@@ -3243,6 +3230,16 @@ table td {
 .breadcrumb {
   min-width: 0;
   white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .topbar-actions,
+  .breadcrumb .mobile-menu {
+    flex-shrink: 0;
+  }
+  .breadcrumb strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 .range-bar {
   gap: 12px;

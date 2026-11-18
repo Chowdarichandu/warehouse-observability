@@ -164,7 +164,7 @@ footer{font-size:11px;color:#5c6a66;border-top:1px solid #dde3e0;margin-top:28px
             markdown += (
                 f"**{label}**\n\n[![{title} · {label}]({filename})]({filename})\n\n"
             )
-    (DIRECTORY / "README.md").write_text(markdown)
+    (DIRECTORY / "README.md").write_text(markdown.rstrip() + "\n")
     archive = ROOT / "output/console-screens.zip"
     archive.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(archive, "w", ZIP_DEFLATED) as bundle:

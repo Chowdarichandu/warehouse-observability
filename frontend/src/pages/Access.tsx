@@ -228,7 +228,7 @@ export function Access() {
             </div>
           ))}
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll access-matrix-scroll">
           <table className="access-matrix">
             <caption className="sr-only">Workspace role permission matrix</caption>
             <thead>

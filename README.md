@@ -15,7 +15,7 @@ Your team can retry, resync and onboard tenants from the same screen, without lo
 
 ## What it does
 
-- **Tenant health at a glance.** A live board of every tenant and pipeline (MySQL and MongoDB, initial load and CDC), with freshness against each tenant's SLA and a one-sentence status at the top.
+- **Tenant health at a glance.** Overview shows which tenants need attention and the evidence to start investigating, including data age against each tenant's SLA and links to failed CDC runs. The health board covers MySQL and MongoDB from initial load through CDC.
 - **Failures explained.** Every failure is classified, grouped by root cause and paired with the fix. Redacted logs, attempt history and run comparison sit next to it.
 - **Incidents, not alert noise.** Related alerts become one incident, routed to Slack, Teams or email, with acknowledgement, escalation, maintenance windows and a daily digest.
 - **Safe operator actions.** Retry, resync, pause and bulk retry are role-gated, confirmed, idempotent and fully audited.

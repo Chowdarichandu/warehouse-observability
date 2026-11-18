@@ -6,7 +6,8 @@ test("capture every console screen across light/dark desktop and mobile themes",
   page,
 }) => {
   test.setTimeout(420_000);
-  await page.clock.install({ time: new Date("2026-11-15T12:00:00.000Z") });
+  const capturedAt = new Date();
+  await page.clock.setFixedTime(capturedAt);
   const directory = path.resolve("../docs/screenshots");
   mkdirSync(directory, { recursive: true });
 
@@ -18,9 +19,7 @@ test("capture every console screen across light/dark desktop and mobile themes",
   for (const viewport of viewports) {
     for (const theme of themes) {
       const loginPage = await page.context().newPage();
-      await loginPage.clock.install({
-        time: new Date("2026-11-15T12:00:00.000Z"),
-      });
+      await loginPage.clock.setFixedTime(capturedAt);
       await loginPage.setViewportSize(viewport);
       await loginPage.addInitScript(
         (savedTheme) => localStorage.setItem("obs-theme", savedTheme),

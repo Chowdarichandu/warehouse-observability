@@ -64,6 +64,7 @@ Each capability lists its behavior. Screen layouts are in `docs/DESIGN.md` §7.
 ### 2.1 Overview
 
 - **A one-sentence status at the top**, generated from the current state. It names at most 3 problems, ordered by severity. Examples: "9 of 10 tenants are healthy. Acme Retail's MySQL data is 7 hours old because its CDC position was lost; it needs a resync." When nothing is wrong: "All 10 tenants are healthy and within SLA."
+- **Needs attention** shows up to three affected tenants, with down tenants before degraded tenants. It shows observed evidence such as freshness against the tenant SLA or failures in the last 24 hours. A latest failed CDC run links to its investigation, and the tenant name links to its health details.
 - **A KPI strip**, where each KPI shows its change against the previous period: tenant health (healthy, degraded and down), success rate, failed runs, share of time within SLA, active syncs, open incidents.
 - **The tenant health board:** the latest run of every pipeline per tenant, freshness against SLA, and live sync state. Problems sort to the top.
 - Open incidents and live activity.

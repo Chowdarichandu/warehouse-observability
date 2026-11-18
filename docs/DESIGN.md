@@ -370,6 +370,7 @@ The layout and behavior of every screen. Screenshots use seeded demo data.
 ### 7.2 Overview
 **Spec** (12-column layout):
 - **Row 1:** page header with the one-sentence status (SPEC §2.1). Actions: "TV mode" (secondary) and "Onboard tenant" (primary).
+- **Health summary:** show the health distribution and a short Needs attention list in one panel, with the list below the summary on narrow screens. Link health counts to their tenant filters. Each affected tenant has a detail link and shows the available evidence in plain language. Keep the direct link to a failed CDC run distinct from the tenant link.
 - **Row 2:** a 6-KPI strip: Tenants (healthy, degraded and down in one value), Success rate, Failed runs, Data within SLA, Active syncs, Open incidents. Each has a delta.
 - **Row 3:** Health board (8 columns) next to Incidents (4 columns: open incidents first, then live activity under a divider).
 - **Row 4:** Runs over time (6 columns) next to Duration by pipeline (6 columns, with a p95 tick).

@@ -157,6 +157,9 @@
   font-weight: 500;
   color: var(--green);
 }
+.access-matrix-scroll {
+  position: relative;
+}
 .access-matrix th:not(:first-child),
 .access-matrix td {
   text-align: center;

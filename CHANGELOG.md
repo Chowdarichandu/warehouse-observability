@@ -4,6 +4,9 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Show the tenants that need attention on Overview, with freshness evidence and direct links to failed CDC runs. Keep tenant activity and run log availability separate, and show when the live feed is reconnecting.
+- Keep the sidebar collapse control clear of the Pravah name.
+- Keep the Access role matrix and the Freshness header within the mobile viewport.
 - Adopt design tokens across the UI, lint raw colors and typography, load screen styles with their routes, and split the largest screen modules into smaller lazy-loaded components.
 - Use Pravah branding in the sign-in screen, workspace header and browser titles. Planned modules now stay non-interactive until their screens are available, and live onboarding messages explain the tenant-isolation gate.
 - Move the screenshot gallery into `docs/screenshots/` so the README hero image and gallery links render on GitHub. Generate runtime configuration reference types and hide credential defaults, merge the duplicate environment guide, and rename the EC2 unit to `pravah.service`.

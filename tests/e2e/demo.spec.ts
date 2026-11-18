@@ -49,6 +49,19 @@ test("offline overview → red tenant → failed run → redacted log → succes
     page.getByRole("heading", { name: "Tenant health" }),
   ).toBeVisible();
   await expect(page.locator(".live-indicator")).toHaveText("Live");
+  const attention = page.getByRole("region", { name: "Needs attention" });
+  const acme = attention.getByRole("listitem").filter({ hasText: "Acme Retail" });
+  await expect(acme.getByRole("link", { name: "Acme Retail", exact: true })).toHaveAttribute(
+    "href",
+    "/tenants/acme_retail",
+  );
+  await expect(acme).toContainText(/Data is .* min old \(SLA \d+ min\)/);
+  await acme
+    .getByRole("link", { name: "Inspect failed MySQL CDC run for Acme Retail" })
+    .click();
+  await expect(page.getByRole("heading", { name: "MySQL CDC sync" })).toBeVisible();
+  await expect(page.locator(".error-diagnosis")).toContainText("MYSQL_BINLOG_PURGED");
+  await page.goBack();
   await page.screenshot({
     path: path.join(screenshots, "overview.png"),
     fullPage: true,

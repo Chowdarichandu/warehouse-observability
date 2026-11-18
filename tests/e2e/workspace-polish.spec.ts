@@ -13,6 +13,11 @@ test("search, navigation, typography, and administration work together", async (
   await expect(
     page.getByRole("heading", { name: "Tenant health", exact: true }),
   ).toBeVisible();
+  const collapse = page.getByRole("button", { name: "Collapse sidebar" });
+  await expect(collapse).toHaveCSS("width", "32px");
+  await collapse.click();
+  await page.getByRole("button", { name: "Expand sidebar" }).click();
+  await expect(collapse).toBeVisible();
   await page.locator(".workspace-switch").click();
   await expect(page.locator("#workspace-product-menu")).toBeVisible();
   await page.getByRole("link", { name: "Settings", exact: true }).click();

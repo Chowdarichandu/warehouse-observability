@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { chooseSelectIndex, chooseSelectOption, expectSelectOptionCount, expectSelectOptionNamed } from "./select";
+import { chooseSelectIndex, chooseSelectOption, expectSelectOptionCount } from "./select";
 
 test("tenant selection updates run choices and opens the selected log", async ({
   page,
 }) => {
+  await page.route("**/api/v1/tenants/acme_retail/metrics?*", (route) =>
+    route.fulfill({ json: { activity: [], hourly: [], pipelines: [] } }),
+  );
   await page.route("**/api/v1/runs?*", async (route) => {
     const tenant = new URL(route.request().url()).searchParams.get("tenant");
     if (tenant !== "acme_retail" && tenant !== "orbit_logistics") {
@@ -38,6 +41,7 @@ test("tenant selection updates run choices and opens the selected log", async ({
   const tenant = page.getByLabel("Run activity tenant");
   const log = page.getByLabel("Open run log");
   await chooseSelectOption(tenant, "Acme Retail");
+  await expect(page.getByRole("heading", { name: "No runs in this range" })).toBeVisible();
   await expectSelectOptionCount(log, 2);
   const orbitRuns = page.waitForResponse(
     (response) =>
@@ -46,6 +50,7 @@ test("tenant selection updates run choices and opens the selected log", async ({
   );
   await chooseSelectOption(tenant, "Orbit Logistics");
   await orbitRuns;
+  await expect(page.getByRole("img", { name: "Runs per hour by status" })).toBeVisible();
   await expectSelectOptionCount(log, 2);
   await chooseSelectIndex(log, 1);
   await expect(page).toHaveURL(/\/runs\/orbit_logistics-run\?focus=log$/);
