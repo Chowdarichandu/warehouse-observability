@@ -15,17 +15,17 @@
   color: var(--run);
 }
 .component-card h3 {
-  font-size: 11px;
+  font-size: 0.6875rem;
   text-transform: capitalize;
   width: 100%;
 }
 .component-card p {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 .component-card small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 0.5rem;
   width: 100%;
 }
 .platform-history {
@@ -40,7 +40,7 @@
 .platform-history strong {
   width: 130px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.625rem;
   text-transform: capitalize;
   flex-shrink: 0;
 }
@@ -60,18 +60,18 @@
   color: var(--muted);
 }
 .pool-card h3 {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 .pool-number {
   color: var(--title);
-  font-size: 33px;
+  font-size: 2.0625rem;
   letter-spacing: -1px;
   margin: 20px 0;
 }
 .pool-number span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0;
   margin-left: 5px;
 }
@@ -89,7 +89,7 @@
 }
 .pool-card p,
 .pool-card > span {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .pool-card > span {
   display: inline-block;
@@ -100,28 +100,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.search-results > a {
-  display: block;
-  padding: 22px;
-  border-top: 1px solid var(--line);
-}
-.search-results > a:hover {
-  background: var(--subtle);
-}
-.search-results strong {
-  color: var(--green);
-  font-size: 12px;
-}
-.search-results p {
-  color: var(--muted);
-  font-size: 11px;
-  margin: 10px 0;
-}
-.search-results small {
-  color: var(--muted);
-  font-size: 10px;
-}
-
 @media (max-width: 1250px) {
   .component-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -152,7 +130,7 @@
 .operation-review label {
   display: grid;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-meta);
 }
 .operation-review input {
   max-width: 480px;
@@ -334,8 +312,7 @@
 .role-card {
   background: var(--subtle);
 }
-.admin-tabs button:focus-visible,
-.global-search-submit:focus-visible {
+.admin-tabs button:focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 2px;
 }
@@ -356,11 +333,11 @@
 }
 .admin-intro strong {
   color: var(--title);
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .admin-intro span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-label);
   margin-top: 4px;
 }
 .admin-tabs {
@@ -377,7 +354,7 @@
   padding: 12px 16px;
   background: none;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-label);
   font-weight: 650;
   cursor: pointer;
 }
@@ -385,73 +362,6 @@
   color: var(--green);
   border-bottom-color: var(--green);
 }
-.search-form {
-  padding: 20px 22px;
-}
-.search-sections {
-  border-top: 1px solid var(--line);
-}
-.search-section {
-  padding: 22px;
-  border-bottom: 1px solid var(--line);
-}
-.search-section:last-child {
-  border: 0;
-}
-.search-section h2 {
-  font-size: 15px;
-  color: var(--title);
-}
-.search-section h2 span {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 500;
-  margin-left: 5px;
-}
-.search-hint,
-.search-empty {
-  color: var(--muted);
-  font-size: 13px;
-  margin-top: 8px;
-}
-.search-shortcuts {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-}
-.search-shortcuts a {
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  color: var(--title);
-  text-decoration: none;
-  font-size: 13px;
-}
-.search-shortcuts a:hover {
-  border-color: var(--green);
-  color: var(--green);
-}
-.search-shortcuts span {
-  margin-left: 12px;
-  color: var(--muted);
-}
-.search-section :is(.search-results, .tenant-search-results) {
-  margin-top: 12px;
-}
-.search-section :is(.search-results, .tenant-search-results) > a {
-  padding: 14px 0;
-}
-.search-section :is(.search-results, .tenant-search-results) strong,
-.search-section :is(.search-results, .tenant-search-results) p {
-  font-size: 13px;
-}
-.search-section :is(.search-results, .tenant-search-results) small {
-  display: block;
-  margin-top: 6px;
-  font-size: 12px;
-}
-
 @media (max-width: 700px) {
   .admin-intro {
     align-items: flex-start;
@@ -460,18 +370,4 @@
   .admin-tabs button {
     padding: 11px 12px;
   }
-}
-.tenant-search-results > a {
-  display: block;
-  border-top: 1px solid var(--line);
-  text-decoration: none;
-}
-.tenant-search-results > a:hover {
-  background: var(--subtle);
-}
-.tenant-search-results strong {
-  color: var(--green);
-}
-.tenant-search-results small {
-  color: var(--muted);
 }

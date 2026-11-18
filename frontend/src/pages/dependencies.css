@@ -4,7 +4,7 @@
   flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 20px;
-  font-size: 12px;
+  font-size: var(--text-meta);
 }
 .dependency-controls label {
   color: var(--title);
@@ -43,7 +43,7 @@
   top: 23px;
   width: 172px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.07em;
 }
@@ -102,13 +102,13 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
 }
 .dependency-node small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.625rem;
   margin-top: 4px;
   text-transform: capitalize;
 }
@@ -124,7 +124,7 @@
 }
 .dependency-note {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-meta);
   line-height: 1.7;
   margin: 12px 0 20px;
 }
@@ -140,11 +140,11 @@
 }
 .dependency-facts dt {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   margin-bottom: 8px;
 }
 .dependency-facts dd {
-  font-size: 12px;
+  font-size: var(--text-meta);
   margin: 0;
 }
 .dependency-details .button {
@@ -152,7 +152,7 @@
 }
 .dependency-subheading {
   margin: 20px;
-  font-size: 12px;
+  font-size: var(--text-meta);
   color: var(--title);
 }
 .dependency-evidence,
@@ -166,7 +166,7 @@
   gap: 10px;
   align-items: center;
   margin: 10px 0;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .dependency-evidence-kind {
   color: var(--muted);
@@ -189,7 +189,7 @@
   color: var(--text);
   text-align: left;
   padding: 11px 0;
-  font-size: 12px;
+  font-size: var(--text-meta);
 }
 .dependency-impact button span {
   flex: 1;
@@ -197,7 +197,7 @@
 }
 .dependency-impact small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .dependency-details .dependency-note {
   margin: 0 20px 20px;

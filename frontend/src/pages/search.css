@@ -1,0 +1,80 @@
+.search-form .button {
+  min-height: var(--filter-control-height);
+  padding-block: 0;
+}
+.search-section {
+  padding: var(--space-4) var(--panel-gutter, var(--space-5));
+  border-bottom: 1px solid var(--line);
+}
+.search-section:last-child {
+  border-bottom: 0;
+}
+.search-section h2 {
+  font-size: var(--text-heading);
+  color: var(--ink-900);
+}
+.search-section h2 span {
+  margin-inline-start: var(--space-1);
+  color: var(--ink-600);
+  font-size: var(--text-meta);
+  font-weight: 500;
+}
+.search-hint,
+.search-empty {
+  margin-top: var(--space-2);
+  color: var(--ink-600);
+  font-size: var(--text-body);
+}
+.search-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.search-shortcuts a {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--accent);
+  font-size: var(--text-label);
+}
+.search-shortcuts a:hover {
+  border-color: var(--accent);
+}
+.search-shortcuts span {
+  margin-inline-start: var(--space-2);
+}
+.search-section :is(.search-results, .tenant-search-results) {
+  margin-top: var(--space-3);
+}
+.search-section :is(.search-results, .tenant-search-results) > a {
+  display: block;
+  border-top: 1px solid var(--line);
+  padding-block: var(--space-3);
+  text-decoration: none;
+  font-size: var(--text-body);
+  overflow-wrap: anywhere;
+}
+.search-section :is(.search-results, .tenant-search-results) > a:hover {
+  background: var(--sunken);
+}
+.search-section :is(.search-results, .tenant-search-results) strong {
+  color: var(--accent);
+}
+.search-section :is(.search-results, .tenant-search-results) p {
+  margin-block: var(--space-2);
+  color: var(--ink-600);
+}
+.search-section :is(.search-results, .tenant-search-results) small {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-meta);
+  color: var(--ink-600);
+}
+.search-section .inline-flex {
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+.search-section .tag {
+  white-space: normal;
+}

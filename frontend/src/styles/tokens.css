@@ -29,13 +29,14 @@
   --chart-5: #5d6b78;
   --font-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-code: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
-  --text-display: 32px;
-  --text-title: 24px;
-  --text-heading: 16px;
-  --text-body: 14px;
-  --text-label: 13px;
-  --text-meta: 12px;
-  --text-kpi: 24px;
+  --text-display: 2rem;
+  --text-title: 1.5rem;
+  --text-heading: 1rem;
+  --text-body: 0.875rem;
+  --text-label: 0.8125rem;
+  --text-meta: 0.75rem;
+  --text-kpi: 1.5rem;
+  --filter-control-height: 36px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -63,6 +64,10 @@
   --layer-popover: 60;
   --layer-toast: 70;
   --layer-tooltip: 80;
+}
+
+:root[data-text-size='large'] {
+  font-size: 112%;
 }
 
 :root[data-theme='dark'] {

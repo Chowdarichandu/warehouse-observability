@@ -74,16 +74,16 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .duration-row > strong {
   text-align: right;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 550;
 }
 .duration-row strong small {
   display: block;
-  font-size: 8px;
+  font-size: 0.5rem;
   color: var(--muted);
   font-weight: 400;
   margin-top: 4px;
@@ -111,7 +111,7 @@
   display: flex;
   justify-content: center;
   gap: 22px;
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: var(--muted);
   margin: 6px 0 20px;
 }
@@ -149,18 +149,18 @@
 }
 .failure-list strong {
   text-transform: capitalize;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .failure-list small {
   display: block;
   font-family: var(--font-code);
-  font-size: 8px;
+  font-size: 0.5rem;
   color: var(--muted);
   margin-top: 4px;
 }
 .failure-list time {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
   white-space: nowrap;
 }
 .failure-list > a > svg {
@@ -190,19 +190,19 @@
   background: var(--ok);
 }
 .activity-list strong {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 500;
 }
 .activity-list small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
   margin-top: 4px;
 }
 .activity-list time {
   margin-left: auto;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 .activity-waiting {
   padding: 48px 10px;
@@ -216,10 +216,10 @@
   display: block;
   margin-top: 13px;
   color: var(--text);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .activity-waiting p {
-  font-size: 10px;
+  font-size: 0.625rem;
   margin-top: 5px;
 }
 

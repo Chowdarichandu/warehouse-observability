@@ -9,6 +9,7 @@ SOURCE = Path(__file__).resolve().parents[1] / "frontend" / "src"
 HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 FONT_FAMILY = re.compile(r"font-family\s*:\s*([^;{}]+)", re.IGNORECASE)
 FONT_PROPERTY = re.compile(r"fontFamily\s*:\s*([^,}\n]+)", re.IGNORECASE)
+PIXEL_FONT_SIZE = re.compile(r"\bfont-size\s*:[^;{}]*\dpx\b", re.IGNORECASE)
 UPPERCASE_TRANSFORM = re.compile(r"text-transform\s*:\s*uppercase\b", re.IGNORECASE)
 TOKEN_OR_KEYWORD = re.compile(
     r"^(?:var\s*\(|inherit\b|initial\b|unset\b|revert\b)", re.IGNORECASE
@@ -26,6 +27,10 @@ for path in sorted(SOURCE.rglob("*")):
         (HEX, "raw hex color"),
         (UPPERCASE_TRANSFORM, "text-transform: uppercase"),
     ]
+    if path.suffix == ".css":
+        checks.append(
+            (PIXEL_FONT_SIZE, "font-size must scale with the workspace text setting")
+        )
     for pattern, message in checks:
         errors.extend(
             f"{relative}:{content.count(chr(10), 0, match.start()) + 1}: {message}"

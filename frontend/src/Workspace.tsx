@@ -12,14 +12,12 @@ import {
 import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
-  ArrowRight,
   BadgeCheck,
   Bell,
   Mail,
   CalendarDays,
   ChevronDown,
   Cog,
-  Command,
   KeyRound,
   LayoutDashboard,
   LogOut,
@@ -28,7 +26,6 @@ import {
   Moon,
   Network,
   PanelLeft,
-  Search,
   Server,
   Settings2,
   ShieldCheck,
@@ -49,6 +46,7 @@ import { APP_NAME } from './config';
 import { Loading, Time } from './components/ui';
 import { StatusPill } from './components/StatusPill';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { GlobalSearch } from './components/GlobalSearch';
 
 const Overview = lazy(() =>
   import('./pages/Overview').then((page) => ({ default: page.Overview })),
@@ -230,21 +228,16 @@ export function Workspace({
   const [pwOpen, setPwOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [menu, setMenu] = useState(false);
-  const [search, setSearch] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchTerm = search.trim();
-  const suggestTenants = useQuery({
-    queryKey: ['suggest-tenants', searchTerm],
-    queryFn: () =>
-      api<Schema<'Page_Tenant_'>>(`/tenants?q=${encodeURIComponent(searchTerm)}&page_size=5`),
-    enabled: !metricsOnly && searchOpen && searchTerm.length >= 2,
-  });
-  const suggestPages =
-    !metricsOnly && searchTerm.length >= 2
-      ? NAV.flatMap((g) => g.items).filter((item) =>
-          item.label.toLowerCase().includes(searchTerm.toLowerCase()),
-        )
-      : [];
+  const navGroups = NAV.map((group) => ({
+    ...group,
+    items: group.items.filter(({ path }) => {
+      if (metricsOnly) return path === '/';
+      if (path === '/admin') return permissions?.includes('manage_users') ?? user.role === 'admin';
+      if (path === '/dev/mailbox') return user.role === 'admin' && runtime.mode === 'demo';
+      return true;
+    }),
+  }));
+  const searchPages = navGroups.flatMap((group) => group.items);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -272,7 +265,7 @@ export function Workspace({
     localStorage.setItem('obs-theme', theme);
   }, [theme]);
   useEffect(() => {
-    document.documentElement.style.setProperty('zoom', textSize === 'large' ? '1.12' : '1');
+    document.documentElement.dataset.textSize = textSize;
     localStorage.setItem('obs-text-size', textSize);
   }, [textSize]);
   useEffect(() => {
@@ -287,7 +280,6 @@ export function Workspace({
   useEffect(() => {
     setMenu(false);
     setPanel('none');
-    setSearchOpen(false);
   }, [location.pathname]);
   useEffect(() => {
     if (!toast) return;
@@ -301,14 +293,17 @@ export function Workspace({
   };
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (
+        searchRef.current &&
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === 'k'
+      ) {
         event.preventDefault();
         searchRef.current?.focus();
       }
       if (event.key === 'Escape') {
         setMenu(false);
         setPanel('none');
-        setSearchOpen(false);
       }
     };
     window.addEventListener('keydown', shortcut);
@@ -427,19 +422,10 @@ export function Workspace({
               </div>
             )}
             <nav>
-              {NAV.map((group) => {
-                const items = group.items
-                  .filter((item) => !metricsOnly || item.path === '/')
-                  .filter(
-                    (item) =>
-                      item.path !== '/admin' ||
-                      (permissions ? permissions.includes('manage_users') : user.role === 'admin'),
-                  )
-                  .filter((item) => item.path !== '/onboarding' || user.role !== 'viewer')
-                  .filter((item) => item.path !== '/dev/mailbox' || user.role === 'admin');
+              {navGroups.map(({ group, items }) => {
                 return items.length ? (
-                  <div className="nav-group" key={group.group}>
-                    <span className="nav-label">{metricsOnly ? 'METRICS' : group.group}</span>
+                  <div className="nav-group" key={group}>
+                    <span className="nav-label">{metricsOnly ? 'METRICS' : group}</span>
                     {items.map((item) => (
                       <NavLink key={item.path} to={rangeLink(item.path)} end={item.path === '/'}>
                         <item.icon size={17} />
@@ -503,108 +489,7 @@ export function Workspace({
               <strong>{section}</strong>
             </div>
             <div className="topbar-actions">
-              {!metricsOnly && (
-                <div
-                  className="search-wrap"
-                  onBlur={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget as Node))
-                      setSearchOpen(false);
-                  }}
-                >
-                  <form
-                    className="global-search"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (search.trim()) {
-                        setSearchOpen(false);
-                        navigate(`/search?q=${encodeURIComponent(search.trim())}`);
-                      }
-                    }}
-                  >
-                    <Search size={15} />
-                    <input
-                      ref={searchRef}
-                      aria-label="Search tenants, logs, pages"
-                      placeholder="Search tenants, logs, pages…"
-                      maxLength={200}
-                      value={search}
-                      onFocus={() => setSearchOpen(true)}
-                      onChange={(event) => {
-                        setSearch(event.target.value);
-                        setSearchOpen(true);
-                      }}
-                    />
-                    {search.trim() ? (
-                      <button
-                        type="submit"
-                        aria-label="Submit global search"
-                        className="global-search-submit"
-                      >
-                        Search
-                      </button>
-                    ) : (
-                      <Command size={12} aria-hidden="true" />
-                    )}
-                  </form>
-                  {searchOpen && searchTerm.length >= 2 && (
-                    <div
-                      className={`search-suggest${suggestTenants.isPlaceholderData ? ' is-fetching' : ''}`}
-                      role="listbox"
-                      aria-label="Search suggestions"
-                    >
-                      {suggestTenants.data && suggestTenants.data.items.length > 0 && (
-                        <>
-                          <span className="search-suggest-label">Tenants</span>
-                          {suggestTenants.data.items.map((tenant) => (
-                            <button
-                              type="button"
-                              key={tenant.tenant_id}
-                              className="search-suggest-item"
-                              onClick={() => {
-                                setSearchOpen(false);
-                                setSearch('');
-                                navigate(`/tenants/${tenant.tenant_id}`);
-                              }}
-                            >
-                              <strong>{tenant.display_name}</strong>
-                              <small>{tenant.tenant_id}</small>
-                            </button>
-                          ))}
-                        </>
-                      )}
-                      {suggestPages.length > 0 && (
-                        <>
-                          <span className="search-suggest-label">Pages</span>
-                          {suggestPages.map((item) => (
-                            <button
-                              type="button"
-                              key={item.path}
-                              className="search-suggest-item"
-                              onClick={() => {
-                                setSearchOpen(false);
-                                setSearch('');
-                                navigate(item.path);
-                              }}
-                            >
-                              <strong>{item.label}</strong>
-                            </button>
-                          ))}
-                        </>
-                      )}
-                      <button
-                        type="button"
-                        className="search-suggest-all"
-                        onClick={() => {
-                          setSearchOpen(false);
-                          navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
-                        }}
-                      >
-                        See all results for “{searchTerm}” <ArrowRight size={13} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+              {!metricsOnly && <GlobalSearch inputRef={searchRef} pages={searchPages} />}
               <span className={`live-indicator ${live.connected ? '' : 'disconnected'}`}>
                 <span />
                 {live.connected ? 'Live' : 'Polling · 30s'}
@@ -805,7 +690,7 @@ export function Workspace({
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/platform" element={<Platform />} />
                     <Route path="/admin" element={<Admin />} />
-                    <Route path="/search" element={<SearchResults />} />
+                    <Route path="/search" element={<SearchResults pages={searchPages} />} />
                     <Route path="/styleguide" element={<Styleguide />} />
                     <Route
                       path="*"

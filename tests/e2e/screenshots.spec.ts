@@ -5,7 +5,7 @@ import path from "node:path";
 test("capture every console screen across light/dark desktop and mobile themes", async ({
   page,
 }) => {
-  test.setTimeout(420_000);
+  test.setTimeout(600_000);
   const capturedAt = new Date();
   await page.clock.setFixedTime(capturedAt);
   const directory = path.resolve("../docs/screenshots");
@@ -140,7 +140,35 @@ test("capture every console screen across light/dark desktop and mobile themes",
           await expect(page.locator(".health-grid-mobile")).toBeVisible();
           await expect(page.locator(".health-grid-desktop")).toBeHidden();
         }
-        await page.screenshot({
+        const layout = await page.evaluate(() => {
+          const heading =
+            document.querySelector<HTMLElement>(".page-heading h1");
+          const content = document.querySelector(
+            ".page-content > .route-enter",
+          );
+          const body = content?.getBoundingClientRect();
+          return {
+            width: document.documentElement.scrollWidth,
+            font: heading ? getComputedStyle(heading).fontFamily : undefined,
+            panels: Array.from(
+              content?.querySelectorAll(":scope > .panel") ?? [],
+            ).map((panel) => {
+              const bounds = panel.getBoundingClientRect();
+              return {
+                left: Math.round(bounds.left - (body?.left ?? bounds.left)),
+                right: Math.round((body?.right ?? bounds.right) - bounds.right),
+                border: getComputedStyle(panel).borderTopWidth,
+              };
+            }),
+          };
+        });
+        const label = `${screen.slug}, ${theme}, ${viewport.width}px`;
+        expect(layout.width, label).toBeLessThanOrEqual(viewport.width);
+        if (layout.font) expect(layout.font, label).toContain("IBM Plex Sans");
+        for (const panel of layout.panels) {
+          expect(panel, label).toEqual({ left: 0, right: 0, border: "1px" });
+        }
+        const preview = await page.screenshot({
           path: path.join(
             directory,
             `${screen.slug}-${theme}-${viewport.width}.png`,
@@ -148,6 +176,7 @@ test("capture every console screen across light/dark desktop and mobile themes",
           fullPage: true,
           animations: "disabled",
         });
+        expect(preview.readUInt32BE(16), label).toBe(viewport.width);
       }
     }
   }

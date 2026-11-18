@@ -23,7 +23,7 @@
   gap: var(--space-3);
   margin-bottom: var(--space-5);
   color: var(--ink-900);
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 .login-brand .brand-icon {

@@ -22,10 +22,20 @@ test("search, navigation, typography, and administration work together", async (
   await expect(page.locator("#workspace-product-menu")).toBeVisible();
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/account$/);
+  const overviewLink = page.getByRole("link", {
+    name: "Overview",
+    exact: true,
+  });
+  const textSize = () =>
+    overviewLink.evaluate((link) =>
+      parseFloat(getComputedStyle(link).fontSize),
+    );
+  const standardSize = await textSize();
   await chooseSelectOption(page.getByLabel("Text size"), "Large");
-  await expect(page.locator("html")).toHaveCSS("zoom", "1.12");
+  await expect.poll(textSize).toBeGreaterThan(standardSize);
   await page.reload();
   await expect(page.getByLabel("Text size")).toContainText("Large");
+  await expect.poll(textSize).toBeGreaterThan(standardSize);
   await chooseSelectOption(page.getByLabel("Text size"), "Standard");
   await page.goto("/");
   await page.getByLabel("Search tenants, logs, pages").fill("acme");
@@ -131,4 +141,57 @@ test("search, navigation, typography, and administration work together", async (
   await expect(
     workflow.locator(".wf-card:not(.wf-analytics) button"),
   ).toHaveCount(0);
+});
+
+test("mobile filters remain aligned and dropdowns stay attached with Large text", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("obs-text-size", "large"),
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Email address").fill("admin@demo.local");
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill(process.env.DEMO_PASSWORD || "demo");
+  await page.getByRole("button", { name: "Sign in to workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Tenant health", exact: true }),
+  ).toBeVisible();
+  await page.goto("/tenants");
+
+  const filter = page.getByRole("button", { name: "Filter by health" });
+  const input = page.locator(".filter-bar .search-field");
+  await expect(filter).toHaveCSS("height", "36px");
+  await expect(input).toHaveCSS("height", "36px");
+  const ring = await filter.evaluate(
+    (item) => getComputedStyle(item).borderColor,
+  );
+  await expect(input).toHaveCSS("border-top-color", ring);
+  await filter.press("Enter");
+  const menu = page.getByRole("listbox", { name: "Filter by health" });
+  await expect(menu).toBeVisible();
+  const trigger = (await filter.boundingBox())!;
+  const popup = (await menu.boundingBox())!;
+  const gap = Math.min(
+    Math.abs(popup.y - trigger.y - trigger.height),
+    Math.abs(trigger.y - popup.y - popup.height),
+  );
+  expect(gap).toBeLessThanOrEqual(8);
+  expect(popup.x).toBeGreaterThanOrEqual(0);
+  expect(popup.x + popup.width).toBeLessThanOrEqual(390);
+  await menu.getByRole("option", { name: "down", exact: true }).click();
+  await expect(page).toHaveURL(/health=down/);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+
+  await page.goto("/access");
+  await expect(
+    page.getByRole("heading", { name: "User access & sessions" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
 });

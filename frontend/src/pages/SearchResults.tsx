@@ -1,10 +1,10 @@
-import './system.css';
+import './search.css';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { api, runPath } from '../api/client';
 import type { Schema } from '../api/client';
-import { useApp } from '../AppContext';
+import { matchingPages, type SearchPage } from '../search';
 import { StatusPill } from '../components/StatusPill';
 import {
   Empty,
@@ -17,23 +17,8 @@ import {
   useFilters,
 } from '../components/ui';
 
-const SEARCH_PAGES = [
-  { label: 'Overview', path: '/', keywords: 'health dashboard' },
-  { label: 'Tenants', path: '/tenants', keywords: 'customers sources' },
-  { label: 'Pipeline orchestration', path: '/pipelines', keywords: 'dag workflow pipelines' },
-  { label: 'Pipeline runs', path: '/runs', keywords: 'logs jobs execution' },
-  { label: 'Errors', path: '/errors', keywords: 'failures investigation' },
-  { label: 'Alerts', path: '/alerts', keywords: 'notifications incidents' },
-  { label: 'Data quality', path: '/quality', keywords: 'checks validation' },
-  { label: 'Warehouse', path: '/warehouse', keywords: 'database tables' },
-  { label: 'Access & roles', path: '/access', keywords: 'permissions security' },
-  { label: 'Account settings', path: '/account', keywords: 'profile password' },
-  { label: 'Administration', path: '/admin', keywords: 'users roles settings', admin: true },
-];
-
-export function SearchResults() {
+export function SearchResults({ pages }: { pages: SearchPage[] }) {
   const { params, set, page } = useFilters();
-  const { isAdmin } = useApp();
   const term = (params.get('q') || '').trim();
   const enabled = term.length >= 2;
   const query = useQuery({
@@ -50,13 +35,7 @@ export function SearchResults() {
     enabled,
     placeholderData: () => undefined,
   });
-  const pages = enabled
-    ? SEARCH_PAGES.filter(
-        (item) =>
-          (!item.admin || isAdmin) &&
-          `${item.label} ${item.keywords}`.toLowerCase().includes(term.toLowerCase()),
-      )
-    : [];
+  const destinations = enabled ? matchingPages(pages, term) : [];
   return (
     <>
       <PageHeader
@@ -92,13 +71,13 @@ export function SearchResults() {
           </Empty>
         ) : (
           <div className="search-sections">
-            {pages.length > 0 && (
+            {destinations.length > 0 && (
               <section className="search-section">
                 <h2>
-                  Pages <span>{pages.length}</span>
+                  Pages <span>{destinations.length}</span>
                 </h2>
                 <div className="search-shortcuts">
-                  {pages.map((item) => (
+                  {destinations.map((item) => (
                     <Link key={item.path} to={item.path}>
                       {item.label}
                       <span aria-hidden="true">↗</span>
@@ -140,7 +119,7 @@ export function SearchResults() {
             <section className="search-section">
               <h2>Errors & logs {query.data && <span>{query.data.total}</span>}</h2>
               <p className="search-hint">
-                Searches words in classified errors and redacted run logs.
+                Search by error code or words in redacted pipeline logs.
               </p>
               {query.isPending ? (
                 <Loading />
@@ -150,7 +129,7 @@ export function SearchResults() {
                 <>
                   <div className="search-results">
                     {query.data.items.map((hit) => (
-                      <Link to={runPath(hit.run_key)} key={hit.run_key}>
+                      <Link to={`${runPath(hit.run_key)}?focus=log`} key={hit.run_key}>
                         <div className="inline-flex">
                           <strong>{hit.tenant_id}</strong>
                           {hit.error_class && <span className="tag mono">{hit.error_class}</span>}

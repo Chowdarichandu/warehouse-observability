@@ -3,7 +3,7 @@
 }
 .compact-input {
   width: 120px;
-  font-size: 10px;
+  font-size: 0.625rem;
   padding: 8px;
 }
 .metadata-list {
@@ -12,14 +12,14 @@
   gap: 15px;
   padding: 2px 20px 22px;
   margin: 0;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .metadata-list dt {
   color: var(--muted);
 }
 .metadata-list dd {
   margin: 0;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .error-diagnosis {
   background: color-mix(in srgb, var(--bad) 2.75%, transparent);
@@ -38,7 +38,7 @@
   padding: 15px 0;
   color: var(--bad);
   font-family: var(--font-code);
-  font-size: 11px;
+  font-size: 0.6875rem;
   overflow-wrap: anywhere;
 }
 .fix-hint {
@@ -49,18 +49,18 @@
   gap: 7px;
 }
 .fix-hint span {
-  font-size: 8px;
+  font-size: 0.5rem;
   letter-spacing: 1.1px;
   color: var(--bad);
 }
 .fix-hint strong {
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.6;
   color: var(--bad);
 }
 .redacted-label {
   color: var(--ok);
-  font-size: 8px;
+  font-size: 0.5rem;
   display: flex;
   gap: 5px;
   align-items: center;
@@ -79,7 +79,7 @@
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 .log-viewer {
   background: var(--sunken);
@@ -105,12 +105,12 @@
   width: 45px;
   text-align: right;
   padding-right: 13px;
-  font-size: 10px;
+  font-size: 0.625rem;
   user-select: none;
   flex-shrink: 0;
 }
 .log-viewer code {
-  font-size: 10px;
+  font-size: 0.625rem;
   white-space: pre;
 }
 .log-viewer .error-line {
@@ -143,5 +143,5 @@
   flex-wrap: wrap;
 }
 .log-toolbar label {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }

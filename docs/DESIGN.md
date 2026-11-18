@@ -120,6 +120,7 @@ Use this for series that aren't status, such as sources, pipelines and tenants: 
 - **Code font:** IBM Plex Mono, weights 400 and 500 (`@fontsource/ibm-plex-mono`). Use it only for logs, run ids, connection ids, SQL and the error message block. Never use it for labels or numbers in the UI.
 - Fallback stack: `"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
 - Turn on `font-variant-numeric: tabular-nums` globally.
+- Settings offers Standard and Large text. Large increases the type scale by 12%; spacing and control dimensions still follow their layout tokens.
 
 | Token | Size / line height | Weight | Use |
 |---|---|---|---|
@@ -144,6 +145,7 @@ Sentence case everywhere. Never use all caps.
   - 12 px from a panel header to its content.
 - **Panel padding:** 16 px; 20 px for panels wider than 6 columns.
 - **Control heights:** 32 px default, 28 px small (tables and toolbars), 40 px large (sign-in, wizard footer). Inputs, selects and buttons in the same row are always the same height.
+- **Filter bars:** Search fields, selects and the search submit button share a 36 px height. On narrow screens, filters can wrap to a new row.
 - **Icons:** 16 px, 1.75 px stroke, from one set (lucide). 8 px gap to their label.
 - **Tables:**
   - Row height 40 px (32 px in compact density), cell padding 12 px horizontal.

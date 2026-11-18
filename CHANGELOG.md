@@ -4,6 +4,9 @@ User-visible changes are recorded here. Entries are grouped by release; version 
 
 ## Unreleased
 
+- Align workspace headings, panels, tables, and search controls on shared spacing, border, and typography tokens.
+- Scale text from Settings while keeping dropdowns attached and layouts within the mobile viewport.
+- Keep global search suggestions within the mobile viewport, support keyboard navigation, and search by exact error code. Search shows the same pages as the signed-in user's navigation.
 - Show the tenants that need attention on Overview, with freshness evidence and direct links to failed CDC runs. Keep tenant activity and run log availability separate, and show when the live feed is reconnecting.
 - Keep the sidebar collapse control clear of the Pravah name.
 - Keep the Access role matrix and the Freshness header within the mobile viewport.

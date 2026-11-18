@@ -40,6 +40,19 @@ def test_read_contracts(clients: dict, path: str) -> None:
     assert response.status_code == 200, response.text
 
 
+def test_search_finds_an_exact_error_code_without_matching_its_message(
+    clients: dict,
+) -> None:
+    response = clients["viewer"].get(
+        "/api/v1/search", params={"q": "mysql_binlog_purged"}
+    )
+    assert response.status_code == 200, response.text
+    hits = response.json()["items"]
+    assert hits
+    assert all(hit["error_class"] == "MYSQL_BINLOG_PURGED" for hit in hits)
+    assert hits[0]["excerpt"]
+
+
 def test_application_api_is_versioned_without_legacy_aliases() -> None:
     with TestClient(app) as client:
         assert client.get("/api/v1/health/live").status_code == 200

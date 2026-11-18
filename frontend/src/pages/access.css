@@ -29,14 +29,14 @@
 }
 .access-eyebrow {
   display: block;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--muted);
   margin-bottom: 7px;
 }
 .access-identity h2 {
-  font-size: 18px;
+  font-size: 1.125rem;
   letter-spacing: -0.02em;
   margin: 0 0 7px;
 }
@@ -46,7 +46,7 @@
 .access-role-descriptions p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-meta);
   line-height: 1.65;
 }
 .access-role-summary {
@@ -57,7 +57,7 @@
 .access-role-summary strong {
   display: block;
   margin-bottom: 5px;
-  font-size: 12px;
+  font-size: var(--text-meta);
 }
 .access-policy-note {
   border-top: 1px solid var(--line);
@@ -68,7 +68,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 .access-filter select {
@@ -106,22 +106,22 @@
   min-width: 0;
 }
 .access-permission strong {
-  font-size: 12px;
+  font-size: var(--text-meta);
 }
 .access-permission p {
-  font-size: 12px;
+  font-size: var(--text-meta);
   line-height: 1.6;
   color: var(--muted);
   margin: 5px 0 0;
 }
 .access-permission small {
   display: block;
-  font-size: 11px;
+  font-size: 0.6875rem;
   margin-top: 5px;
   color: var(--muted);
 }
 .access-state {
-  font-size: 10px;
+  font-size: 0.625rem;
   border: 1px solid var(--line);
   padding: 5px 8px;
   border-radius: 5px;
@@ -149,11 +149,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--text-meta);
   margin-bottom: 8px;
 }
 .access-role-descriptions strong span {
-  font-size: 9px;
+  font-size: 0.5625rem;
   font-weight: 500;
   color: var(--green);
 }
@@ -165,7 +165,7 @@
   text-align: center;
 }
 .access-matrix tbody th {
-  font-size: 12px;
+  font-size: var(--text-meta);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -187,7 +187,7 @@
 }
 .access-matrix-note {
   margin: 16px 20px 20px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.6;
 }
 .access-user {
@@ -209,12 +209,12 @@
   min-width: 0;
 }
 .access-user strong {
-  font-size: 12px;
+  font-size: var(--text-meta);
 }
 .access-user p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   overflow-wrap: anywhere;
 }
 .access-confirm {
@@ -224,7 +224,7 @@
 }
 .access-confirm > span,
 .access-self-hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .access-role-select {
   min-width: 112px;

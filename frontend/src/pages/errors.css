@@ -1,5 +1,5 @@
 .chart-label {
-  font-size: 8px;
+  font-size: 0.5rem;
   letter-spacing: 1px;
   color: var(--muted);
   display: flex;
@@ -18,12 +18,12 @@
   margin-bottom: 20px;
 }
 .insight-banner strong {
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
   color: var(--title);
 }
 .insight-banner p {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -49,7 +49,7 @@
 .group-description {
   padding: 0 20px 20px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .group-description > div {
   margin-top: 10px;
@@ -68,7 +68,7 @@
 }
 .mttr-list a {
   text-transform: capitalize;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .mttr-track {
   background: var(--subtle);
@@ -82,13 +82,13 @@
   background: var(--run);
 }
 .mttr-list strong {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
   text-align: right;
 }
 .mttr-list small {
   display: block;
-  font-size: 8px;
+  font-size: 0.5rem;
   font-weight: 400;
   margin-top: 5px;
   color: var(--muted);
@@ -107,10 +107,10 @@
     gap: 12px;
   }
   .insight-banner strong {
-    font-size: 14px;
+    font-size: var(--text-body);
   }
   .insight-banner p {
-    font-size: 9px;
+    font-size: 0.5625rem;
   }
   .insight-banner > svg {
     flex-shrink: 0;

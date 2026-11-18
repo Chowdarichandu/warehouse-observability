@@ -561,11 +561,16 @@ def search(
     q: str = Query(min_length=2, max_length=200), page: PageNumber = 1, page_size: PageSize = 25
 ) -> dict:
     where = """ FROM obs.pipeline_runs r LEFT JOIN obs.run_errors e USING(run_key) LEFT JOIN obs.run_logs l USING(run_key)
-         WHERE to_tsvector('simple',coalesce(e.error_message,'')) @@ plainto_tsquery('simple',%s)
-         OR l.tsv @@ plainto_tsquery('simple',%s)"""
+         CROSS JOIN (SELECT plainto_tsquery('simple',%s) AS terms, upper(%s) AS code) search
+         WHERE e.error_class=search.code
+         OR to_tsvector('simple',coalesce(e.error_message,'')) @@ search.terms
+         OR l.tsv @@ search.terms"""
     total = one("SELECT count(*) AS n" + where, (q, q))["n"]
     items = rows(
-        "SELECT r.run_key,r.tenant_id,r.started_at,e.error_class,left(coalesce(e.error_message,l.content,''),400) AS excerpt"
+        """SELECT r.run_key,r.tenant_id,r.started_at,e.error_class,
+        left(coalesce(CASE WHEN e.error_class=search.code
+                  OR to_tsvector('simple',coalesce(e.error_message,'')) @@ search.terms
+             THEN coalesce(e.error_message,l.content) ELSE l.content END,''),400) AS excerpt"""
         + where
         + " ORDER BY r.started_at DESC LIMIT %s OFFSET %s",
         (q, q, page_size, (page - 1) * page_size),
